@@ -71,18 +71,29 @@ wss.on("connection", (ws: Client) => {
       if (!room) return;
 
       const contents = getContents(room.id).filter((e) => e.id !== player.id);
-      const richContents = contents.map((item) => ({
-        id: item.id,
-        name: item.name,
-        kind: item.kind,
-        location_detail: item.location_detail,
-        contents: getContents(item.id).map((sub) => ({
-          id: sub.id,
-          name: sub.name,
-          kind: sub.kind,
-          contents: [],
-        })),
-      }));
+      const richContents = contents.map((item) => {
+        const richItem: any = {
+          id: item.id,
+          name: item.name,
+          kind: item.kind,
+          location_detail: item.location_detail,
+          contents: getContents(item.id).map((sub) => ({
+            id: sub.id,
+            name: sub.name,
+            kind: sub.kind,
+            contents: [],
+          })),
+        };
+
+        if (item.kind === "EXIT" && item.props["destination_id"]) {
+          const dest = getEntity(item.props["destination_id"]);
+          if (dest) {
+            richItem.destination_name = dest.name;
+          }
+        }
+
+        return richItem;
+      });
 
       ws.send(
         JSON.stringify({

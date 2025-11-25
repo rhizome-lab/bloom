@@ -22,13 +22,13 @@ export default function Compass() {
   };
 
   const Cell = (props: { dir: string; label: string }) => {
-    const exit = getExit(props.dir);
+    const exit = () => getExit(props.dir);
     return (
       <button
         onClick={() => handleDir(props.dir)}
         style={{
-          background: exit ? "#2a2a2d" : "#111",
-          color: exit ? "#fff" : "#444",
+          background: exit() ? "#2a2a2d" : "#111",
+          color: exit() ? "#fff" : "#444",
           border: "1px solid #333",
           "border-radius": "4px",
           cursor: "pointer",
@@ -52,10 +52,10 @@ export default function Compass() {
             overflow: "hidden",
             "text-overflow": "ellipsis",
             "max-width": "100%",
-            color: exit ? "#aaddff" : "#333",
+            color: exit() ? "#aaddff" : "#333",
           }}
         >
-          {exit ? exit.name : "+"}
+          {exit() ? exit()?.destination_name ?? exit()?.name : "+"}
         </div>
       </button>
     );
@@ -69,7 +69,7 @@ export default function Compass() {
           "grid-template-columns": "repeat(3, 1fr)",
           "grid-template-rows": "repeat(3, 1fr)",
           gap: "4px",
-          width: "140px",
+          width: "280px",
           height: "140px",
         }}
       >
@@ -102,10 +102,7 @@ export default function Compass() {
         <div
           style={{
             position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            inset: 0,
             background: "rgba(0,0,0,0.5)",
             display: "flex",
             "align-items": "center",

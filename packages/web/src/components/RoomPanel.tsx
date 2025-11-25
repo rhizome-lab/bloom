@@ -77,7 +77,7 @@ export default function RoomPanel() {
           </div>
           <div style={{ display: "flex", gap: "10px", "flex-wrap": "wrap" }}>
             <For
-              each={gameStore.state.room!.contents.filter(
+              each={gameStore.state.room?.contents.filter(
                 (i) => i.kind === "EXIT",
               )}
             >
@@ -94,6 +94,9 @@ export default function RoomPanel() {
                   }}
                 >
                   {exit.name}
+                  {exit.destination_name
+                    ? ` (to ${exit.destination_name})`
+                    : ""}
                 </span>
               )}
             </For>

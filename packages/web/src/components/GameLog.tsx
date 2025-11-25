@@ -80,6 +80,9 @@ const RoomView = (props: {
                   }}
                 >
                   {exit.name}
+                  {exit.destination_name
+                    ? ` (to ${exit.destination_name})`
+                    : ""}
                 </span>
               </span>
             )}
@@ -188,13 +191,18 @@ export default function GameLog() {
     >
       <For each={gameStore.state.messages}>
         {(msg) => {
-          if (msg.type === "room") return <RoomView {...(msg as any)} />;
-          if (msg.type === "inventory")
-            return <InventoryView {...(msg as any)} />;
-          if (msg.type === "item") return <ItemInspectView {...(msg as any)} />;
-          return (
-            <MessageView text={(msg as any).text} type={(msg as any).type} />
-          );
+          switch (msg.type) {
+            case "room":
+              return <RoomView {...msg} />;
+            case "inventory":
+              return <InventoryView {...msg} />;
+            case "item":
+              return <ItemInspectView {...msg} />;
+            case "message":
+              return <MessageView text={msg.text} type={msg.type} />;
+            default:
+              return null;
+          }
         }}
       </For>
     </div>

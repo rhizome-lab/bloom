@@ -13,6 +13,7 @@ export interface RichItem {
   kind: string;
   location_detail: string | null;
   contents: RichItem[];
+  destination_name?: string;
 }
 
 export interface RoomMessage {
