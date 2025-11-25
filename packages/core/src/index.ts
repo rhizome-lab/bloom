@@ -66,6 +66,66 @@ wss.on("connection", (ws: Client) => {
     if (!player) return;
 
     if (command === "look") {
+      // Look at specific target
+      if (args.length > 0) {
+        const targetName = args[0].toString().toLowerCase();
+
+        // Helper to recursively find an item by name
+        const findRecursive = (
+          containerId: number,
+          name: string,
+        ): { id: number; name: string; kind: string; props: any } | null => {
+          const contents = getContents(containerId);
+          for (const item of contents) {
+            if (item.name.toLowerCase() === name) return item;
+            const found = findRecursive(item.id, name);
+            if (found) return found;
+          }
+          return null;
+        };
+
+        let target = null;
+
+        // Search in room hierarchy
+        if (player.location_id) {
+          target = findRecursive(player.location_id, targetName);
+        }
+
+        // Search in inventory hierarchy if not found
+        if (!target) {
+          target = findRecursive(player.id, targetName);
+        }
+
+        if (!target) {
+          ws.send(
+            JSON.stringify({
+              type: "message",
+              text: `You don't see '${args[0]}' here.`,
+            }),
+          );
+          return;
+        }
+
+        const richContents = getContents(target.id).map((sub) => ({
+          id: sub.id,
+          name: sub.name,
+          kind: sub.kind,
+          contents: [], // Recurse if needed, but keeping it simple
+          location_detail: sub.location_detail,
+        }));
+
+        ws.send(
+          JSON.stringify({
+            type: "item", // New type for inspected item
+            name: target.name,
+            description: target.props["description"] || "It's just a thing.",
+            contents: richContents,
+          }),
+        );
+        return;
+      }
+
+      // Look at room (existing logic)
       if (!player.location_id) {
         ws.send(
           JSON.stringify({ type: "message", text: "You are in the void." }),

@@ -25,7 +25,18 @@ export interface TextMessage {
   text: string;
 }
 
-export type GameMessage = RoomMessage | InventoryMessage | TextMessage;
+export interface ItemMessage {
+  type: "item";
+  name: string;
+  description: string;
+  contents: RichItem[];
+}
+
+export type GameMessage =
+  | RoomMessage
+  | InventoryMessage
+  | TextMessage
+  | ItemMessage;
 
 interface GameState {
   messages: GameMessage[];

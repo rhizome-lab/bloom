@@ -3,7 +3,18 @@ import { gameStore, RichItem } from "../store/game";
 
 const ItemView = (props: { item: RichItem }) => (
   <div style={{ "margin-left": "15px" }}>
-    <span style={{ color: "#aaddff" }}>{props.item.name}</span>
+    <span
+      onClick={() => gameStore.send(["look", props.item.name])}
+      style={{
+        color: "#aaddff",
+        cursor: "pointer",
+        "text-decoration": "underline",
+        "text-decoration-style": "dotted",
+      }}
+      title="Inspect"
+    >
+      {props.item.name}
+    </span>
     <Show when={props.item.location_detail}>
       <span style={{ color: "#888", "font-size": "0.9em" }}>
         {" "}
@@ -91,6 +102,34 @@ const MessageView = (props: { text: string; type: "message" | "error" }) => (
   </div>
 );
 
+const ItemInspectView = (props: {
+  name: string;
+  description: string;
+  contents: RichItem[];
+}) => (
+  <div
+    style={{
+      "margin-bottom": "15px",
+      border: "1px solid #444",
+      padding: "10px",
+      background: "#222",
+    }}
+  >
+    <div style={{ "font-weight": "bold", color: "#aaddff" }}>{props.name}</div>
+    <div style={{ "margin-bottom": "10px", color: "#ccc" }}>
+      {props.description}
+    </div>
+    <Show when={props.contents.length > 0}>
+      <div
+        style={{ "font-size": "0.9em", color: "#888", "margin-bottom": "5px" }}
+      >
+        Contains:
+      </div>
+      <For each={props.contents}>{(item) => <ItemView item={item} />}</For>
+    </Show>
+  </div>
+);
+
 export default function GameLog() {
   let containerRef: HTMLDivElement | undefined;
 
@@ -119,6 +158,7 @@ export default function GameLog() {
           if (msg.type === "room") return <RoomView {...(msg as any)} />;
           if (msg.type === "inventory")
             return <InventoryView {...(msg as any)} />;
+          if (msg.type === "item") return <ItemInspectView {...(msg as any)} />;
           return (
             <MessageView text={(msg as any).text} type={(msg as any).type} />
           );
