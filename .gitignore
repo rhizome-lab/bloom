@@ -25,3 +25,8 @@ pnpm-debug.log*
 
 # direnv
 .direnv/
+
+# database
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

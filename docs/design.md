@@ -20,7 +20,7 @@ The system is divided into:
 3.  **Frontends (Plugins)**:
     - Web Client (SolidJS) - Rich HTML display.
     - Discord Bot - Markdown/Text interface.
-    - Terminal/Telnet - ANSI/Plain text.
+    - Terminal (Telnet/Netcat) - ANSI/Plain text.
 
 ## Object System
 
