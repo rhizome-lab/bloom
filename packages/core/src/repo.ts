@@ -75,13 +75,14 @@ export function createEntity(data: {
   location_id?: number;
   location_detail?: string;
   prototype_id?: number;
+  owner_id?: number;
   props?: Record<string, any>;
   state?: Record<string, any>;
   ai_context?: Record<string, any>;
 }) {
   const insertEntity = db.query(`
-    INSERT INTO entities (name, slug, kind, location_id, location_detail, prototype_id)
-    VALUES ($name, $slug, $kind, $location_id, $location_detail, $prototype_id)
+    INSERT INTO entities (name, slug, kind, location_id, location_detail, prototype_id, owner_id)
+    VALUES ($name, $slug, $kind, $location_id, $location_detail, $prototype_id, $owner_id)
     RETURNING id
   `);
 
@@ -98,6 +99,7 @@ export function createEntity(data: {
       $location_id: data.location_id || null,
       $location_detail: data.location_detail || null,
       $prototype_id: data.prototype_id || null,
+      $owner_id: data.owner_id || null,
     }) as { id: number };
 
     insertData.run({
@@ -176,5 +178,75 @@ export function updateEntity(
     db.query(
       `UPDATE entity_data SET ${dataUpdates.join(", ")} WHERE entity_id = ?`,
     ).run(...dataParams);
+  }
+}
+
+export interface Verb {
+  id: number;
+  entity_id: number;
+  name: string;
+  code: any; // JSON
+  permissions: Record<string, any>;
+}
+
+export function getVerbs(entityId: number): Verb[] {
+  const rows = db
+    .query("SELECT * FROM verbs WHERE entity_id = ?")
+    .all(entityId) as any[];
+
+  return rows.map((r) => ({
+    ...r,
+    code: JSON.parse(r.code),
+    permissions: JSON.parse(r.permissions),
+  }));
+}
+
+export function getVerb(entityId: number, name: string): Verb | null {
+  const row = db
+    .query("SELECT * FROM verbs WHERE entity_id = ? AND name = ?")
+    .get(entityId, name) as any;
+
+  if (!row) return null;
+
+  return {
+    ...row,
+    code: JSON.parse(row.code),
+    permissions: JSON.parse(row.permissions),
+  };
+}
+
+export function addVerb(
+  entityId: number,
+  name: string,
+  code: any,
+  permissions: Record<string, any> = { call: "public" },
+) {
+  db.query(
+    "INSERT INTO verbs (entity_id, name, code, permissions) VALUES (?, ?, ?, ?)",
+  ).run(entityId, name, JSON.stringify(code), JSON.stringify(permissions));
+}
+
+export function updateVerb(
+  id: number,
+  code?: any,
+  permissions?: Record<string, any>,
+) {
+  const updates: string[] = [];
+  const params: any[] = [];
+
+  if (code !== undefined) {
+    updates.push("code = ?");
+    params.push(JSON.stringify(code));
+  }
+  if (permissions !== undefined) {
+    updates.push("permissions = ?");
+    params.push(JSON.stringify(permissions));
+  }
+
+  if (updates.length > 0) {
+    params.push(id);
+    db.query(`UPDATE verbs SET ${updates.join(", ")} WHERE id = ?`).run(
+      ...params,
+    );
   }
 }

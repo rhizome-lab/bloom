@@ -177,8 +177,66 @@ export function startServer(port: number = 8080) {
           return;
         }
         args = result.data;
-      } else {
-        // Unknown command or no schema (handled at the end)
+      }
+
+      // --- SCRIPTING ENGINE INTEGRATION ---
+      const { getVerb } = await import("./repo");
+      const { evaluate } = await import("./scripting/interpreter");
+
+      // 1. Check verbs on 'me' (the player)
+      let verb = getVerb(player.id, command);
+      let targetEntity = player;
+
+      // 2. Check verbs on 'here' (the room)
+      if (!verb && player.location_id) {
+        verb = getVerb(player.location_id, command);
+        if (verb) targetEntity = getEntity(player.location_id)!;
+      }
+
+      // 3. Check verbs on a target item (if args[0] is a name)
+      // This is tricky because we don't know if args[0] is meant to be a target.
+      // But if we follow MOO style: "verb target"
+      if (!verb && args.length > 0 && typeof args[0] === "string") {
+        const targetName = args[0].toLowerCase();
+        // Find target in room or inventory
+        const findTarget = (containerId: number) => {
+          const contents = getContents(containerId);
+          return contents.find((e) => e.name.toLowerCase() === targetName);
+        };
+
+        let target = null;
+        if (player.location_id) target = findTarget(player.location_id);
+        if (!target) target = findTarget(player.id);
+
+        if (target) {
+          verb = getVerb(target.id, command);
+          if (verb) targetEntity = target;
+        }
+      }
+
+      if (verb && targetEntity) {
+        console.log(`Executing verb '${verb.name}' on ${targetEntity.id}`);
+        try {
+          await evaluate(verb.code, {
+            caller: player,
+            this: targetEntity,
+            args: args,
+            sys: {
+              move: moveEntity,
+              create: createEntity,
+              send: (msg) => ws.send(JSON.stringify(msg)),
+            },
+          });
+          return; // Stop processing if verb executed
+        } catch (e: any) {
+          ws.send(
+            JSON.stringify({
+              type: "error",
+              text: `Script Error: ${e.message}`,
+            }),
+          );
+          return;
+        }
       }
 
       if (command === "look") {

@@ -6,40 +6,50 @@ export const db = new Database("world.sqlite", { create: true });
 db.query("PRAGMA journal_mode = WAL;").run();
 
 // Initialize Schema
-const schema = `
--- 1. The Entity Table (Everything is an Entity)
-CREATE TABLE IF NOT EXISTS entities (
+db.query(
+  `
+  CREATE TABLE IF NOT EXISTS entities (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    slug TEXT UNIQUE, 
+    slug TEXT UNIQUE,
     name TEXT NOT NULL,
-    location_id INTEGER REFERENCES entities(id),
-    -- Where exactly in the location? (e.g., 'head', 'main_pocket', 'surface')
+    location_id INTEGER,
     location_detail TEXT,
-    prototype_id INTEGER REFERENCES entities(id),
-    owner_id INTEGER REFERENCES entities(id),
-    kind TEXT CHECK( kind IN ('ZONE', 'ROOM', 'ACTOR', 'ITEM', 'PART', 'EXIT') ) DEFAULT 'ITEM',
+    prototype_id INTEGER,
+    owner_id INTEGER,
+    kind TEXT DEFAULT 'ITEM',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(location_id) REFERENCES entities(id),
+    FOREIGN KEY(prototype_id) REFERENCES entities(id),
+    FOREIGN KEY(owner_id) REFERENCES entities(id)
+  )
+`,
+).run();
 
--- 2. The Data Store (JSON Attributes)
-CREATE TABLE IF NOT EXISTS entity_data (
-    entity_id INTEGER PRIMARY KEY REFERENCES entities(id) ON DELETE CASCADE,
-    state JSON DEFAULT '{}',
-    props JSON DEFAULT '{}',
-    ai_context JSON DEFAULT '{}'
-);
+db.query(
+  `
+  CREATE TABLE IF NOT EXISTS entity_data (
+    entity_id INTEGER PRIMARY KEY,
+    props TEXT DEFAULT '{}',
+    state TEXT DEFAULT '{}',
+    ai_context TEXT DEFAULT '{}',
+    FOREIGN KEY(entity_id) REFERENCES entities(id) ON DELETE CASCADE
+  )
+`,
+).run();
 
--- 3. The Scripting System (LambdaMOO style verbs)
-CREATE TABLE IF NOT EXISTS verbs (
+db.query(
+  `
+  CREATE TABLE IF NOT EXISTS verbs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    entity_id INTEGER REFERENCES entities(id) ON DELETE CASCADE,
-    trigger TEXT NOT NULL,
+    entity_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
     code TEXT NOT NULL,
-    is_public BOOLEAN DEFAULT 0
-);
-`;
-
-db.run(schema);
+    permissions TEXT DEFAULT '{"call":"public"}',
+    FOREIGN KEY(entity_id) REFERENCES entities(id) ON DELETE CASCADE,
+    UNIQUE(entity_id, name)
+  )
+`,
+).run();
 
 console.log("Database initialized with ECS schema (v2)");
