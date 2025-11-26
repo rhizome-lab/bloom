@@ -437,6 +437,10 @@ body {
   gap: 5px;
 }
 
+.builder__row--column {
+  flex-direction: column;
+}
+
 .builder__input {
   background: var(--bg-input);
   color: var(--text-primary);
@@ -489,6 +493,135 @@ body {
 .builder__btn--secondary {
   background: var(--bg-element);
   color: var(--text-primary);
+}
+
+.builder__tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.builder__tab {
+  font-weight: normal;
+  text-decoration: none;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0;
+}
+
+.builder__tab--active {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.builder__tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.builder__tag {
+  background: var(--bg-element);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+}
+
+.builder__tag:hover {
+  background: var(--bg-element-hover);
+  border-color: var(--error-color); /* Indicate removal */
+}
+
+.builder__autocomplete-wrapper {
+  position: relative;
+  display: flex;
+  flex: 1;
+}
+
+.builder__autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  z-index: 10;
+  max-height: 150px;
+  overflow: auto;
+}
+
+.builder__autocomplete-item {
+  padding: 5px 10px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.builder__autocomplete-item:hover {
+  background: var(--bg-element-hover);
+}
+
+/* DigPanel */
+.dig-panel {
+  padding: 10px;
+}
+
+.dig-panel__row {
+  display: flex;
+  gap: 10px;
+  font-size: 0.9em;
+}
+
+.dig-panel__compass {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  width: 60px;
+  height: 60px;
+}
+
+.dig-panel__cell {
+  background: var(--bg-element);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.dig-panel__cell:hover {
+  background: var(--bg-element-hover);
+}
+
+.dig-panel__cell--active {
+  background: var(--accent-color);
+  color: var(--accent-fg);
+  border-color: var(--accent-base);
+}
+
+.dig-panel__cell--center {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.dig-panel__direction-label {
+  font-weight: bold;
+  color: var(--text-secondary);
+}
+
+.dig-panel__direction-value {
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.dig-panel__direction-wrapper {
+  flex: 1;
 }
 
 /* GameLog */

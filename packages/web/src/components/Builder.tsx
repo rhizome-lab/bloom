@@ -18,49 +18,28 @@ export default function Builder() {
 
   return (
     <div class="builder">
-      <div
-        class="builder__tabs"
-        style={{ display: "flex", gap: "10px", "margin-bottom": "10px" }}
-      >
+      <div class="builder__tabs">
         <button
           onClick={() => setActiveTab("room")}
-          style={{
-            "font-weight": activeTab() === "room" ? "bold" : "normal",
-            "text-decoration": activeTab() === "room" ? "underline" : "none",
-            background: "none",
-            border: "none",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            padding: "0",
-          }}
+          class={`builder__tab ${
+            activeTab() === "room" ? "builder__tab--active" : ""
+          }`}
         >
           Room
         </button>
         <button
           onClick={() => setActiveTab("create")}
-          style={{
-            "font-weight": activeTab() === "create" ? "bold" : "normal",
-            "text-decoration": activeTab() === "create" ? "underline" : "none",
-            background: "none",
-            border: "none",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            padding: "0",
-          }}
+          class={`builder__tab ${
+            activeTab() === "create" ? "builder__tab--active" : ""
+          }`}
         >
           Create Item
         </button>
         <button
           onClick={() => setActiveTab("edit")}
-          style={{
-            "font-weight": activeTab() === "edit" ? "bold" : "normal",
-            "text-decoration": activeTab() === "edit" ? "underline" : "none",
-            background: "none",
-            border: "none",
-            color: "var(--text-primary)",
-            cursor: "pointer",
-            padding: "0",
-          }}
+          class={`builder__tab ${
+            activeTab() === "edit" ? "builder__tab--active" : ""
+          }`}
         >
           Edit Item
         </button>

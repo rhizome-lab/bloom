@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, Show, For } from "solid-js";
 import { gameStore } from "../store/game";
 
 interface DigPanelProps {
@@ -30,7 +30,7 @@ export default function DigPanel(props: DigPanelProps) {
   };
 
   return (
-    <div class="builder__panel" style={{ padding: "10px" }}>
+    <div class="builder__panel dig-panel">
       <div class="builder__title">DIG ROOM</div>
       <form onSubmit={handleDig} class="builder__form">
         <Show when={!props.hideDirection}>
@@ -47,62 +47,84 @@ export default function DigPanel(props: DigPanelProps) {
           </div>
         </Show>
 
-        <div
-          class="builder__tabs"
-          style={{ display: "flex", gap: "10px", "font-size": "0.9em" }}
-        >
+        <div class="builder__tabs">
           <button
             type="button"
             onClick={() => setMode("new")}
-            style={{
-              "font-weight": mode() === "new" ? "bold" : "normal",
-              "text-decoration": mode() === "new" ? "underline" : "none",
-              background: "none",
-              border: "none",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              padding: "0",
-            }}
+            class={`builder__tab ${
+              mode() === "new" ? "builder__tab--active" : ""
+            }`}
           >
             New Room
           </button>
           <button
             type="button"
             onClick={() => setMode("existing")}
-            style={{
-              "font-weight": mode() === "existing" ? "bold" : "normal",
-              "text-decoration": mode() === "existing" ? "underline" : "none",
-              background: "none",
-              border: "none",
-              color: "var(--text-primary)",
-              cursor: "pointer",
-              padding: "0",
-            }}
+            class={`builder__tab ${
+              mode() === "existing" ? "builder__tab--active" : ""
+            }`}
           >
             Existing Room
           </button>
         </div>
 
         <Show when={mode() === "new"}>
-          <input
-            type="text"
-            placeholder="New Room Name"
-            value={roomName()}
-            onInput={(e) => setRoomName(e.currentTarget.value)}
-            class="builder__input"
-            autocomplete="off"
-          />
+          <div class="builder__row">
+            <input
+              type="text"
+              placeholder="New Room Name"
+              value={roomName()}
+              onInput={(e) => setRoomName(e.currentTarget.value)}
+              class="builder__input builder__input--full"
+              required
+            />
+          </div>
         </Show>
 
         <Show when={mode() === "existing"}>
-          <input
-            type="text"
-            placeholder="Target Room Name (exact match)"
-            value={targetRoom()}
-            onInput={(e) => setTargetRoom(e.currentTarget.value)}
-            class="builder__input"
-            autocomplete="off"
-          />
+          <div class="builder__row">
+            <input
+              type="text"
+              placeholder="Target Room Name (exact match)"
+              value={targetRoom()}
+              onInput={(e) => setTargetRoom(e.currentTarget.value)}
+              class="builder__input builder__input--full"
+              autocomplete="off"
+            />
+          </div>
+        </Show>
+
+        <Show when={!props.hideDirection}>
+          <div class="dig-panel__row">
+            <div class="dig-panel__compass">
+              <For
+                each={["nw", "n", "ne", "w", "center", "e", "sw", "s", "se"]}
+              >
+                {(dir) => (
+                  <div
+                    class={`dig-panel__cell ${
+                      dir === "center"
+                        ? "dig-panel__cell--center"
+                        : direction() === dir
+                        ? "dig-panel__cell--active"
+                        : ""
+                    }`}
+                    onClick={() => dir !== "center" && setDirection(dir)}
+                  >
+                    {dir === "center" ? "●" : dir.toUpperCase()}
+                  </div>
+                )}
+              </For>
+            </div>
+            <div class="builder__row builder__row--column dig-panel__direction-wrapper">
+              <div class="builder__title dig-panel__direction-label">
+                DIRECTION
+              </div>
+              <div class="dig-panel__direction-value">
+                {direction().toUpperCase()}
+              </div>
+            </div>
+          </div>
         </Show>
 
         <div class="builder__actions">
@@ -111,13 +133,7 @@ export default function DigPanel(props: DigPanelProps) {
               Cancel
             </button>
           )}
-          <button
-            type="submit"
-            classList={{
-              builder__btn: true,
-              "builder__btn--primary": true,
-            }}
-          >
+          <button type="submit" class="builder__btn builder__btn--primary">
             Dig
           </button>
         </div>

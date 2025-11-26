@@ -64,19 +64,12 @@ export default function ItemCreator(props: { onClose?: () => void }) {
           class="builder__input"
         />
 
-        <div class="builder__row" style={{ "flex-direction": "column" }}>
-          <div style={{ display: "flex", gap: "5px", "flex-wrap": "wrap" }}>
+        <div class="builder__row builder__row--column">
+          <div class="builder__tags">
             <For each={selectedAdjectives()}>
               {(adj) => (
                 <span
-                  style={{
-                    background: "var(--bg-element)",
-                    padding: "2px 6px",
-                    "border-radius": "4px",
-                    "font-size": "0.9em",
-                    cursor: "pointer",
-                    border: "1px solid var(--border-color)",
-                  }}
+                  class="builder__tag"
                   onClick={() => removeAdjective(adj)}
                   title="Click to remove"
                 >
@@ -85,7 +78,7 @@ export default function ItemCreator(props: { onClose?: () => void }) {
               )}
             </For>
           </div>
-          <div style={{ position: "relative", display: "flex", flex: 1 }}>
+          <div class="builder__autocomplete-wrapper">
             <input
               type="text"
               placeholder="Add Adjective (e.g. color:red)"
@@ -94,36 +87,12 @@ export default function ItemCreator(props: { onClose?: () => void }) {
               class="builder__input"
             />
             {filteredAdjectives().length > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  background: "var(--bg-app)",
-                  border: "1px solid var(--border-color)",
-                  "border-radius": "4px",
-                  "z-index": 10,
-                  "max-height": "150px",
-                  overflow: "auto",
-                }}
-              >
+              <div class="builder__autocomplete-dropdown">
                 <For each={filteredAdjectives()}>
                   {(adj) => (
                     <div
-                      style={{
-                        padding: "5px 10px",
-                        cursor: "pointer",
-                        "border-bottom": "1px solid var(--border-color)",
-                      }}
+                      class="builder__autocomplete-item"
                       onClick={() => addAdjective(adj)}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.background =
-                          "var(--bg-element-hover)")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.background = "transparent")
-                      }
                     >
                       {adj}
                     </div>
