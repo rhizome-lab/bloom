@@ -1,4 +1,4 @@
-import { Component, For, Show } from "solid-js";
+import { Component, For, Show, createMemo } from "solid-js";
 import { BLOCK_DEFINITIONS } from "./types";
 
 interface BlockNodeProps {
@@ -9,90 +9,114 @@ interface BlockNodeProps {
 }
 
 export const BlockNode: Component<BlockNodeProps> = (props) => {
-  const isArray = Array.isArray(props.node);
+  const isArray = createMemo(() => Array.isArray(props.node));
 
-  // If it's not an array, it's a literal or variable
-  if (!isArray) {
-    return (
-      <div class="block-node block-node--literal">
-        <input
-          class="block-node__input"
-          value={props.node}
-          onInput={(e) => props.onUpdate(props.path, e.currentTarget.value)}
-        />
-      </div>
-    );
-  }
-
-  const opcode = props.node[0];
-  const def = BLOCK_DEFINITIONS.find((d) => d.opcode === opcode);
-
-  if (!def) {
-    return <div class="block-node block-node--unknown">Unknown: {opcode}</div>;
-  }
-
-  const args = props.node.slice(1);
+  // Handle null/placeholder
+  const isNull = createMemo(() => props.node === null);
 
   return (
-    <div
-      class={`block-node block-node--${def.type} block-node--${def.category}`}
+    <Show
+      when={!isNull()}
+      fallback={
+        <div class="block-node block-node--placeholder">Empty Slot</div>
+      }
     >
-      <div class="block-node__header">
-        <span class="block-node__label">{def.label}</span>
-        <button
-          class="block-node__delete"
-          onClick={(e) => {
-            e.stopPropagation();
-            props.onDelete(props.path);
-          }}
-        >
-          &times;
-        </button>
-      </div>
-
-      <div class="block-node__content">
-        <Show when={def.opcode === "seq"}>
-          <div class="block-node__sequence">
-            <For each={args}>
-              {(arg, i) => (
-                <BlockNode
-                  node={arg}
-                  path={[...props.path, i() + 1]}
-                  onUpdate={props.onUpdate}
-                  onDelete={props.onDelete}
-                />
-              )}
-            </For>
-            {/* Drop zone for new steps would go here */}
+      <Show
+        when={isArray()}
+        fallback={
+          <div class="block-node block-node--literal">
+            <input
+              class="block-node__input"
+              value={props.node}
+              onInput={(e) => props.onUpdate(props.path, e.currentTarget.value)}
+            />
           </div>
-        </Show>
+        }
+      >
+        {(() => {
+          const opcode = createMemo(() => props.node[0]);
+          const def = createMemo(() =>
+            BLOCK_DEFINITIONS.find((d) => d.opcode === opcode()),
+          );
+          const args = createMemo(() => props.node.slice(1));
 
-        <Show when={def.opcode !== "seq" && def.slots}>
-          <For each={def.slots}>
-            {(slot, i) => (
-              <div class="block-node__slot">
-                <span class="block-node__slot-label">{slot.name}:</span>
-                <div class="block-node__slot-content">
-                  {/* If the slot expects a block, render the child node if present, or a placeholder */}
-                  <Show
-                    when={args[i()] !== undefined}
-                    fallback={
-                      <div class="block-node__placeholder">Drop here</div>
-                    }
+          return (
+            <Show
+              when={def()}
+              fallback={
+                <div class="block-node block-node--unknown">
+                  Unknown: {opcode()}
+                </div>
+              }
+            >
+              <div
+                class={`block-node block-node--${def()!.type} block-node--${
+                  def()!.category
+                }`}
+              >
+                <div class="block-node__header">
+                  <span class="block-node__label">{def()!.label}</span>
+                  <button
+                    class="block-node__delete"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      props.onDelete(props.path);
+                    }}
                   >
-                    <BlockNode
-                      node={args[i()]}
-                      path={[...props.path, i() + 1]}
-                      onUpdate={props.onUpdate}
-                      onDelete={props.onDelete}
-                    />
+                    &times;
+                  </button>
+                </div>
+
+                <div class="block-node__content">
+                  <Show when={def()!.opcode === "seq"}>
+                    <div class="block-node__sequence">
+                      <For each={args()}>
+                        {(arg, i) => (
+                          <BlockNode
+                            node={arg}
+                            path={[...props.path, i() + 1]}
+                            onUpdate={props.onUpdate}
+                            onDelete={props.onDelete}
+                          />
+                        )}
+                      </For>
+                    </div>
+                  </Show>
+
+                  <Show when={def()!.opcode !== "seq" && def()!.slots}>
+                    <For each={def()!.slots}>
+                      {(slot, i) => (
+                        <div class="block-node__slot">
+                          <span class="block-node__slot-label">
+                            {slot.name}:
+                          </span>
+                          <div class="block-node__slot-content">
+                            <Show
+                              when={args()[i()] !== undefined}
+                              fallback={
+                                <div class="block-node__placeholder">
+                                  Drop here
+                                </div>
+                              }
+                            >
+                              <BlockNode
+                                node={args()[i()]}
+                                path={[...props.path, i() + 1]}
+                                onUpdate={props.onUpdate}
+                                onDelete={props.onDelete}
+                              />
+                            </Show>
+                          </div>
+                        </div>
+                      )}
+                    </For>
                   </Show>
                 </div>
               </div>
-            )}
-          </For>
-        </Show>
-      </div>
-    </div>
+            </Show>
+          );
+        })()}
+      </Show>
+    </Show>
   );
 };

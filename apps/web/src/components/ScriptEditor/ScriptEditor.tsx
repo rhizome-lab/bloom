@@ -8,12 +8,11 @@ export const ScriptEditor: Component = () => {
   const [script, setScript] = createSignal<any>(["seq"]);
 
   const updateNode = (path: number[], newNode: any) => {
-    // Deep clone and update
     const newScript = JSON.parse(JSON.stringify(script()));
     let current = newScript;
 
     // Navigate to parent
-    for (const segment of path) {
+    for (const segment of path.slice(0, -1)) {
       current = current[segment];
     }
 
@@ -27,12 +26,30 @@ export const ScriptEditor: Component = () => {
     let current = newScript;
 
     // Navigate to parent
-    for (const segment of path) {
+    for (const segment of path.slice(0, -1)) {
       current = current[segment];
     }
 
-    // Remove child (splice)
-    current.splice(path[path.length - 1], 1);
+    const index = path[path.length - 1]!;
+
+    // Check if parent is a sequence (array starting with "seq")
+    // OR if we are at the root (which is implicitly a seq/array)
+    // Actually, our root is ["seq", ...].
+    // If current is an array, check its first element.
+    const isSeq = Array.isArray(current) && current[0] === "seq";
+
+    // If it's a sequence, we splice (remove).
+    // If it's a fixed slot (e.g. "if" args), we replace with null.
+    // Exception: If we are inside a "seq" block, the children start at index 1.
+    // So if current[0] === "seq", any index > 0 is a child in the sequence.
+
+    if (isSeq && index > 0) {
+      current.splice(index, 1);
+    } else {
+      // It's a slot argument, set to null
+      current[index] = null;
+    }
+
     setScript(newScript);
   };
 
