@@ -45,15 +45,16 @@ const providerMap: Record<string, string> = {
 };
 
 async function getModel(modelSpec?: string) {
-  const defaultProvider = process.env.AI_PROVIDER || "openai";
-  const defaultModel = process.env.AI_MODEL || "gpt-4o";
+  const defaultProvider = process.env["AI_PROVIDER"] ?? "openai";
+  const defaultModel = process.env["AI_MODEL"] ?? "gpt-4o";
 
   let providerName = defaultProvider;
   let modelName = defaultModel;
 
   if (modelSpec) {
-    if (modelSpec.includes(":")) {
-      [providerName, modelName] = modelSpec.split(":");
+    const matches = modelSpec.match(/^([^:]+):(.+)$/);
+    if (matches) {
+      [providerName = "", modelName = ""] = matches.slice(1);
     } else {
       modelName = modelSpec;
     }
@@ -86,8 +87,9 @@ async function getModel(modelSpec?: string) {
 
     if (!providerFn) {
       // Try camelCase for hyphenated names
-      const camel = providerName.replace(/-([a-z])/g, (g) =>
-        g[1].toUpperCase(),
+      const camel = providerName.replace(
+        /-([a-z])/g,
+        (g) => g[1]?.toUpperCase() ?? "",
       );
       providerFn = mod[camel];
     }
@@ -117,7 +119,7 @@ export class AiPlugin implements Plugin {
     this.registerTemplate({
       name: "item",
       description: "Generate an item",
-      prompt: (ctx, instruction) => `
+      prompt: (_ctx, instruction) => `
         You are a creative game master. Create a JSON object for an item based on the description: "${instruction}".
         The JSON should have: name, description, adjectives (array of strings).
         Example: {"name": "Rusty Sword", "description": "An old sword.", "adjectives": ["rusty", "sharp"]}
@@ -128,7 +130,7 @@ export class AiPlugin implements Plugin {
     this.registerTemplate({
       name: "room",
       description: "Generate a room",
-      prompt: (ctx, instruction) => `
+      prompt: (_ctx, instruction) => `
         You are a creative game master. Create a JSON object for a room based on the description: "${instruction}".
         The JSON should have: name, description, adjectives (array of strings).
         Example: {"name": "Dark Cave", "description": "A dark and damp cave.", "adjectives": ["dark", "damp"]}
@@ -178,8 +180,8 @@ export class AiPlugin implements Plugin {
       const { text } = await generateText({
         model,
         system: `You are roleplaying as ${target.name}. 
-        Description: ${target.props.description || "A mysterious entity."}
-        Adjectives: ${target.props.adjectives?.join(", ") || "none"}
+        Description: ${target.props["description"] ?? "A mysterious entity."}
+        Adjectives: ${target.props["adjectives"]?.join(", ") ?? "none"}
         Keep your response short and in character.`,
         prompt: message,
       });
