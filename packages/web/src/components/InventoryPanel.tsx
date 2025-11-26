@@ -5,7 +5,11 @@ const ItemView = (props: { item: RichItem }) => (
   <div class="inventory-panel__item">
     <span
       onClick={() => gameStore.send(["look", props.item.name])}
-      class="inventory-panel__item-link"
+      class={`inventory-panel__item-link ${
+        props.item.adjectives
+          ?.map((a) => `attribute-${a.replace(":", "-")}`)
+          .join(" ") || ""
+      }`}
     >
       {props.item.name}
     </span>

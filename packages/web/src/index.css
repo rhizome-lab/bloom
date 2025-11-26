@@ -923,3 +923,105 @@ body {
 .app__settings-btn:hover {
   background: var(--bg-element-hover);
 }
+
+/* Adjectives */
+
+/* Effects */
+.attribute-glowing {
+  text-shadow: 0 0 5px currentColor;
+  animation: glow-pulse 2s infinite alternate;
+}
+
+@keyframes glow-pulse {
+  from {
+    text-shadow: 0 0 2px currentColor;
+  }
+  to {
+    text-shadow: 0 0 8px currentColor, 0 0 12px currentColor;
+  }
+}
+
+.attribute-transparent {
+  opacity: 0.5;
+}
+
+.attribute-ethereal {
+  opacity: 0.7;
+  filter: blur(0.5px);
+  animation: ethereal-float 3s ease-in-out infinite alternate;
+}
+
+@keyframes ethereal-float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-2px);
+  }
+}
+
+/* Dynamic Colors */
+[class*="attribute-color-"] {
+  color: oklch(var(--item-l, 0.65) var(--item-c, 0.18) var(--item-hue, 0));
+}
+
+/* Base Colors (Hue) */
+.attribute-color-pink {
+  --item-hue: 330;
+}
+.attribute-color-cyan {
+  --item-hue: 190;
+}
+.attribute-color-lilac {
+  --item-hue: 280;
+}
+.attribute-color-lavender {
+  --item-hue: 270;
+}
+.attribute-color-green {
+  --item-hue: 140;
+}
+.attribute-color-red {
+  --item-hue: 20;
+}
+.attribute-color-blue {
+  --item-hue: 250;
+}
+.attribute-color-yellow {
+  --item-hue: 90;
+}
+.attribute-color-orange {
+  --item-hue: 50;
+}
+.attribute-color-purple {
+  --item-hue: 290;
+}
+.attribute-color-teal {
+  --item-hue: 170;
+}
+.attribute-color-grey {
+  --item-c: 0;
+}
+.attribute-color-white {
+  --item-l: 0.95;
+  --item-c: 0;
+}
+
+/* Modifiers */
+.attribute-color-light {
+  --item-l: 0.9;
+  --item-c: 0.05;
+}
+.attribute-color-dark {
+  --item-l: 0.3;
+  --item-c: 0.1;
+}
+.attribute-color-pastel {
+  --item-l: 0.85;
+  --item-c: 0.1;
+}
+.attribute-color-neon {
+  --item-l: 0.7;
+  --item-c: 0.3;
+  text-shadow: 0 0 5px currentColor;
+}

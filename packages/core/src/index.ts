@@ -77,6 +77,7 @@ wss.on("connection", (ws: Client) => {
           name: item.name,
           kind: item.kind,
           location_detail: item.location_detail,
+          adjectives: item.props["adjectives"],
           contents: getContents(item.id).map((sub) => ({
             id: sub.id,
             name: sub.name,
@@ -146,6 +147,7 @@ wss.on("connection", (ws: Client) => {
           kind: sub.kind,
           contents: [],
           location_detail: sub.location_detail,
+          adjectives: sub.props["adjectives"],
         }));
 
         ws.send(
@@ -154,6 +156,7 @@ wss.on("connection", (ws: Client) => {
             name: target.name,
             description: target.props["description"] || "It's just a thing.",
             contents: richContents,
+            adjectives: target.props["adjectives"],
           }),
         );
         return;
@@ -174,6 +177,7 @@ wss.on("connection", (ws: Client) => {
         name: item.name,
         kind: item.kind,
         location_detail: item.location_detail,
+        adjectives: item.props["adjectives"],
         contents: getContents(item.id).map((sub) => ({
           id: sub.id,
           name: sub.name,
@@ -353,7 +357,13 @@ wss.on("connection", (ws: Client) => {
       }
 
       // Update props
-      const newProps = { ...target.props, [prop]: value };
+      // Update props
+      let parsedValue = value;
+      try {
+        parsedValue = JSON.parse(value);
+      } catch {}
+
+      const newProps = { ...target.props, [prop]: parsedValue };
       db.query("UPDATE entity_data SET props = ? WHERE entity_id = ?").run(
         JSON.stringify(newProps),
         target.id,
