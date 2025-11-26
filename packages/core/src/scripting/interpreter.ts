@@ -5,6 +5,7 @@ export type ScriptContext = {
   caller: Entity;
   this: Entity;
   args: any[];
+  locals?: Record<string, any>;
   sys?: {
     move: (id: number, dest: number) => void;
     create: (data: any) => number;
@@ -38,8 +39,34 @@ const OPS: Record<string, (args: any[], ctx: ScriptContext) => Promise<any>> = {
     }
     return null;
   },
-  for: async () => {
-    // Not implemented yet
+  for: async (args, ctx) => {
+    const [varName, listExpr, body] = args;
+    const list = await evaluate(listExpr, ctx);
+    if (!Array.isArray(list)) return null;
+
+    if (!ctx.locals) ctx.locals = {};
+
+    let lastResult = null;
+    for (const item of list) {
+      ctx.locals[varName] = item;
+      lastResult = await evaluate(body, ctx);
+    }
+    return lastResult;
+  },
+
+  // Variables
+  let: async (args, ctx) => {
+    const [name, valExpr] = args;
+    const val = await evaluate(valExpr, ctx);
+    if (!ctx.locals) ctx.locals = {};
+    ctx.locals[name] = val;
+    return val;
+  },
+  var: async (args, ctx) => {
+    const [name] = args;
+    if (ctx.locals && name in ctx.locals) {
+      return ctx.locals[name];
+    }
     return null;
   },
 
@@ -125,18 +152,6 @@ const OPS: Record<string, (args: any[], ctx: ScriptContext) => Promise<any>> = {
 export async function evaluate(ast: any, ctx: ScriptContext): Promise<any> {
   if (!Array.isArray(ast)) {
     // Literals
-    if (typeof ast === "string" && ast.startsWith("$")) {
-      // Variable access (simple implementation for now)
-      // We don't have local scope in this simple version yet,
-      // but let's support args by index e.g. $0, $1
-      const varName = ast.substring(1);
-      const argIndex = parseInt(varName);
-      if (!isNaN(argIndex)) {
-        return ctx.args[argIndex];
-      }
-      // TODO: Implement local variables
-      return null;
-    }
     return ast;
   }
 

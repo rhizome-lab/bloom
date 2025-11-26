@@ -257,4 +257,34 @@ export const BLOCK_DEFINITIONS: BlockDefinition[] = [
     layout: "primitive",
     slots: [{ name: "Val", type: "boolean" }],
   },
+  {
+    type: "container",
+    label: "For Loop",
+    opcode: "for",
+    category: "logic",
+    layout: "control-flow",
+    slots: [
+      { name: "Var", type: "string" },
+      { name: "List", type: "block" },
+      { name: "Do", type: "block" },
+    ],
+  },
+  {
+    type: "statement",
+    label: "Let",
+    opcode: "let",
+    category: "logic",
+    slots: [
+      { name: "Name", type: "string" },
+      { name: "Value", type: "block" },
+    ],
+  },
+  {
+    type: "expression",
+    label: "Get Var",
+    opcode: "var",
+    category: "data",
+    layout: "primitive",
+    slots: [{ name: "Name", type: "string" }],
+  },
 ];
