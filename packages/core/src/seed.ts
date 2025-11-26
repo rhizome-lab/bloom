@@ -193,7 +193,7 @@ export function seed() {
     location_id: gemstoreId,
     props: {
       description: "A pitch black stone.",
-      adjectives: ["black", "shiny"],
+      adjectives: ["color:black", "effect:shiny"],
     },
   });
 
@@ -203,7 +203,7 @@ export function seed() {
     location_id: gemstoreId,
     props: {
       description: "A gleaming silver blade.",
-      adjectives: ["silver", "metallic"],
+      adjectives: ["color:silver", "material:metal"],
     },
   });
 
@@ -211,7 +211,10 @@ export function seed() {
     name: "Gold Coin",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: { description: "A heavy gold coin.", adjectives: ["gold", "heavy"] },
+    props: {
+      description: "A heavy gold coin.",
+      adjectives: ["color:gold", "weight:heavy"],
+    },
   });
 
   createEntity({
@@ -220,7 +223,7 @@ export function seed() {
     location_id: gemstoreId,
     props: {
       description: "A precious platinum ring.",
-      adjectives: ["platinum", "precious"],
+      adjectives: ["color:platinum", "value:precious"],
     },
   });
 
@@ -230,7 +233,7 @@ export function seed() {
     location_id: gemstoreId,
     props: {
       description: "It glows with a sickly light.",
-      adjectives: ["radioactive", "glowing"],
+      adjectives: ["effect:radioactive", "effect:glowing"],
     },
   });
 
@@ -240,7 +243,7 @@ export function seed() {
     location_id: gemstoreId,
     props: {
       description: "A crackling blue liquid.",
-      adjectives: ["electric blue", "glowing"],
+      adjectives: ["color:electric blue", "effect:glowing"],
     },
   });
 
@@ -250,7 +253,7 @@ export function seed() {
     location_id: gemstoreId,
     props: {
       description: "A swirling white mist.",
-      adjectives: ["white", "ethereal"],
+      adjectives: ["color:white", "effect:ethereal"],
     },
   });
 
@@ -260,7 +263,7 @@ export function seed() {
     location_id: gemstoreId,
     props: {
       description: "You can barely see it.",
-      adjectives: ["transparent", "glass"],
+      adjectives: ["effect:transparent", "material:glass"],
     },
   });
 
@@ -277,7 +280,10 @@ export function seed() {
       kind: "ITEM",
       location_id: wigStandId,
       location_detail: "surface",
-      props: { description: "A reddish-brown wig.", adjectives: ["auburn"] },
+      props: {
+        description: "A reddish-brown wig.",
+        adjectives: ["color:auburn"],
+      },
     });
 
     createEntity({
@@ -285,7 +291,10 @@ export function seed() {
       kind: "ITEM",
       location_id: wigStandId,
       location_detail: "surface",
-      props: { description: "A bright yellow wig.", adjectives: ["blonde"] },
+      props: {
+        description: "A bright yellow wig.",
+        adjectives: ["color:blonde"],
+      },
     });
 
     createEntity({
@@ -293,7 +302,10 @@ export function seed() {
       kind: "ITEM",
       location_id: wigStandId,
       location_detail: "surface",
-      props: { description: "A dark brown wig.", adjectives: ["brunette"] },
+      props: {
+        description: "A dark brown wig.",
+        adjectives: ["color:brunette"],
+      },
     });
   }
 

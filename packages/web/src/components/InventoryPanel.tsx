@@ -21,7 +21,9 @@ const ItemView = (props: { item: RichItem }) => {
           onClick={() => gameStore.send(["look", props.item.name])}
           class={`inventory-panel__item-link ${
             props.item.adjectives
-              ?.map((a) => `attribute-${a.replace(":", "-")}`)
+              ?.map(
+                (a) => `attribute-${a.replace(/:/g, "-").replace(/ /g, "-")}`,
+              )
               .join(" ") || ""
           }`}
           style={{ "margin-left": hasContents() ? "0" : "20px" }}
