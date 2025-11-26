@@ -34,6 +34,16 @@ export default function RoomPanel() {
         fallback={<div class="room-panel__loading">Loading room...</div>}
       >
         <div class="room-panel__name">{gameStore.state.room!.name}</div>
+        <Show when={gameStore.state.room!.custom_css}>
+          <style>{gameStore.state.room!.custom_css}</style>
+        </Show>
+        <Show when={gameStore.state.room!.image}>
+          <img
+            src={gameStore.state.room!.image}
+            class="room-panel__image"
+            alt={gameStore.state.room!.name}
+          />
+        </Show>
         <div class="room-panel__desc">{gameStore.state.room!.description}</div>
 
         {/* Exits */}

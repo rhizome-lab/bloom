@@ -1575,3 +1575,4 @@ body {
 .block-node--data .block-node__header {
   background: rgba(34, 197, 94, 0.2);
 }
+.room-panel__image { max-width: 100%; border-radius: 8px; margin-bottom: 1rem; display: block; }

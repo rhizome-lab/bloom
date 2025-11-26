@@ -137,6 +137,7 @@ export function startServer(port: number = 8080) {
             name: room.name,
             description: room.props["description"] || "Nothing special.",
             custom_css: customCss,
+            image: room.props["image"],
             contents: richContents,
           }),
         );

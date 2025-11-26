@@ -114,6 +114,7 @@ export class AiPlugin implements Plugin {
   onLoad(ctx: PluginContext) {
     ctx.registerCommand("talk", this.handleTalk.bind(this));
     ctx.registerCommand("gen", this.handleGen.bind(this));
+    ctx.registerCommand("image", this.handleImage.bind(this));
 
     // Register default templates
     this.registerTemplate({
@@ -280,6 +281,101 @@ export class AiPlugin implements Plugin {
     } catch (error: any) {
       console.error("AI Error:", error);
       ctx.send({ type: "error", text: `AI Error: ${error.message}` });
+    }
+  }
+
+  async handleImage(ctx: CommandContext) {
+    const instruction = ctx.args.join(" ");
+
+    if (!instruction) {
+      ctx.send({
+        type: "message",
+        text: "Usage: image <description>",
+      });
+      return;
+    }
+
+    ctx.send({ type: "message", text: "Generating image..." });
+
+    try {
+      const model = await getModel("openai:dall-e-3");
+      const { image } = await import("ai").then((m) =>
+        m.experimental_generateImage({
+          model,
+          prompt: instruction,
+          n: 1,
+        }),
+      );
+
+      const base64Data = image.base64;
+      const buffer = Buffer.from(base64Data, "base64");
+      const filename = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(7)}.png`;
+      const filepath = `apps/web/public/images/${filename}`;
+      const publicUrl = `/images/${filename}`;
+
+      await Bun.write(filepath, buffer);
+
+      // Update current room or item?
+      // For now, let's update the current room's image if no target specified?
+      // Or maybe just return the URL?
+      // The user wants to "expose some way to generate images".
+      // Let's assume we want to set it on the current room or a target.
+      // Let's try to find a target like 'look' does, or default to room.
+
+      const playerEntity = ctx.core.getEntity(ctx.player.id);
+      if (!playerEntity || !playerEntity.location_id) return;
+
+      // Simple logic: If args start with "room", update room. If "item <name>", update item.
+      // But the instruction is the prompt.
+      // Let's just update the current room for now as a demo, or maybe add a flag?
+      // Actually, let's make it: image <target> <prompt>
+      // If target is "room" or "here", update room.
+      // If target matches an item, update item.
+
+      // Re-parsing args for target
+      const targetName = ctx.args[0];
+      const prompt = ctx.args.slice(1).join(" ");
+
+      if (!targetName || !prompt) {
+        ctx.send({ type: "message", text: "Usage: image <target> <prompt>" });
+        return;
+      }
+
+      let targetId = null;
+      if (targetName === "room" || targetName === "here") {
+        targetId = playerEntity.location_id;
+      } else {
+        // Find item
+        const roomItems = ctx.core.getContents(playerEntity.location_id);
+        const item = roomItems.find(
+          (i) => i.name.toLowerCase() === targetName.toLowerCase(),
+        );
+        if (item) targetId = item.id;
+      }
+
+      if (targetId) {
+        const entity = ctx.core.getEntity(targetId);
+        if (entity) {
+          const newProps = { ...entity.props, image: publicUrl };
+          ctx.core.updateEntity(targetId, { props: newProps });
+          ctx.core.sendRoom(playerEntity.location_id);
+          ctx.send({
+            type: "message",
+            text: `Image generated for ${entity.name}.`,
+          });
+          return;
+        }
+      }
+
+      ctx.send({
+        type: "message",
+        text: `Could not find target '${targetName}'.`,
+      });
+    } catch (error: any) {
+      console.error("AI Image Error:", error);
+      ctx.send({ type: "error", text: `AI Image Error: ${error.message}` });
     }
   }
 }

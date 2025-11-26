@@ -16,6 +16,7 @@ export interface RichItem {
   destination_name?: string;
   adjectives?: string[];
   custom_css?: string;
+  image?: string;
 }
 
 export interface RoomMessage {
@@ -24,6 +25,7 @@ export interface RoomMessage {
   description: string;
   contents: RichItem[];
   custom_css?: string;
+  image?: string;
 }
 
 export interface InventoryMessage {
