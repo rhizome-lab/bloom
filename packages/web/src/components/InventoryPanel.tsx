@@ -20,7 +20,6 @@ const ItemView = (props: { item: RichItem }) => (
 export default function InventoryPanel() {
   return (
     <div class="inventory-panel">
-      <div class="inventory-panel__title">Inventory</div>
       <Show when={gameStore.state.inventory}>
         <For each={gameStore.state.inventory!.items}>
           {(item) => <ItemView item={item} />}

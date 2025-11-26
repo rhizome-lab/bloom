@@ -1,5 +1,6 @@
-import { createSignal, onMount, Show } from "solid-js";
+import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { gameStore } from "./store/game";
+import { keybindsStore } from "./store/keybinds";
 import GameLog from "./components/GameLog";
 import Builder from "./components/Builder";
 import Compass from "./components/Compass";
@@ -7,21 +8,75 @@ import CustomExits from "./components/CustomExits";
 import RoomPanel from "./components/RoomPanel";
 import InventoryPanel from "./components/InventoryPanel";
 import InspectorPanel from "./components/InspectorPanel";
+import { SettingsModal } from "./components/SettingsModal";
 import "./index.css";
 
 function App() {
   const [showBuilder, setShowBuilder] = createSignal(false);
+  const [showSettings, setShowSettings] = createSignal(false);
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Ignore if typing in an input or textarea
+    if (
+      e.target instanceof HTMLInputElement ||
+      e.target instanceof HTMLTextAreaElement
+    ) {
+      return;
+    }
+
+    const action = keybindsStore.getActionForKey(e.key);
+    if (action) {
+      e.preventDefault();
+      switch (action) {
+        case "north":
+          gameStore.send(["move", "north"]);
+          break;
+        case "south":
+          gameStore.send(["move", "south"]);
+          break;
+        case "east":
+          gameStore.send(["move", "east"]);
+          break;
+        case "west":
+          gameStore.send(["move", "west"]);
+          break;
+        case "look":
+          gameStore.send(["look"]);
+          break;
+        case "inventory":
+          gameStore.send(["inventory"]);
+          break;
+      }
+    }
+  };
 
   onMount(() => {
     gameStore.connect();
+    window.addEventListener("keydown", handleKeyDown);
+  });
+
+  onCleanup(() => {
+    window.removeEventListener("keydown", handleKeyDown);
   });
 
   return (
     <div class="app">
+      <SettingsModal
+        isOpen={showSettings()}
+        onClose={() => setShowSettings(false)}
+      />
+
       {/* Header / Status */}
       <div class="app__header">
         <div class="app__title">VIWO</div>
         <div class="app__header-controls">
+          <button
+            onClick={() => setShowSettings(true)}
+            class="app__settings-btn"
+            title="Settings"
+          >
+            ⚙️
+          </button>
           <button
             onClick={() => setShowBuilder(!showBuilder())}
             classList={{
@@ -61,6 +116,7 @@ function App() {
 
       {/* Right Sidebar (Inventory) */}
       <div class="app__sidebar-right">
+        <div class="app__sidebar-header">INVENTORY</div>
         <InventoryPanel />
       </div>
 
