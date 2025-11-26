@@ -6,7 +6,12 @@
   ],
   "private": true,
   "scripts": {
-    "dev": "bun --filter '*' dev",
+    "dev:server": "bun --filter @viwo/server dev",
+    "dev:core": "bun --filter @viwo/core dev",
+    "dev:web": "bun --filter @viwo/web dev",
+    "dev:discord": "bun --filter @viwo/discord-bot dev",
+    "dev:cli": "bun --filter @viwo/cli dev",
+    "dev:tui": "bun --filter @viwo/tui dev",
     "typecheck": "bun --filter '*' typecheck"
   },
   "devDependencies": {
