@@ -113,33 +113,39 @@ function App() {
         </div>
       </header>
 
-      <aside class="app__sidebar-left">
-        <div class="app__sidebar-header">Navigation</div>
-        <Compass />
-        <CustomExits />
-      </aside>
-
-      <main class="app__main">
+      {/* Log Area: Log + Custom Exits */}
+      <div class="app__log">
+        <div class="app__sidebar-header">Log</div>
         <GameLog />
+        <CustomExits />
+      </div>
+
+      {/* Room Area: Main View + Builder Overlay */}
+      <div class="app__room">
+        <RoomPanel />
         <Show when={showBuilder()}>
           <div class="app__builder-overlay">
             <Builder />
           </div>
         </Show>
-      </main>
+      </div>
 
-      <aside class="app__sidebar-right">
+      {/* Inventory Area */}
+      <div class="app__inventory">
+        <div class="app__sidebar-header">Inventory</div>
+        <InventoryPanel />
+      </div>
+
+      {/* Compass Area */}
+      <div class="app__compass">
+        <Compass />
+      </div>
+
+      {/* Inspector Area */}
+      <div class="app__inspector">
         <div class="app__sidebar-header">Inspector</div>
         <InspectorPanel />
-        <InventoryPanel />
-        <RoomPanel />
-      </aside>
-
-      <footer class="app__bottom">
-        <div class="app__controls">
-          {/* Input is handled in GameLog for now, or we can move it here */}
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }

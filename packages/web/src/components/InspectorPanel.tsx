@@ -24,7 +24,6 @@ const ItemView = (props: { item: RichItem }) => (
 export default function InspectorPanel() {
   return (
     <div class="inspector-panel">
-      <div class="inspector-panel__title">Inspector</div>
       <Show
         when={gameStore.state.inspectedItem}
         fallback={

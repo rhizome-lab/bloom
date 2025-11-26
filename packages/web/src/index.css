@@ -113,21 +113,65 @@ body {
 /* App */
 .app {
   display: grid;
-  grid-template-columns: 250px 1fr 250px;
+  grid-template-columns: 300px 1fr 300px;
   grid-template-rows: auto 1fr 200px;
+  grid-template-areas:
+    "header header header"
+    "log    room   inventory"
+    "compass inspector inspector";
   height: 100vh;
   width: 100vw;
   overflow: hidden;
 }
 
 .app__header {
-  grid-column: 1 / -1;
+  grid-area: header;
   background-color: var(--bg-panel);
   border-bottom: 1px solid var(--border-color);
   padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.app__log {
+  grid-area: log;
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--bg-panel);
+}
+
+.app__room {
+  grid-area: room;
+  overflow: hidden;
+  position: relative;
+}
+
+.app__inventory {
+  grid-area: inventory;
+  border-left: 1px solid var(--border-color);
+  overflow: hidden;
+  background-color: var(--bg-panel);
+}
+
+.app__compass {
+  grid-area: compass;
+  border-top: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+  background-color: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+}
+
+.app__inspector {
+  grid-area: inspector;
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-panel);
+  overflow: hidden;
 }
 
 .app__title {
@@ -173,28 +217,11 @@ body {
   color: var(--status-online);
 }
 
-.app__sidebar-left {
-  grid-row: 2 / 3;
-  grid-column: 1 / 2;
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background-color: var(--bg-panel);
-}
-
 .app__sidebar-header {
   padding: 10px;
   font-size: 0.9em;
   color: var(--text-muted);
   border-bottom: 1px solid var(--border-color);
-}
-
-.app__main {
-  grid-row: 2 / 3;
-  grid-column: 2 / 3;
-  overflow: hidden;
-  position: relative;
 }
 
 .app__builder-overlay {
@@ -203,34 +230,6 @@ body {
   left: 0;
   right: 0;
   z-index: 10;
-}
-
-.app__sidebar-right {
-  grid-row: 2 / 3;
-  grid-column: 3 / 4;
-  overflow: hidden;
-  background-color: var(--bg-panel);
-}
-
-.app__bottom {
-  grid-row: 3 / 4;
-  grid-column: 1 / -1;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  background-color: var(--bg-panel);
-}
-
-.app__controls {
-  padding: 20px;
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  border-right: 1px solid var(--border-color);
-}
-
-.app__inspector {
-  flex: 1;
-  overflow: hidden;
 }
 
 /* Compass */
@@ -746,13 +745,6 @@ body {
   background-color: var(--bg-panel);
   height: 100%;
   overflow: auto;
-}
-
-.inspector-panel__title {
-  font-size: 0.9em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: 10px;
 }
 
 .inspector-panel__empty {
