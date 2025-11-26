@@ -35,6 +35,20 @@ const ItemView = (props: { item: RichItem }) => {
             ({props.item.location_detail})
           </span>
         </Show>
+        <Show when={props.item.verbs && props.item.verbs.length > 0}>
+          <span class="inventory-panel__item-verbs">
+            <For each={props.item.verbs}>
+              {(verb) => (
+                <button
+                  class="inventory-panel__verb-btn"
+                  onClick={() => gameStore.send([verb, props.item.name])}
+                >
+                  {verb}
+                </button>
+              )}
+            </For>
+          </span>
+        </Show>
       </div>
       <Show when={isExpanded() && hasContents()}>
         <div class="inventory-panel__nested">

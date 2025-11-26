@@ -18,6 +18,20 @@ const ItemView = (props: { item: RichItem }) => (
         ({props.item.location_detail})
       </span>
     </Show>
+    <Show when={props.item.verbs && props.item.verbs.length > 0}>
+      <span class="room-panel__item-verbs">
+        <For each={props.item.verbs}>
+          {(verb) => (
+            <button
+              class="room-panel__verb-btn"
+              onClick={() => gameStore.send([verb, props.item.name])}
+            >
+              {verb}
+            </button>
+          )}
+        </For>
+      </span>
+    </Show>
     <Show when={props.item.contents.length > 0}>
       <div class="room-panel__item-contents">
         <For each={props.item.contents}>{(sub) => <ItemView item={sub} />}</For>

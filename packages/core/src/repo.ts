@@ -248,29 +248,74 @@ export interface Verb {
 }
 
 export function getVerbs(entityId: number): Verb[] {
-  const rows = db
-    .query("SELECT * FROM verbs WHERE entity_id = ?")
-    .all(entityId) as any[];
+  // Recursive function to collect verbs up the prototype chain
+  const collectVerbs = (id: number, visited: Set<number>): Verb[] => {
+    if (visited.has(id)) return [];
+    visited.add(id);
 
-  return rows.map((r) => ({
-    ...r,
-    code: JSON.parse(r.code),
-    permissions: JSON.parse(r.permissions),
-  }));
+    const rows = db
+      .query("SELECT * FROM verbs WHERE entity_id = ?")
+      .all(id) as any[];
+
+    const verbs = rows.map((r) => ({
+      ...r,
+      code: JSON.parse(r.code),
+      permissions: JSON.parse(r.permissions),
+    }));
+
+    // Check prototype
+    const entity = db
+      .query("SELECT prototype_id FROM entities WHERE id = ?")
+      .get(id) as { prototype_id: number | null };
+
+    if (entity && entity.prototype_id) {
+      const protoVerbs = collectVerbs(entity.prototype_id, visited);
+      // Merge, keeping the child's verb if names collide
+      const verbNames = new Set(verbs.map((v) => v.name));
+      for (const pv of protoVerbs) {
+        if (!verbNames.has(pv.name)) {
+          verbs.push(pv);
+        }
+      }
+    }
+
+    return verbs;
+  };
+
+  return collectVerbs(entityId, new Set());
 }
 
 export function getVerb(entityId: number, name: string): Verb | null {
-  const row = db
-    .query("SELECT * FROM verbs WHERE entity_id = ? AND name = ?")
-    .get(entityId, name) as any;
+  // Recursive lookup
+  const lookup = (id: number, visited: Set<number>): Verb | null => {
+    if (visited.has(id)) return null;
+    visited.add(id);
 
-  if (!row) return null;
+    const row = db
+      .query("SELECT * FROM verbs WHERE entity_id = ? AND name = ?")
+      .get(id, name) as any;
 
-  return {
-    ...row,
-    code: JSON.parse(row.code),
-    permissions: JSON.parse(row.permissions),
+    if (row) {
+      return {
+        ...row,
+        code: JSON.parse(row.code),
+        permissions: JSON.parse(row.permissions),
+      };
+    }
+
+    // Check prototype
+    const entity = db
+      .query("SELECT prototype_id FROM entities WHERE id = ?")
+      .get(id) as { prototype_id: number | null };
+
+    if (entity && entity.prototype_id) {
+      return lookup(entity.prototype_id, visited);
+    }
+
+    return null;
   };
+
+  return lookup(entityId, new Set());
 }
 
 export function addVerb(
@@ -307,4 +352,13 @@ export function updateVerb(
       ...params,
     );
   }
+}
+
+export function deleteEntity(id: number) {
+  const transaction = db.transaction(() => {
+    db.query("DELETE FROM entity_data WHERE entity_id = ?").run(id);
+    db.query("DELETE FROM verbs WHERE entity_id = ?").run(id);
+    db.query("DELETE FROM entities WHERE id = ?").run(id);
+  });
+  transaction();
 }

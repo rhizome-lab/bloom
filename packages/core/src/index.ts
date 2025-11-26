@@ -7,6 +7,8 @@ import {
   moveEntity,
   createEntity,
   updateEntity,
+  deleteEntity,
+  getVerbs,
 } from "./repo";
 import { checkPermission } from "./permissions";
 import { PluginManager, CommandContext } from "./plugin";
@@ -118,7 +120,9 @@ export function startServer(port: number = 8080) {
               kind: sub.kind,
               contents: [],
               custom_css: sub.props["custom_css"],
+              verbs: getVerbs(sub.id).map((v) => v.name),
             })),
+            verbs: getVerbs(item.id).map((v) => v.name),
           };
 
           if (item.kind === "EXIT" && item.props["destination_id"]) {
@@ -155,6 +159,7 @@ export function startServer(port: number = 8080) {
           moveEntity,
           createEntity,
           updateEntity,
+          deleteEntity,
           sendRoom,
         },
       };
@@ -222,9 +227,11 @@ export function startServer(port: number = 8080) {
             caller: player,
             this: targetEntity,
             args: args,
+            gas: 1000,
             sys: {
               move: moveEntity,
               create: createEntity,
+              destroy: deleteEntity,
               send: (msg) => ws.send(JSON.stringify(msg)),
             },
           });
@@ -283,6 +290,7 @@ export function startServer(port: number = 8080) {
             location_detail: sub.location_detail,
             adjectives: sub.props["adjectives"],
             custom_css: sub.props["custom_css"],
+            verbs: getVerbs(sub.id).map((v) => v.name),
           }));
 
           ws.send(
@@ -293,6 +301,7 @@ export function startServer(port: number = 8080) {
               contents: richContents,
               adjectives: target.props["adjectives"],
               custom_css: target.props["custom_css"],
+              verbs: getVerbs(target.id).map((v) => v.name),
             }),
           );
           return;
@@ -321,7 +330,9 @@ export function startServer(port: number = 8080) {
             kind: sub.kind,
             contents: [],
             custom_css: sub.props["custom_css"],
+            verbs: getVerbs(sub.id).map((v) => v.name),
           })),
+          verbs: getVerbs(item.id).map((v) => v.name),
         }));
 
         ws.send(

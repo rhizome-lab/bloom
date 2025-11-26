@@ -17,6 +17,7 @@ export interface RichItem {
   adjectives?: string[];
   custom_css?: string;
   image?: string;
+  verbs?: string[];
 }
 
 export interface RoomMessage {

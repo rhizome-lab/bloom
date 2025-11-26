@@ -25,6 +25,7 @@ export interface CommandContext {
     moveEntity: (id: number, destId: number, detail?: string | null) => void;
     createEntity: (data: any) => number;
     updateEntity: (id: number, data: any) => void;
+    deleteEntity: (id: number) => void;
     sendRoom: (roomId: number) => void;
   };
 }
