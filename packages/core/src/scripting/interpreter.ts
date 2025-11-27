@@ -3,26 +3,29 @@ import { checkPermission } from "../permissions";
 import { TimeLibrary } from "./lib/time";
 import { WorldLibrary } from "./lib/world";
 
+export type ScriptSystemContext = {
+  move: (id: number, dest: number) => void;
+  create: (data: any) => number;
+  send: (msg: any) => void;
+  destroy?: (id: number) => void;
+  call?: (targetId: number, verb: string, args: any[]) => Promise<any>;
+  getAllEntities?: () => number[];
+  schedule?: (
+    entityId: number,
+    verb: string,
+    args: any[],
+    delay: number,
+  ) => void;
+  broadcast?: (msg: any, locationId?: number) => void;
+};
+
 export type ScriptContext = {
   caller: Entity;
   this: Entity;
   args: any[];
   locals?: Record<string, any>;
   gas?: number; // Gas limit
-  sys?: {
-    move: (id: number, dest: number) => void;
-    create: (data: any) => number;
-    send: (msg: any) => void;
-    destroy?: (id: number) => void;
-    call?: (targetId: number, verb: string, args: any[]) => Promise<any>;
-    getAllEntities?: () => number[];
-    schedule?: (
-      entityId: number,
-      verb: string,
-      args: any[],
-      delay: number,
-    ) => void;
-  };
+  sys?: ScriptSystemContext;
   warnings?: string[];
 };
 
@@ -275,6 +278,16 @@ const OPS: Record<string, (args: any[], ctx: ScriptContext) => Promise<any>> = {
 
     if (ctx.sys?.schedule) {
       ctx.sys.schedule(ctx.this.id, verb, callArgs, delay);
+    }
+    return true;
+  },
+  broadcast: async (args, ctx) => {
+    const [msgExpr, locExpr] = args;
+    const msg = await evaluate(msgExpr, ctx);
+    const loc = locExpr ? await evaluate(locExpr, ctx) : undefined;
+
+    if (ctx.sys?.broadcast) {
+      ctx.sys.broadcast(msg, loc);
     }
     return true;
   },

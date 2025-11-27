@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, mock, afterAll } from "bun:test";
+import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import { scheduler } from "./scheduler";
 import { db } from "./db";
 import { createEntity, addVerb } from "./repo";
@@ -50,6 +50,6 @@ describe("Scheduler Verification", () => {
     // Let's check the entity state.
     const { getEntity } = await import("./repo");
     const entity = getEntity(entityId);
-    expect(entity?.props.count).toBe(1);
+    expect(entity?.props["count"]).toBe(1);
   });
 });

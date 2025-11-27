@@ -9,10 +9,12 @@ import {
   updateEntity,
   deleteEntity,
   getVerbs,
+  getAllEntities,
 } from "./repo";
 import { checkPermission } from "./permissions";
 import { PluginManager, CommandContext } from "./plugin";
 import { scheduler } from "./scheduler";
+import { ScriptSystemContext } from "./scripting/interpreter";
 
 export { PluginManager };
 export type { CommandContext };
@@ -38,6 +40,28 @@ export function startServer(port: number = 8080) {
 
   wss.on("connection", (ws: Client) => {
     console.log("New client connected");
+
+    const sys: ScriptSystemContext = {
+      move: (id, dest) => {
+        updateEntity(id, { location_id: dest });
+      },
+      create: (data) => {
+        return createEntity(data);
+      },
+      send: (msg) => {
+        ws.send(JSON.stringify(msg));
+      },
+      destroy: (id) => {
+        deleteEntity(id);
+      },
+      getAllEntities: () => {
+        return getAllEntities();
+      },
+      schedule: (entityId, verb, args, delay) => {
+        scheduler.schedule(entityId, verb, args, delay);
+      },
+      // Recursive calls allowed?
+    };
 
     // Auto-login as the Guest player for now
     const guest = db
@@ -95,7 +119,7 @@ export function startServer(port: number = 8080) {
       if (!player) return;
 
       // Helper to send room update
-      const sendRoom = (roomId: number) => {
+      const sendRoom = async (roomId: number) => {
         const room = getEntity(roomId);
         if (!room) return;
 
@@ -112,34 +136,58 @@ export function startServer(port: number = 8080) {
         }
 
         const contents = getContents(room.id).filter((e) => e.id !== player.id);
-        const richContents = contents.map((item) => {
-          const richItem: any = {
-            id: item.id,
-            name: item.name,
-            kind: item.kind,
-            location_detail: item.location_detail,
-            adjectives: item.props["adjectives"],
-            custom_css: item.props["custom_css"],
-            contents: getContents(item.id).map((sub) => ({
-              id: sub.id,
-              name: sub.name,
-              kind: sub.kind,
-              contents: [],
-              custom_css: sub.props["custom_css"],
-              verbs: getVerbs(sub.id).map((v) => v.name),
-            })),
-            verbs: getVerbs(item.id).map((v) => v.name),
-          };
+        const richContents = await Promise.all(
+          contents.map(async (item) => {
+            let adjectives = item.props["adjectives"];
 
-          if (item.kind === "EXIT" && item.props["destination_id"]) {
-            const dest = getEntity(item.props["destination_id"]);
-            if (dest) {
-              richItem.destination_name = dest.name;
+            // Dynamic Adjectives
+            const getAdjVerb = getVerb(item.id, "get_adjectives");
+            if (getAdjVerb) {
+              try {
+                const { evaluate } = await import("./scripting/interpreter");
+                const result = await evaluate(getAdjVerb.code, {
+                  caller: item, // Caller is self
+                  this: item,
+                  args: [],
+                  gas: 500,
+                  sys,
+                });
+                if (Array.isArray(result)) {
+                  adjectives = result;
+                }
+              } catch (e) {
+                console.error(`Error getting adjectives for ${item.id}`, e);
+              }
             }
-          }
 
-          return richItem;
-        });
+            const richItem: any = {
+              id: item.id,
+              name: item.name,
+              kind: item.kind,
+              location_detail: item.location_detail,
+              adjectives: adjectives,
+              custom_css: item.props["custom_css"],
+              contents: getContents(item.id).map((sub) => ({
+                id: sub.id,
+                name: sub.name,
+                kind: sub.kind,
+                contents: [],
+                custom_css: sub.props["custom_css"],
+                verbs: getVerbs(sub.id).map((v) => v.name),
+              })),
+              verbs: getVerbs(item.id).map((v) => v.name),
+            };
+
+            if (item.kind === "EXIT" && item.props["destination_id"]) {
+              const dest = getEntity(item.props["destination_id"]);
+              if (dest) {
+                richItem.destination_name = dest.name;
+              }
+            }
+
+            return richItem;
+          }),
+        );
 
         ws.send(
           JSON.stringify({
@@ -231,26 +279,21 @@ export function startServer(port: number = 8080) {
             warnings,
             sys: {
               move: (id, dest) => {
-                const { updateEntity } = require("./repo");
                 updateEntity(id, { location_id: dest });
               },
               create: (data) => {
-                const { createEntity } = require("./repo");
                 return createEntity(data);
               },
               send: (msg) => {
                 ws.send(JSON.stringify(msg));
               },
               destroy: (id) => {
-                const { deleteEntity } = require("./repo");
                 deleteEntity(id);
               },
               getAllEntities: () => {
-                const { getAllEntities } = require("./repo");
                 return getAllEntities();
               },
               call: async (targetId, verbName, callArgs) => {
-                const { getVerb, getEntity } = require("./repo");
                 const targetVerb = getVerb(targetId, verbName);
                 const targetEnt = getEntity(targetId);
                 if (targetVerb && targetEnt) {
@@ -260,37 +303,30 @@ export function startServer(port: number = 8080) {
                     args: callArgs,
                     gas: 500, // Sub-call gas limit?
                     warnings, // Share warnings array
-                    sys: {
-                      move: (id, dest) => {
-                        const { updateEntity } = require("./repo");
-                        updateEntity(id, { location_id: dest });
-                      },
-                      create: (data) => {
-                        const { createEntity } = require("./repo");
-                        return createEntity(data);
-                      },
-                      send: (msg) => {
-                        ws.send(JSON.stringify(msg));
-                      },
-                      destroy: (id) => {
-                        const { deleteEntity } = require("./repo");
-                        deleteEntity(id);
-                      },
-                      getAllEntities: () => {
-                        const { getAllEntities } = require("./repo");
-                        return getAllEntities();
-                      },
-                      schedule: (entityId, verb, args, delay) => {
-                        scheduler.schedule(entityId, verb, args, delay);
-                      },
-                      // Recursive calls allowed?
-                    },
+                    sys,
                   });
                 }
                 return null;
               },
               schedule: (entityId, verb, args, delay) => {
                 scheduler.schedule(entityId, verb, args, delay);
+              },
+              broadcast: (msg, locationId) => {
+                wss.clients.forEach((client) => {
+                  const c = client as Client;
+                  if (c.readyState === WebSocket.OPEN && c.playerId) {
+                    if (!locationId) {
+                      // Global
+                      c.send(JSON.stringify({ type: "message", text: msg }));
+                    } else {
+                      // Local
+                      const p = getEntity(c.playerId);
+                      if (p && p.location_id === locationId) {
+                        c.send(JSON.stringify({ type: "message", text: msg }));
+                      }
+                    }
+                  }
+                });
               },
             },
           });

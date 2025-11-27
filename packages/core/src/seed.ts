@@ -439,4 +439,97 @@ export function seed() {
   // Kickoff
   // We need a way to start it. Let's add a 'touch' verb to start it.
   addVerb(moodRingId, "touch", ["schedule", "update_color", [], 0]);
+
+  // --- Advanced Items ---
+
+  // 1. Dynamic Mood Ring (Getter)
+  const dynamicRingId = createEntity({
+    name: "Dynamic Mood Ring",
+    kind: "ITEM",
+    location_id: lobbyId,
+    props: {
+      description: "A ring that shimmers with the current second.",
+      // No static adjectives needed if we use getter
+    },
+  });
+
+  // get_adjectives verb
+  // Returns a list of adjectives.
+  // We'll use the current second to determine color.
+  addVerb(dynamicRingId, "get_adjectives", [
+    "list",
+    [
+      "str.concat",
+      "color:hsl(",
+      ["str.concat", ["*", ["time.timestamp"], 0.1], ", 100%, 50%)"],
+    ], // Rotating hue
+    "material:gold",
+  ]);
+
+  // 2. Special Watch (Local Broadcast)
+  const specialWatchId = createEntity({
+    name: "Broadcasting Watch",
+    kind: "ITEM",
+    location_id: lobbyId,
+    props: { description: "A watch that announces the time to you." },
+  });
+
+  addVerb(specialWatchId, "tick", [
+    "seq",
+    [
+      "broadcast",
+      ["str.concat", "Tick Tock: ", ["time.format", ["time.now"], "time"]],
+      ["prop", "this", "location_id"],
+    ],
+    ["schedule", "tick", [], 10000], // Every 10s for demo
+  ]);
+  addVerb(specialWatchId, "start", ["schedule", "tick", [], 0]);
+
+  // 3. Clock (Room Broadcast)
+  // Actually, "Local Broadcast" usually means Room.
+  // If the watch is held by a player, "location_id" is the player.
+  // If we broadcast to player, only player sees it.
+  // If we broadcast to room, everyone in room sees it.
+  // Let's make the Watch broadcast to the holder (Player).
+  // And the Clock broadcast to the Room.
+
+  const clockId = createEntity({
+    name: "Grandfather Clock",
+    kind: "ITEM",
+    location_id: lobbyId,
+    props: { description: "A loud clock." },
+  });
+
+  addVerb(clockId, "tick", [
+    "seq",
+    [
+      "broadcast",
+      ["str.concat", "BONG! It is ", ["time.format", ["time.now"], "time"]],
+      ["prop", "this", "location_id"],
+    ],
+    ["schedule", "tick", [], 15000],
+  ]);
+  addVerb(clockId, "start", ["schedule", "tick", [], 0]);
+
+  // 4. Clock Tower (Global Broadcast)
+  const towerId = createEntity({
+    name: "Clock Tower",
+    kind: "ITEM", // Or ROOM/BUILDING
+    location_id: voidId, // Hidden, or visible somewhere
+    props: { description: "The source of time." },
+  });
+
+  addVerb(towerId, "toll", [
+    "seq",
+    [
+      "broadcast",
+      [
+        "str.concat",
+        "The Clock Tower tolls: ",
+        ["time.format", ["time.now"], "time"],
+      ],
+    ], // No location = global
+    ["schedule", "toll", [], 60000], // Every minute
+  ]);
+  addVerb(towerId, "start", ["schedule", "toll", [], 0]);
 }
