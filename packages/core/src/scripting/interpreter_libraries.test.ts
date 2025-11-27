@@ -264,6 +264,50 @@ describe("Interpreter Libraries", () => {
     });
   });
 
+  describe("Lambda & HOF", () => {
+    test("lambda & apply", async () => {
+      // (lambda (x) (+ x 1))
+      const inc = ["lambda", ["x"], ["+", ["var", "x"], 1]];
+      expect(await evaluate(["apply", inc, 1], ctx)).toBe(2);
+    });
+
+    test("list.map", async () => {
+      const inc = ["lambda", ["x"], ["+", ["var", "x"], 1]];
+      expect(await evaluate(["list.map", ["list", 1, 2, 3], inc], ctx)).toEqual(
+        [2, 3, 4],
+      );
+    });
+
+    test("list.filter", async () => {
+      // (lambda (x) (> x 1))
+      const gt1 = ["lambda", ["x"], [">", ["var", "x"], 1]];
+      expect(
+        await evaluate(["list.filter", ["list", 1, 2, 3], gt1], ctx),
+      ).toEqual([2, 3]);
+    });
+
+    test("list.reduce", async () => {
+      // (lambda (acc x) (+ acc x))
+      const sum = ["lambda", ["acc", "x"], ["+", ["var", "acc"], ["var", "x"]]];
+      expect(
+        await evaluate(["list.reduce", ["list", 1, 2, 3], sum, 0], ctx),
+      ).toBe(6);
+    });
+
+    test("closure capture", async () => {
+      // (let x 10)
+      // (let addX (lambda (y) (+ x y)))
+      // (apply addX 5) -> 15
+      const localCtx = { ...ctx, locals: {} };
+      await evaluate(["let", "x", 10], localCtx);
+      await evaluate(
+        ["let", "addX", ["lambda", ["y"], ["+", ["var", "x"], ["var", "y"]]]],
+        localCtx,
+      );
+      expect(await evaluate(["apply", ["var", "addX"], 5], localCtx)).toBe(15);
+    });
+  });
+
   describe("Call Opcode", () => {
     test("call", async () => {
       // call(target, verb, args...)

@@ -296,6 +296,38 @@ const OPS: Record<string, (args: any[], ctx: ScriptContext) => Promise<any>> = {
     }
     return null;
   },
+  lambda: async (args, ctx) => {
+    const [argNames, body] = args;
+    return {
+      type: "lambda",
+      args: argNames,
+      body,
+      closure: { ...ctx.locals },
+    };
+  },
+  apply: async (args, ctx) => {
+    const [funcExpr, ...argExprs] = args;
+    const func = await evaluate(funcExpr, ctx);
+
+    if (!func || func.type !== "lambda") return null;
+
+    const evaluatedArgs = [];
+    for (const arg of argExprs) {
+      evaluatedArgs.push(await evaluate(arg, ctx));
+    }
+
+    // Create new context
+    const newLocals = { ...func.closure };
+    // Bind arguments
+    for (let i = 0; i < func.args.length; i++) {
+      newLocals[func.args[i]] = evaluatedArgs[i];
+    }
+
+    return await evaluate(func.body, {
+      ...ctx,
+      locals: newLocals,
+    });
+  },
   call: async (args, ctx) => {
     const [targetExpr, verbExpr, ...callArgs] = args;
     const target = await evaluateTarget(targetExpr, ctx);

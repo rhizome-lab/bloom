@@ -97,4 +97,53 @@ export function registerListLibrary() {
     if (!Array.isArray(list)) return list;
     return list.sort();
   });
+
+  // Helper to execute lambda
+  const executeLambda = async (lambda: any, args: any[], ctx: any) => {
+    if (!lambda || lambda.type !== "lambda") return null;
+    const newLocals = { ...lambda.closure };
+    for (let i = 0; i < lambda.args.length; i++) {
+      newLocals[lambda.args[i]] = args[i];
+    }
+    return await evaluate(lambda.body, { ...ctx, locals: newLocals });
+  };
+
+  registerOpcode("list.map", async (args, ctx) => {
+    const list = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    if (!Array.isArray(list)) return [];
+
+    const result = [];
+    for (const item of list) {
+      result.push(await executeLambda(func, [item], ctx));
+    }
+    return result;
+  });
+
+  registerOpcode("list.filter", async (args, ctx) => {
+    const list = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    if (!Array.isArray(list)) return [];
+
+    const result = [];
+    for (const item of list) {
+      if (await executeLambda(func, [item], ctx)) {
+        result.push(item);
+      }
+    }
+    return result;
+  });
+
+  registerOpcode("list.reduce", async (args, ctx) => {
+    const list = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    let acc = await evaluate(args[2], ctx);
+
+    if (!Array.isArray(list)) return acc;
+
+    for (const item of list) {
+      acc = await executeLambda(func, [acc, item], ctx);
+    }
+    return acc;
+  });
 }
