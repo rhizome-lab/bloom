@@ -1,4 +1,4 @@
-import { evaluate, registerOpcode } from "../interpreter";
+import { evaluate, registerOpcode, executeLambda } from "../interpreter";
 
 export function registerListLibrary() {
   registerOpcode("list.len", async (args, ctx) => {
@@ -98,22 +98,12 @@ export function registerListLibrary() {
     return list.sort();
   });
 
-  // Helper to execute lambda
-  const executeLambda = async (lambda: any, args: any[], ctx: any) => {
-    if (!lambda || lambda.type !== "lambda") return null;
-    const newLocals = { ...lambda.closure };
-    for (let i = 0; i < lambda.args.length; i++) {
-      newLocals[lambda.args[i]] = args[i];
-    }
-    return await evaluate(lambda.body, { ...ctx, locals: newLocals });
-  };
-
   registerOpcode("list.map", async (args, ctx) => {
     const list = await evaluate(args[0], ctx);
     const func = await evaluate(args[1], ctx);
     if (!Array.isArray(list)) return [];
 
-    const result = [];
+    const result: unknown[] = [];
     for (const item of list) {
       result.push(await executeLambda(func, [item], ctx));
     }
@@ -125,7 +115,7 @@ export function registerListLibrary() {
     const func = await evaluate(args[1], ctx);
     if (!Array.isArray(list)) return [];
 
-    const result = [];
+    const result: unknown[] = [];
     for (const item of list) {
       if (await executeLambda(func, [item], ctx)) {
         result.push(item);
@@ -145,5 +135,22 @@ export function registerListLibrary() {
       acc = await executeLambda(func, [acc, item], ctx);
     }
     return acc;
+  });
+
+  registerOpcode("list.flatMap", async (args, ctx) => {
+    const list = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    if (!Array.isArray(list)) return [];
+
+    const result: unknown[] = [];
+    for (const item of list) {
+      const mapped = await executeLambda(func, [item], ctx);
+      if (Array.isArray(mapped)) {
+        result.push(...mapped);
+      } else {
+        result.push(mapped);
+      }
+    }
+    return result;
   });
 }

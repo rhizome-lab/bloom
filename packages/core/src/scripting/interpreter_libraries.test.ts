@@ -294,6 +294,85 @@ describe("Interpreter Libraries", () => {
       ).toBe(6);
     });
 
+    test("list.flatMap", async () => {
+      // (lambda (x) (list x (+ x 1)))
+      const dup = [
+        "lambda",
+        ["x"],
+        ["list", ["var", "x"], ["+", ["var", "x"], 1]],
+      ];
+      expect(
+        await evaluate(["list.flatMap", ["list", 1, 3], dup], ctx),
+      ).toEqual([1, 2, 3, 4]);
+    });
+
+    test("obj.map", async () => {
+      // (lambda (val key) (+ val 1))
+      const inc = ["lambda", ["val", "key"], ["+", ["var", "val"], 1]];
+      expect(await evaluate(["obj.map", { a: 1, b: 2 }, inc], ctx)).toEqual({
+        a: 2,
+        b: 3,
+      });
+    });
+
+    test("obj.filter", async () => {
+      // (lambda (val key) (> val 1))
+      const gt1 = ["lambda", ["val", "key"], [">", ["var", "val"], 1]];
+      expect(await evaluate(["obj.filter", { a: 1, b: 2 }, gt1], ctx)).toEqual({
+        b: 2,
+      });
+    });
+
+    test("obj.reduce", async () => {
+      // (lambda (acc val key) (+ acc val))
+      const sum = [
+        "lambda",
+        ["acc", "val", "key"],
+        ["+", ["var", "acc"], ["var", "val"]],
+      ];
+      expect(await evaluate(["obj.reduce", { a: 1, b: 2 }, sum, 0], ctx)).toBe(
+        3,
+      );
+    });
+
+    test("obj.flatMap", async () => {
+      // (lambda (val key) { [key]: val, [key + "_dup"]: val })
+      // We need to construct object dynamically.
+      // Let's use obj.merge for simplicity in lambda if we could, but we can return object literal if keys are static?
+      // But keys are dynamic here.
+      // We don't have object literal syntax with dynamic keys in lisp-like structure easily unless we use `obj.set` or similar.
+      // Let's assume we return a new object created via `obj.set`.
+
+      // (lambda (val key)
+      //   (let o {})
+      //   (obj.set o key val)
+      //   (obj.set o (str.concat key "_dup") val)
+      //   o
+      // )
+
+      const expand = [
+        "lambda",
+        ["val", "key"],
+        [
+          "seq",
+          ["let", "o", {}],
+          ["obj.set", ["var", "o"], ["var", "key"], ["var", "val"]],
+          [
+            "obj.set",
+            ["var", "o"],
+            ["str.concat", ["var", "key"], "_dup"],
+            ["var", "val"],
+          ],
+          ["var", "o"],
+        ],
+      ];
+
+      expect(await evaluate(["obj.flatMap", { a: 1 }, expand], ctx)).toEqual({
+        a: 1,
+        a_dup: 1,
+      });
+    });
+
     test("closure capture", async () => {
       // (let x 10)
       // (let addX (lambda (y) (+ x y)))

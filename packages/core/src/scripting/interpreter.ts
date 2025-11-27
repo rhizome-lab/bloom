@@ -434,3 +434,16 @@ export async function evaluateTarget(
   }
   return null;
 }
+
+export async function executeLambda(
+  lambda: any,
+  args: any[],
+  ctx: ScriptContext,
+): Promise<any> {
+  if (!lambda || lambda.type !== "lambda") return null;
+  const newLocals = { ...lambda.closure };
+  for (let i = 0; i < lambda.args.length; i++) {
+    newLocals[lambda.args[i]] = args[i];
+  }
+  return await evaluate(lambda.body, { ...ctx, locals: newLocals });
+}

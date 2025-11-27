@@ -1,4 +1,4 @@
-import { evaluate, registerOpcode } from "../interpreter";
+import { evaluate, registerOpcode, executeLambda } from "../interpreter";
 
 export function registerObjectLibrary() {
   registerOpcode("obj.keys", async (args, ctx) => {
@@ -68,5 +68,66 @@ export function registerObjectLibrary() {
     if (typeof obj2 !== "object" || obj2 === null || Array.isArray(obj2))
       return { ...obj1 };
     return { ...obj1, ...obj2 };
+  });
+
+  registerOpcode("obj.map", async (args, ctx) => {
+    const obj = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj))
+      return {};
+
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      result[key] = await executeLambda(func, [val, key], ctx);
+    }
+    return result;
+  });
+
+  registerOpcode("obj.filter", async (args, ctx) => {
+    const obj = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj))
+      return {};
+
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      if (await executeLambda(func, [val, key], ctx)) {
+        result[key] = val;
+      }
+    }
+    return result;
+  });
+
+  registerOpcode("obj.reduce", async (args, ctx) => {
+    const obj = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    let acc = await evaluate(args[2], ctx);
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj))
+      return acc;
+
+    for (const [key, val] of Object.entries(obj)) {
+      acc = await executeLambda(func, [acc, val, key], ctx);
+    }
+    return acc;
+  });
+
+  registerOpcode("obj.flatMap", async (args, ctx) => {
+    const obj = await evaluate(args[0], ctx);
+    const func = await evaluate(args[1], ctx);
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj))
+      return {};
+
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      const mapped = await executeLambda(func, [val, key], ctx);
+      if (
+        typeof mapped === "object" &&
+        mapped !== null &&
+        !Array.isArray(mapped)
+      ) {
+        Object.assign(result, mapped);
+      }
+    }
+    return result;
   });
 }
