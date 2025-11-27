@@ -1,0 +1,335 @@
+import { createEntity, addVerb, updateVerb, getVerb } from "../repo";
+
+export function seedHotel(lobbyId: number, voidId: number) {
+  // 7. Hotel Implementation
+
+  // Hotel Lobby
+  const hotelLobbyId = createEntity({
+    name: "Grand Hotel Lobby",
+    kind: "ROOM",
+    location_id: voidId, // Or connect to main lobby? Let's connect it.
+    props: {
+      description:
+        "The lavish lobby of the Grand Hotel. Type 'visit <room_number>' to go to a room.",
+    },
+  });
+
+  // Connect Hotel Lobby to Main Lobby
+  createEntity({
+    name: "hotel",
+    kind: "EXIT",
+    location_id: lobbyId,
+    props: { direction: "hotel", destination_id: hotelLobbyId },
+  });
+
+  createEntity({
+    name: "out",
+    kind: "EXIT",
+    location_id: hotelLobbyId,
+    props: { direction: "out", destination_id: lobbyId },
+  });
+
+  // Hotel Room Prototype (Hidden)
+  const hotelRoomProtoId = createEntity({
+    name: "Hotel Room Prototype",
+    kind: "ROOM",
+    location_id: voidId,
+    props: {
+      description: "A generic hotel room.",
+    },
+  });
+
+  // Verb: leave (on the prototype)
+  // Moves player back to lobby and destroys the room
+  addVerb(hotelRoomProtoId, "leave", [
+    "seq",
+    ["move", "caller", ["var", "hotelLobbyId"]], // Move player out first
+    ["tell", "caller", "You leave the room and it fades away behind you."],
+    ["destroy", "this"], // Destroy the room
+  ]);
+
+  // Update 'leave' verb to use prop
+  updateVerb(getVerb(hotelRoomProtoId, "leave")!.id, [
+    "seq",
+    ["let", "lobbyId", ["prop", "this", "lobby_id"]],
+    ["move", "caller", ["var", "lobbyId"]],
+    ["tell", "caller", "You leave the room and it fades away behind you."],
+    ["destroy", "this"],
+  ]);
+
+  // Verb: visit <room_number> (on the Lobby)
+  addVerb(hotelLobbyId, "visit", [
+    "seq",
+    ["let", "roomNum", ["arg", 0]],
+    [
+      "if",
+      ["not", ["var", "roomNum"]],
+      ["throw", "Please specify a room number."],
+    ],
+    // Create the ephemeral room
+    ["let", "roomData", {}],
+    [
+      "obj.set",
+      ["var", "roomData"],
+      "name",
+      ["str.concat", "Room ", ["var", "roomNum"]],
+    ],
+    ["obj.set", ["var", "roomData"], "kind", "ROOM"],
+    ["obj.set", ["var", "roomData"], "prototype_id", hotelRoomProtoId],
+
+    ["let", "props", {}],
+    [
+      "obj.set",
+      ["var", "props"],
+      "description",
+      [
+        "str.concat",
+        "You are in room ",
+        ["var", "roomNum"],
+        ". It is pristine.",
+      ],
+    ],
+    ["obj.set", ["var", "props"], "lobby_id", hotelLobbyId],
+
+    ["obj.set", ["var", "roomData"], "props", ["var", "props"]],
+
+    ["let", "roomId", ["create", ["var", "roomData"]]],
+    ["move", "caller", ["var", "roomId"]],
+    [
+      "tell",
+      "caller",
+      ["str.concat", "You enter Room ", ["var", "roomNum"], "."],
+    ],
+  ]);
+
+  // 8. Hotel Elevator & Floors
+
+  // Elevator (Persistent)
+  const elevatorId = createEntity({
+    name: "Hotel Elevator",
+    kind: "ROOM",
+    location_id: hotelLobbyId,
+    props: {
+      description:
+        "A polished brass elevator. Buttons for floors 1-100. Type 'push <floor>' to select.",
+      current_floor: 1,
+    },
+  });
+
+  // Link Lobby -> Elevator
+  createEntity({
+    name: "elevator",
+    kind: "EXIT",
+    location_id: hotelLobbyId,
+    props: { direction: "elevator", destination_id: elevatorId },
+  });
+
+  // Floor Lobby Prototype (Ephemeral)
+  const floorLobbyProtoId = createEntity({
+    name: "Floor Lobby Proto",
+    kind: "ROOM",
+    location_id: voidId,
+    props: { description: "A quiet carpeted lobby." },
+  });
+
+  // Wing Prototype (Ephemeral)
+  const wingProtoId = createEntity({
+    name: "Wing Proto",
+    kind: "ROOM",
+    location_id: voidId,
+    props: { description: "A long hallway lined with doors." },
+  });
+
+  // --- Elevator Verbs ---
+
+  // push <floor>
+  addVerb(elevatorId, "push", [
+    "seq",
+    ["let", "floor", ["arg", 0]],
+    ["set", "this", "current_floor", ["var", "floor"]],
+    [
+      "tell",
+      "caller",
+      [
+        "str.concat",
+        "The elevator hums and moves to floor ",
+        ["var", "floor"],
+        ".",
+      ],
+    ],
+  ]);
+
+  // out (Exit Elevator to Floor Lobby)
+  addVerb(elevatorId, "out", [
+    "seq",
+    ["let", "floor", ["prop", "this", "current_floor"]],
+    // If floor 1, go to Main Hotel Lobby? Or just create Floor 1 Lobby?
+    // Let's say Floor 1 is the Main Lobby.
+    [
+      "if",
+      ["==", ["var", "floor"], 1],
+      [
+        "seq",
+        ["move", "caller", ["var", "hotelLobbyId"]],
+        ["tell", "caller", "The doors open to the Grand Lobby."],
+      ],
+      [
+        "seq",
+        // Create Ephemeral Floor Lobby
+        ["let", "lobbyData", {}],
+        [
+          "obj.set",
+          ["var", "lobbyData"],
+          "name",
+          ["str.concat", "Floor ", ["var", "floor"], " Lobby"],
+        ],
+        ["obj.set", ["var", "lobbyData"], "kind", "ROOM"],
+        ["obj.set", ["var", "lobbyData"], "prototype_id", floorLobbyProtoId],
+
+        ["let", "props", {}],
+        [
+          "obj.set",
+          ["var", "props"],
+          "description",
+          [
+            "str.concat",
+            "The lobby of floor ",
+            ["var", "floor"],
+            ". West and East wings extend from here.",
+          ],
+        ],
+        ["obj.set", ["var", "props"], "floor", ["var", "floor"]],
+        ["obj.set", ["var", "props"], "elevator_id", elevatorId], // Return point
+
+        ["obj.set", ["var", "lobbyData"], "props", ["var", "props"]],
+
+        ["let", "lobbyId", ["create", ["var", "lobbyData"]]],
+        ["move", "caller", ["var", "lobbyId"]],
+        [
+          "tell",
+          "caller",
+          ["str.concat", "The doors open to Floor ", ["var", "floor"], "."],
+        ],
+      ],
+    ],
+  ]);
+
+  // --- Floor Lobby Verbs ---
+
+  // elevator (Return to Elevator)
+  addVerb(floorLobbyProtoId, "elevator", [
+    "seq",
+    ["let", "elevId", ["prop", "this", "elevator_id"]],
+    ["move", "caller", ["var", "elevId"]],
+    ["tell", "caller", "You step back into the elevator."],
+    ["destroy", "this"],
+  ]);
+
+  // west (Create Left Wing)
+  addVerb(floorLobbyProtoId, "west", [
+    "seq",
+    ["let", "floor", ["prop", "this", "floor"]],
+
+    ["let", "wingData", {}],
+    [
+      "obj.set",
+      ["var", "wingData"],
+      "name",
+      ["str.concat", "Floor ", ["var", "floor"], " West Wing"],
+    ],
+    ["obj.set", ["var", "wingData"], "kind", "ROOM"],
+    ["obj.set", ["var", "wingData"], "prototype_id", wingProtoId],
+
+    ["let", "props", {}],
+    [
+      "obj.set",
+      ["var", "props"],
+      "description",
+      "A long hallway. Rooms 01-50 are here.",
+    ],
+    ["obj.set", ["var", "props"], "floor", ["var", "floor"]],
+    ["obj.set", ["var", "props"], "side", "West"],
+    ["obj.set", ["var", "props"], "return_id", ["prop", "this", "id"]], // Return to THIS lobby
+
+    ["obj.set", ["var", "wingData"], "props", ["var", "props"]],
+
+    ["let", "wingId", ["create", ["var", "wingData"]]],
+    ["move", "caller", ["var", "wingId"]],
+    ["tell", "caller", "You walk down the West Wing."],
+  ]);
+
+  // east (Create Right Wing)
+  addVerb(floorLobbyProtoId, "east", [
+    "seq",
+    ["let", "floor", ["prop", "this", "floor"]],
+
+    ["let", "wingData", {}],
+    [
+      "obj.set",
+      ["var", "wingData"],
+      "name",
+      ["str.concat", "Floor ", ["var", "floor"], " East Wing"],
+    ],
+    ["obj.set", ["var", "wingData"], "kind", "ROOM"],
+    ["obj.set", ["var", "wingData"], "prototype_id", wingProtoId],
+
+    ["let", "props", {}],
+    [
+      "obj.set",
+      ["var", "props"],
+      "description",
+      "A long hallway. Rooms 51-99 are here.",
+    ],
+    ["obj.set", ["var", "props"], "floor", ["var", "floor"]],
+    ["obj.set", ["var", "props"], "side", "East"],
+    ["obj.set", ["var", "props"], "return_id", ["prop", "this", "id"]],
+
+    ["obj.set", ["var", "wingData"], "props", ["var", "props"]],
+
+    ["let", "wingId", ["create", ["var", "wingData"]]],
+    ["move", "caller", ["var", "wingId"]],
+    ["tell", "caller", "You walk down the East Wing."],
+  ]);
+
+  // --- Wing Verbs ---
+
+  // back (Return to Floor Lobby)
+  addVerb(wingProtoId, "back", [
+    "seq",
+    ["let", "returnId", ["prop", "this", "return_id"]],
+    ["move", "caller", ["var", "returnId"]],
+    ["tell", "caller", "You head back to the lobby."],
+    ["destroy", "this"],
+  ]);
+
+  // enter <room_number>
+  addVerb(wingProtoId, "enter", [
+    "seq",
+    ["let", "roomNum", ["arg", 0]],
+    // TODO: Validate room number matches wing side?
+
+    ["let", "roomData", {}],
+    [
+      "obj.set",
+      ["var", "roomData"],
+      "name",
+      ["str.concat", "Room ", ["var", "roomNum"]],
+    ],
+    ["obj.set", ["var", "roomData"], "kind", "ROOM"],
+    ["obj.set", ["var", "roomData"], "prototype_id", hotelRoomProtoId],
+
+    ["let", "props", {}],
+    ["obj.set", ["var", "props"], "description", "A standard hotel room."],
+    ["obj.set", ["var", "props"], "lobby_id", ["prop", "this", "id"]], // Return to THIS wing
+
+    ["obj.set", ["var", "roomData"], "props", ["var", "props"]],
+
+    ["let", "roomId", ["create", ["var", "roomData"]]],
+    ["move", "caller", ["var", "roomId"]],
+    [
+      "tell",
+      "caller",
+      ["str.concat", "You enter Room ", ["var", "roomNum"], "."],
+    ],
+  ]);
+}
