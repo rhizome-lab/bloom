@@ -1,5 +1,5 @@
 import { ScriptContext, evaluateTarget } from "../interpreter";
-import { getEntity, getContents } from "../../repo";
+import { getEntity, getContents, getVerbs } from "../../repo";
 import { checkPermission } from "../../permissions";
 
 export const WorldLibrary = {
@@ -80,5 +80,55 @@ export const WorldLibrary = {
       target = getEntity(target.location_id);
     }
     return ancestors;
+  },
+  "entity.verbs": async (args: any[], ctx: ScriptContext) => {
+    const [targetExpr] = args;
+    const target = await evaluateTarget(targetExpr, ctx);
+    if (!target) return [];
+
+    if (!checkPermission(ctx.caller, target, "view")) {
+      return [];
+    }
+
+    const verbs = getVerbs(target.id);
+    return verbs.map((v) => v.name);
+  },
+  "player.verbs": async (_args: any[], ctx: ScriptContext) => {
+    const player = ctx.caller;
+    const verbs: { name: string; source: number }[] = [];
+    const seen = new Set<string>();
+
+    const addVerbs = (entityId: number) => {
+      const entityVerbs = getVerbs(entityId);
+      for (const v of entityVerbs) {
+        const key = `${v.name}:${entityId}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          verbs.push({ name: v.name, source: entityId });
+        }
+      }
+    };
+
+    // 1. Player verbs
+    addVerbs(player.id);
+
+    // 2. Room verbs
+    if (player.location_id) {
+      addVerbs(player.location_id);
+
+      // 3. Items in Room
+      const roomContents = getContents(player.location_id);
+      for (const item of roomContents) {
+        addVerbs(item.id);
+      }
+    }
+
+    // 4. Inventory verbs
+    const inventory = getContents(player.id);
+    for (const item of inventory) {
+      addVerbs(item.id);
+    }
+
+    return verbs;
   },
 };

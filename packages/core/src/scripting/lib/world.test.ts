@@ -12,7 +12,7 @@ mock.module("../../db", () => ({ db }));
 import { evaluate, ScriptContext, registerOpcode } from "../interpreter";
 import { WorldLibrary } from "./world";
 import * as permissions from "../../permissions";
-import { createEntity } from "../../repo";
+import { createEntity, addVerb } from "../../repo";
 
 mock.module("../../permissions", () => ({
   checkPermission: mock(),
@@ -148,5 +148,81 @@ describe("World Library", () => {
 
     const ancestors = await evaluate(["entity.ancestors", childId], ctx);
     expect(ancestors).toEqual([parentId, grandparentId]);
+  });
+
+  test("entity.verbs", async () => {
+    const entityId = createEntity({ name: "Object", kind: "ITEM" });
+    addVerb(entityId, "push", ["tell", "caller", "pushed"]);
+    addVerb(entityId, "pull", ["tell", "caller", "pulled"]);
+
+    (permissions.checkPermission as any).mockReturnValue(true);
+
+    const verbs = await evaluate(["entity.verbs", entityId], ctx);
+    expect(verbs).toContain("push");
+    expect(verbs).toContain("pull");
+    expect(verbs.length).toBe(2);
+  });
+
+  test("entity.verbs permission denied", async () => {
+    const entityId = createEntity({ name: "Object", kind: "ITEM" });
+    addVerb(entityId, "secret", []);
+
+    (permissions.checkPermission as any).mockReturnValue(false);
+
+    const verbs = await evaluate(["entity.verbs", entityId], ctx);
+    expect(verbs).toEqual([]);
+  });
+
+  test("player.verbs", async () => {
+    // Setup:
+    // Player (has 'jump')
+    // Room (has 'look')
+    // Item in Inventory (has 'read')
+    // Item in Room (has 'take')
+
+    const roomId = createEntity({ name: "Room", kind: "ROOM" });
+    addVerb(roomId, "look", []);
+
+    const playerId = createEntity({
+      name: "Player",
+      kind: "ACTOR",
+      location_id: roomId,
+    });
+    addVerb(playerId, "jump", []);
+
+    const invItemId = createEntity({
+      name: "Book",
+      kind: "ITEM",
+      location_id: playerId,
+    });
+    addVerb(invItemId, "read", []);
+
+    const roomItemId = createEntity({
+      name: "Sword",
+      kind: "ITEM",
+      location_id: roomId,
+    });
+    addVerb(roomItemId, "take", []);
+
+    // Update context caller
+    ctx.caller = { id: playerId, location_id: roomId } as any;
+
+    (permissions.checkPermission as any).mockReturnValue(true);
+
+    const verbs = await evaluate(["player.verbs"], ctx);
+
+    // Check for presence of all verbs
+    const verbNames = verbs.map((v: any) => v.name);
+    expect(verbNames).toContain("jump");
+    expect(verbNames).toContain("look");
+    expect(verbNames).toContain("read");
+    expect(verbNames).toContain("take");
+
+    // Check sources
+    const jump = verbs.find((v: any) => v.name === "jump");
+    expect(jump.source).toBe(playerId);
+
+    const look = verbs.find((v: any) => v.name === "look");
+    expect(look.source).toBe(roomId);
   });
 });
