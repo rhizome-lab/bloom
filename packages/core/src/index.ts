@@ -140,6 +140,41 @@ export function startServer(port: number = 8080) {
       const player = getEntity(ws.playerId);
       if (!player) return;
 
+      // Helper to resolve dynamic properties (get_*)
+      const resolveEntityProps = async (entity: any) => {
+        const props = { ...entity.props };
+        const verbs = getVerbs(entity.id);
+
+        for (const verb of verbs) {
+          if (verb.name.startsWith("get_")) {
+            const propName = verb.name.substring(4); // remove "get_"
+            try {
+              // We need to import evaluate here or pass it in.
+              // Since we are inside the connection handler, we can import it once at top or here.
+              // We already import it later, let's move import up or use require.
+              const { evaluate } = require("./scripting/interpreter");
+              const result = await evaluate(verb.code, {
+                caller: entity,
+                this: entity,
+                args: [],
+                gas: 500,
+                sys, // Use the sys object we created
+                warnings: [],
+              });
+              if (result !== undefined && result !== null) {
+                props[propName] = result;
+              }
+            } catch (e) {
+              console.error(
+                `Error resolving property ${propName} for ${entity.id}`,
+                e,
+              );
+            }
+          }
+        }
+        return props;
+      };
+
       // Helper to send room update
       const sendRoom = async (roomId: number) => {
         const room = getEntity(roomId);
@@ -160,41 +195,21 @@ export function startServer(port: number = 8080) {
         const contents = getContents(room.id).filter((e) => e.id !== player.id);
         const richContents = await Promise.all(
           contents.map(async (item) => {
-            let adjectives = item.props["adjectives"];
-
-            // Dynamic Adjectives
-            const getAdjVerb = getVerb(item.id, "get_adjectives");
-            if (getAdjVerb) {
-              try {
-                const result = await evaluate(getAdjVerb.code, {
-                  caller: item, // Caller is self
-                  this: item,
-                  args: [],
-                  gas: 500,
-                  sys,
-                  warnings: [],
-                });
-                if (Array.isArray(result)) {
-                  adjectives = result;
-                }
-              } catch (e) {
-                console.error(`Error getting adjectives for ${item.id}`, e);
-              }
-            }
+            const props = await resolveEntityProps(item);
 
             const richItem: any = {
               id: item.id,
               name: item.name,
               kind: item.kind,
               location_detail: item.location_detail,
-              adjectives: adjectives,
-              custom_css: item.props["custom_css"],
+              adjectives: props["adjectives"],
+              custom_css: props["custom_css"],
               contents: getContents(item.id).map((sub) => ({
                 id: sub.id,
                 name: sub.name,
                 kind: sub.kind,
                 contents: [],
-                custom_css: sub.props["custom_css"],
+                custom_css: sub.props["custom_css"], // Should we resolve sub-items too? Maybe later.
                 verbs: getVerbs(sub.id).map((v) => v.name),
               })),
               verbs: getVerbs(item.id).map((v) => v.name),
@@ -353,25 +368,32 @@ export function startServer(port: number = 8080) {
             return;
           }
 
-          const richContents = getContents(target.id).map((sub) => ({
-            id: sub.id,
-            name: sub.name,
-            kind: sub.kind,
-            contents: [],
-            location_detail: sub.location_detail,
-            adjectives: sub.props["adjectives"],
-            custom_css: sub.props["custom_css"],
-            verbs: getVerbs(sub.id).map((v) => v.name),
-          }));
+          const richContents = await Promise.all(
+            getContents(target.id).map(async (sub) => {
+              const props = await resolveEntityProps(sub);
+              return {
+                id: sub.id,
+                name: sub.name,
+                kind: sub.kind,
+                contents: [],
+                location_detail: sub.location_detail,
+                adjectives: props["adjectives"],
+                custom_css: props["custom_css"],
+                verbs: getVerbs(sub.id).map((v) => v.name),
+              };
+            }),
+          );
+
+          const targetProps = await resolveEntityProps(target);
 
           ws.send(
             JSON.stringify({
               type: "item",
               name: target.name,
-              description: target.props["description"] || "It's just a thing.",
+              description: targetProps["description"] || "It's just a thing.",
               contents: richContents,
-              adjectives: target.props["adjectives"],
-              custom_css: target.props["custom_css"],
+              adjectives: targetProps["adjectives"],
+              custom_css: targetProps["custom_css"],
               verbs: getVerbs(target.id).map((v) => v.name),
             }),
           );
@@ -388,23 +410,28 @@ export function startServer(port: number = 8080) {
       } else if (command === "inventory") {
         // ... (keep existing inventory logic) ...
         const items = getContents(player.id);
-        const richItems = items.map((item) => ({
-          id: item.id,
-          name: item.name,
-          kind: item.kind,
-          location_detail: item.location_detail,
-          adjectives: item.props["adjectives"],
-          custom_css: item.props["custom_css"],
-          contents: getContents(item.id).map((sub) => ({
-            id: sub.id,
-            name: sub.name,
-            kind: sub.kind,
-            contents: [],
-            custom_css: sub.props["custom_css"],
-            verbs: getVerbs(sub.id).map((v) => v.name),
-          })),
-          verbs: getVerbs(item.id).map((v) => v.name),
-        }));
+        const richItems = await Promise.all(
+          items.map(async (item) => {
+            const props = await resolveEntityProps(item);
+            return {
+              id: item.id,
+              name: item.name,
+              kind: item.kind,
+              location_detail: item.location_detail,
+              adjectives: props["adjectives"],
+              custom_css: props["custom_css"],
+              contents: getContents(item.id).map((sub) => ({
+                id: sub.id,
+                name: sub.name,
+                kind: sub.kind,
+                contents: [],
+                custom_css: sub.props["custom_css"],
+                verbs: getVerbs(sub.id).map((v) => v.name),
+              })),
+              verbs: getVerbs(item.id).map((v) => v.name),
+            };
+          }),
+        );
 
         ws.send(
           JSON.stringify({

@@ -1,15 +1,23 @@
-import { describe, it, expect, beforeAll, mock, afterAll } from "bun:test";
+import { describe, it, expect, beforeAll, mock } from "bun:test";
+import { Database } from "bun:sqlite";
+
+import { initSchema } from "./schema";
+
+// Setup in-memory DB
+const db = new Database(":memory:");
+
+// Initialize Schema
+initSchema(db);
+
+// Mock the db module
+mock.module("./db", () => ({ db }));
+
 import { evaluate } from "./scripting/interpreter";
 import { createEntity, addVerb, getVerb } from "./repo";
-import { db } from "./db";
 
 describe("Advanced Items Verification", () => {
   beforeAll(() => {
     // Mock sys.broadcast
-  });
-
-  afterAll(() => {
-    db.query("DELETE FROM entities WHERE name LIKE 'Test%'").run();
   });
 
   it("should broadcast message", async () => {
@@ -49,6 +57,7 @@ describe("Advanced Items Verification", () => {
       this: { id: itemId } as any,
       args: [],
       sys: {} as any,
+      warnings: [],
     });
 
     expect(result).toEqual(["color:red", "material:wood"]);

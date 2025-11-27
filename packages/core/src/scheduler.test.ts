@@ -1,6 +1,19 @@
-import { describe, it, expect, beforeAll, afterAll } from "bun:test";
+import { describe, it, expect, beforeAll, mock } from "bun:test";
+import { Database } from "bun:sqlite";
+
+import { initSchema } from "./schema";
+
+// Setup in-memory DB
+const db = new Database(":memory:");
+
+// Initialize Schema
+initSchema(db);
+
+// Mock the db module
+mock.module("./db", () => ({ db }));
+
+// Import modules AFTER mocking
 import { scheduler } from "./scheduler";
-import { db } from "./db";
 import { createEntity, addVerb } from "./repo";
 
 describe("Scheduler Verification", () => {
@@ -9,12 +22,12 @@ describe("Scheduler Verification", () => {
   beforeAll(() => {
     // Create a test entity
     entityId = createEntity({
-      name: "Scheduler Test Entity",
+      name: "SchedulerTestEntity",
       kind: "ITEM",
       props: { count: 0 },
     });
 
-    // Add a verb that increments a counter
+    // Add a verb that increments the count
     addVerb(entityId, "increment", [
       "set",
       "this",
@@ -23,15 +36,16 @@ describe("Scheduler Verification", () => {
     ]);
   });
 
-  afterAll(() => {
-    // Cleanup
-    db.query("DELETE FROM scheduled_tasks").run();
-  });
+  // afterAll is no longer needed as the in-memory DB is ephemeral per test run.
 
   it("should schedule a task", () => {
     scheduler.schedule(entityId, "increment", [], 100);
-    const tasks = db.query("SELECT * FROM scheduled_tasks").all();
-    expect(tasks.length).toBe(1);
+
+    const task = db
+      .query("SELECT * FROM scheduled_tasks WHERE entity_id = ?")
+      .get(entityId) as any;
+    expect(task).toBeDefined();
+    expect(task.verb).toBe("increment");
   });
 
   it("should process due tasks", async () => {
@@ -40,13 +54,12 @@ describe("Scheduler Verification", () => {
 
     await scheduler.process();
 
-    // Check if task was deleted
-    const tasks = db.query("SELECT * FROM scheduled_tasks").all();
-    expect(tasks.length).toBe(0);
+    // Task should be gone
+    const task = db
+      .query("SELECT * FROM scheduled_tasks WHERE entity_id = ?")
+      .get(entityId);
+    expect(task).toBeNull();
 
-    // Check if effect happened (count incremented)
-    // Note: In the real scheduler process, we use `evaluate` which might need mocking or real context.
-    // The scheduler implementation imports `repo` dynamically.
     // Let's check the entity state.
     const { getEntity } = await import("./repo");
     const entity = getEntity(entityId);
