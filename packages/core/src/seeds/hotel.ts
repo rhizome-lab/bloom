@@ -43,7 +43,7 @@ export function seedHotel(lobbyId: number, voidId: number) {
   // Moves player back to lobby and destroys the room
   addVerb(hotelRoomProtoId, "leave", [
     "seq",
-    ["move", "caller", ["var", "hotelLobbyId"]], // Move player out first
+    ["move", "caller", hotelLobbyId], // Move player out first
     ["tell", "caller", "You leave the room and it fades away behind you."],
     ["destroy", "this"], // Destroy the room
   ]);
@@ -170,7 +170,7 @@ export function seedHotel(lobbyId: number, voidId: number) {
       ["==", ["var", "floor"], 1],
       [
         "seq",
-        ["move", "caller", ["var", "hotelLobbyId"]],
+        ["move", "caller", hotelLobbyId],
         ["tell", "caller", "The doors open to the Grand Lobby."],
       ],
       [

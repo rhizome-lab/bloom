@@ -182,6 +182,9 @@ const OPS: Record<string, (args: any[], ctx: ScriptContext) => Promise<any>> = {
       throw new ScriptError(`Permission denied: cannot view ${target.id}`);
     }
 
+    if (key in target) {
+      return (target as any)[key];
+    }
     return target.props[key];
   },
   set: async (args, ctx) => {
@@ -426,16 +429,21 @@ export async function evaluateTarget(
   expr: any,
   ctx: ScriptContext,
 ): Promise<Entity | null> {
-  if (expr === "this") return ctx.this;
-  if (expr === "caller") return ctx.caller;
-  if (typeof expr === "number") {
+  let val = expr;
+  if (Array.isArray(expr)) {
+    val = await evaluate(expr, ctx);
+  }
+
+  if (val === "this") return ctx.this;
+  if (val === "caller") return ctx.caller;
+  if (typeof val === "number") {
     // Resolve entity by ID
     // We need a way to get entity by ID here.
     // Since we can't import getEntity directly due to circular deps if we are not careful,
     // but interpreter.ts is in scripting, and repo is in parent.
     // We imported updateEntity from ../repo, so we can import getEntity too.
     const { getEntity } = await import("../repo");
-    return getEntity(expr);
+    return getEntity(val);
   }
   return null;
 }
