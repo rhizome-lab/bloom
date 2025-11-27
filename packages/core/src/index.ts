@@ -12,6 +12,7 @@ import {
 } from "./repo";
 import { checkPermission } from "./permissions";
 import { PluginManager, CommandContext } from "./plugin";
+import { scheduler } from "./scheduler";
 
 export { PluginManager };
 export type { CommandContext };
@@ -25,6 +26,11 @@ export function startServer(port: number = 8080) {
   const wss = new WebSocketServer({ port });
 
   console.log(`Viwo Core Server running on port ${port}`);
+
+  // Start Scheduler
+  setInterval(() => {
+    scheduler.process();
+  }, 1000);
 
   interface Client extends WebSocket {
     playerId?: number;
@@ -274,11 +280,17 @@ export function startServer(port: number = 8080) {
                         const { getAllEntities } = require("./repo");
                         return getAllEntities();
                       },
+                      schedule: (entityId, verb, args, delay) => {
+                        scheduler.schedule(entityId, verb, args, delay);
+                      },
                       // Recursive calls allowed?
                     },
                   });
                 }
                 return null;
+              },
+              schedule: (entityId, verb, args, delay) => {
+                scheduler.schedule(entityId, verb, args, delay);
               },
             },
           });

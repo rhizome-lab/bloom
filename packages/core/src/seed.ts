@@ -379,4 +379,64 @@ export function seed() {
   ]);
 
   console.log("Seeding complete!");
+
+  // Color Library
+  const colorLibId = createEntity({
+    name: "Color Library",
+    kind: "ITEM", // Or a system object
+    location_id: voidId, // Hidden
+    props: {
+      colors: [
+        "red",
+        "green",
+        "blue",
+        "purple",
+        "orange",
+        "yellow",
+        "cyan",
+        "magenta",
+      ],
+    },
+  });
+
+  addVerb(colorLibId, "random_color", [
+    "list.get",
+    ["prop", "this", "colors"],
+    ["floor", ["*", ["random"], ["list.len", ["prop", "this", "colors"]]]],
+  ]);
+
+  // Mood Ring
+  const moodRingId = createEntity({
+    name: "Mood Ring",
+    kind: "ITEM",
+    location_id: lobbyId,
+    props: {
+      description: "A ring that changes color based on... something.",
+      adjectives: ["color:grey", "material:silver"],
+      color_lib: colorLibId,
+    },
+  });
+
+  // Verb to update color
+  // It calls random_color on the lib, sets its own color adjective, and schedules itself again.
+  addVerb(moodRingId, "update_color", [
+    "seq",
+    ["let", "libId", ["prop", "this", "color_lib"]],
+    ["let", "newColor", ["call", ["var", "libId"], "random_color"]],
+    [
+      "set",
+      "this",
+      "adjectives",
+      [
+        "list",
+        ["str.concat", "color:", ["var", "newColor"]],
+        "material:silver",
+      ],
+    ],
+    ["schedule", "update_color", [], 5000], // Run again in 5s
+  ]);
+
+  // Kickoff
+  // We need a way to start it. Let's add a 'touch' verb to start it.
+  addVerb(moodRingId, "touch", ["schedule", "update_color", [], 0]);
 }

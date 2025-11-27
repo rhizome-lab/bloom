@@ -52,4 +52,17 @@ db.query(
 `,
 ).run();
 
+db.query(
+  `
+  CREATE TABLE IF NOT EXISTS scheduled_tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    entity_id INTEGER NOT NULL,
+    verb TEXT NOT NULL,
+    args TEXT DEFAULT '[]',
+    execute_at INTEGER NOT NULL,
+    FOREIGN KEY(entity_id) REFERENCES entities(id) ON DELETE CASCADE
+  )
+`,
+).run();
+
 console.log("Database initialized with ECS schema (v2)");

@@ -16,6 +16,12 @@ export type ScriptContext = {
     destroy?: (id: number) => void;
     call?: (targetId: number, verb: string, args: any[]) => Promise<any>;
     getAllEntities?: () => number[];
+    schedule?: (
+      entityId: number,
+      verb: string,
+      args: any[],
+      delay: number,
+    ) => void;
   };
   warnings?: string[];
 };
@@ -146,6 +152,7 @@ const OPS: Record<string, (args: any[], ctx: ScriptContext) => Promise<any>> = {
   "^": async (args, ctx) =>
     Math.pow(await evaluate(args[0], ctx), await evaluate(args[1], ctx)),
   random: async () => Math.random(),
+  floor: async (args, ctx) => Math.floor(await evaluate(args[0], ctx)),
 
   // Capabilities
   prop: async (args, ctx) => {
@@ -252,6 +259,24 @@ const OPS: Record<string, (args: any[], ctx: ScriptContext) => Promise<any>> = {
       return await ctx.sys.call(target.id, verb, evaluatedArgs);
     }
     return null;
+  },
+  schedule: async (args, ctx) => {
+    const [verbExpr, argsExpr, delayExpr] = args;
+    const verb = await evaluate(verbExpr, ctx);
+    const callArgs = await evaluate(argsExpr, ctx);
+    const delay = await evaluate(delayExpr, ctx);
+
+    if (
+      typeof verb !== "string" ||
+      !Array.isArray(callArgs) ||
+      typeof delay !== "number"
+    )
+      return null;
+
+    if (ctx.sys?.schedule) {
+      ctx.sys.schedule(ctx.this.id, verb, callArgs, delay);
+    }
+    return true;
   },
   ...TimeLibrary,
   ...WorldLibrary,

@@ -22,8 +22,8 @@ export function checkPermission(
     return true;
   }
 
-  // 2. Ownership
-  if (target.owner_id === actor.id) {
+  // 2. Ownership or Self
+  if (target.owner_id === actor.id || target.id === actor.id) {
     return true;
   }
 
