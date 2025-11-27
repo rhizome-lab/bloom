@@ -16,7 +16,7 @@ import { checkPermission } from "./permissions";
 import { PluginManager, CommandContext } from "./plugin";
 import { scheduler } from "./scheduler";
 import { evaluate, ScriptSystemContext } from "./scripting/interpreter";
-import { CommandSchemas } from "@viwo/shared/commands";
+import { CommandName, CommandSchemas } from "@viwo/shared/commands";
 
 export { PluginManager };
 export type { CommandContext };
@@ -163,8 +163,7 @@ export function startServer(port: number = 8080) {
       }
 
       const [commandName, ...rawArgs] = data as [string, ...any[]];
-      const command =
-        commandName as import("@viwo/shared/commands").CommandName;
+      const command = commandName as CommandName;
 
       console.log(
         `[Player ${ws.playerId}] Command: ${command}, Args: ${JSON.stringify(
@@ -186,10 +185,6 @@ export function startServer(port: number = 8080) {
           if (verb.name.startsWith("get_")) {
             const propName = verb.name.substring(4); // remove "get_"
             try {
-              // We need to import evaluate here or pass it in.
-              // Since we are inside the connection handler, we can import it once at top or here.
-              // We already import it later, let's move import up or use require.
-              const { evaluate } = require("./scripting/interpreter");
               const result = await evaluate(verb.code, {
                 caller: entity,
                 this: entity,

@@ -78,11 +78,6 @@ export function seed() {
   // Add verbs to Player Base
   addVerb(playerBaseId, "say", ["say", ["str.join", ["args"], " "]]);
 
-  addVerb(playerBaseId, "shout", [
-    "say",
-    ["str.concat", "shouts: ", ["str.join", ["args"], " "]],
-  ]);
-
   addVerb(playerBaseId, "tell", [
     "tell",
     ["arg", 0],
