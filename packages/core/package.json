@@ -10,7 +10,8 @@
     "dev": "bun run --watch src/dev.ts",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "db:wipe": "rm -f world.sqlite"
   },
   "dependencies": {
     "ws": "^8.18.0",

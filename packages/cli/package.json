@@ -1,0 +1,16 @@
+{
+  "name": "@viwo/cli",
+  "version": "0.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts"
+  },
+  "dependencies": {
+    "@viwo/core": "workspace:*"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}

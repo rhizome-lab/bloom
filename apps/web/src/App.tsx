@@ -27,6 +27,11 @@ function App() {
       return;
     }
 
+    // Ignore if modifier keys are pressed
+    if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) {
+      return;
+    }
+
     const action = keybindsStore.getActionForKey(e.key);
     if (action) {
       e.preventDefault();
