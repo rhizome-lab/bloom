@@ -4,7 +4,6 @@ import { seed } from "./seed";
 import {
   getEntity,
   getContents,
-  moveEntity,
   createEntity,
   updateEntity,
   deleteEntity,
@@ -12,19 +11,19 @@ import {
   getAllEntities,
   getVerb,
 } from "./repo";
-import { checkPermission } from "./permissions";
 import { PluginManager, CommandContext } from "./plugin";
 import { scheduler } from "./scheduler";
 import {
   evaluate,
-  ScriptSystemContext,
   registerLibrary,
+  ScriptSystemContext,
 } from "./scripting/interpreter";
 import { StringLibrary } from "./scripting/lib/string";
-import { ObjectLibrary } from "./scripting/lib/object";
 import { TimeLibrary } from "./scripting/lib/time";
 import { WorldLibrary } from "./scripting/lib/world";
+import { ObjectLibrary } from "./scripting/lib/object";
 import { ListLibrary } from "./scripting/lib/list";
+import { CoreLibrary } from "./scripting/lib/core";
 
 export { PluginManager };
 export type { CommandContext };
@@ -36,6 +35,7 @@ const GAS_LIMIT = 1000;
 
 export function startServer(port: number = 8080) {
   // Register libraries
+  registerLibrary(CoreLibrary);
   registerLibrary(StringLibrary);
   registerLibrary(ObjectLibrary);
   registerLibrary(TimeLibrary);

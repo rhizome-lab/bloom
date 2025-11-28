@@ -1,10 +1,66 @@
-import { ScriptContext, evaluateTarget } from "../interpreter";
-import { getEntity, getContents, getVerbs, getAllEntities } from "../../repo";
+import {
+  evaluateTarget,
+  ScriptError,
+  ScriptLibraryDefinition,
+} from "../interpreter";
+import { getEntity, getContents, getVerbs } from "../../repo";
 import { checkPermission } from "../../permissions";
+import { config } from "../config";
 
-export const WorldLibrary = {
-  "world.entities": async () => getAllEntities(),
-  "entity.contents": async (args: unknown[], ctx: ScriptContext) => {
+export const WorldLibrary: ScriptLibraryDefinition = {
+  "world.time": async (args) => {
+    if (config.validateCommands) {
+      if (args.length !== 0) {
+        throw new ScriptError("world.time requires 0 arguments");
+      }
+    }
+    // Return a simulated world time (e.g. ticks or game time)
+    // For now, just return Date.now()
+    return Date.now();
+  },
+  "world.players": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 0) {
+        throw new ScriptError("world.players requires 0 arguments");
+      }
+    }
+    // Return list of player IDs
+    if (ctx.sys?.getAllEntities) {
+      const all = ctx.sys.getAllEntities();
+      const players = [];
+      for (const id of all) {
+        const entity = getEntity(id);
+        if (entity?.kind === "ACTOR") {
+          players.push(id);
+        }
+      }
+      return players;
+    }
+    return [];
+  },
+  "world.entities": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 0) {
+        throw new ScriptError("world.entities requires 0 arguments");
+      }
+    }
+    if (ctx.sys?.getAllEntities) {
+      return ctx.sys.getAllEntities();
+    }
+    return [];
+  },
+  "world.where": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 1) {
+        throw new ScriptError("world.where requires 1 argument");
+      }
+    }
+    const [targetExpr] = args;
+    const target = await evaluateTarget(targetExpr, ctx);
+    if (!target) return null;
+    return target.location_id;
+  },
+  "entity.contents": async (args, ctx) => {
     const [targetExpr] = args;
     const target = await evaluateTarget(targetExpr, ctx);
     if (!target) return [];
@@ -18,7 +74,7 @@ export const WorldLibrary = {
     const contents = getContents(target.id);
     return contents.map((e) => e.id);
   },
-  "entity.descendants": async (args: unknown[], ctx: ScriptContext) => {
+  "entity.descendants": async (args, ctx) => {
     const [targetExpr] = args;
     const target = await evaluateTarget(targetExpr, ctx);
     if (!target) return [];
@@ -58,7 +114,7 @@ export const WorldLibrary = {
     }
     return descendants;
   },
-  "entity.ancestors": async (args: unknown[], ctx: ScriptContext) => {
+  "entity.ancestors": async (args, ctx) => {
     const [targetExpr] = args;
     let target = await evaluateTarget(targetExpr, ctx);
     if (!target) return [];
@@ -70,7 +126,7 @@ export const WorldLibrary = {
     }
     return ancestors;
   },
-  "entity.verbs": async (args: unknown[], ctx: ScriptContext) => {
+  "entity.verbs": async (args, ctx) => {
     const [targetExpr] = args;
     const target = await evaluateTarget(targetExpr, ctx);
     if (!target) return [];
@@ -82,7 +138,7 @@ export const WorldLibrary = {
     const verbs = getVerbs(target.id);
     return verbs.map((v) => v.name);
   },
-  "player.verbs": async (_args: unknown[], ctx: ScriptContext) => {
+  "player.verbs": async (_args, ctx) => {
     const player = ctx.caller;
     const verbs: { name: string; source: number }[] = [];
     const seen = new Set<string>();

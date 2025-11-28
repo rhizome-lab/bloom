@@ -231,7 +231,7 @@ export function seed() {
                 "create",
                 "ROOM",
                 ["var", "roomName"],
-                ["obj", "description", "A newly dug room."],
+                ["object", "description", "A newly dug room."],
               ],
             ],
             [
@@ -239,7 +239,7 @@ export function seed() {
               "EXIT",
               ["var", "direction"],
               [
-                "obj",
+                "object",
                 "direction",
                 ["var", "direction"],
                 "destination_id",
@@ -288,7 +288,7 @@ export function seed() {
               "create",
               "ITEM",
               ["var", "name"],
-              ["obj"],
+              ["object"],
               ["prop", "me", "location_id"],
             ],
             ["sys.send_room", ["prop", "me", "location_id"]],

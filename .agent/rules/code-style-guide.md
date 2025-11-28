@@ -13,6 +13,7 @@ description: General Guidelines
 
 ## Advice
 - When starting a conversation, check `docs/` for design documents. After every action, update the files in `docs/` if there are any relevant updates.
+- Add one-shot scripts in `scratch/` subdirectories if possible.
 
 ## Style Guide
 - For background colors, prefer transparency - this means light colors with low transparency on dark mode, and dark colors with low transparency on light mode.

@@ -1,77 +1,116 @@
-import { evaluate } from "../interpreter";
+import { evaluate, ScriptError, ScriptLibraryDefinition } from "../interpreter";
+import { config } from "../config";
 
-export const StringLibrary = {
-  "str.len": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    if (typeof val !== "string") return 0;
-    return val.length;
-  },
-
-  "str.split": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    const delim = await evaluate(args[1], ctx);
-    if (typeof val !== "string" || typeof delim !== "string") return [];
-    return val.split(delim);
-  },
-
-  "str.join": async (args: any[], ctx: any) => {
-    const list = await evaluate(args[0], ctx);
-    const delim = await evaluate(args[1], ctx);
-    if (!Array.isArray(list) || typeof delim !== "string") return "";
-    return list.join(delim);
-  },
-
-  "str.concat": async (args: any[], ctx: any) => {
-    let result = "";
-    for (const arg of args) {
-      result += String(await evaluate(arg, ctx));
+export const StringLibrary: ScriptLibraryDefinition = {
+  "string.length": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 1) {
+        throw new ScriptError("string.length requires 1 argument");
+      }
     }
-    return result;
+    const [strExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    if (typeof str !== "string") return 0;
+    return str.length;
   },
-
-  "str.slice": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    const start = await evaluate(args[1], ctx);
-    const end = args.length > 2 ? await evaluate(args[2], ctx) : undefined;
-    if (typeof val !== "string") return "";
-    return val.slice(start, end);
+  "string.concat": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 2) {
+        throw new ScriptError("string.concat requires 2 arguments");
+      }
+    }
+    const [str1Expr, str2Expr] = args;
+    const str1 = await evaluate(str1Expr, ctx);
+    const str2 = await evaluate(str2Expr, ctx);
+    if (typeof str1 !== "string" || typeof str2 !== "string") return "";
+    return str1 + str2;
   },
-
-  "str.lower": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    if (typeof val !== "string") return val;
-    return val.toLowerCase();
+  "string.split": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 2) {
+        throw new ScriptError("string.split requires 2 arguments");
+      }
+    }
+    const [strExpr, sepExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    const sep = await evaluate(sepExpr, ctx);
+    if (typeof str !== "string" || typeof sep !== "string") return [];
+    return str.split(sep);
   },
-
-  "str.upper": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    if (typeof val !== "string") return val;
-    return val.toUpperCase();
+  "string.slice": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length < 2 || args.length > 3) {
+        throw new ScriptError("string.slice requires 2 or 3 arguments");
+      }
+    }
+    const [strExpr, startExpr, endExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    const start = await evaluate(startExpr, ctx);
+    const end = endExpr ? await evaluate(endExpr, ctx) : undefined;
+    if (typeof str !== "string" || typeof start !== "number") return "";
+    return str.slice(start, end);
   },
-
-  "str.trim": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    if (typeof val !== "string") return val;
-    return val.trim();
+  "string.to_upper": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 1) {
+        throw new ScriptError("string.to_upper requires 1 argument");
+      }
+    }
+    const [strExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    if (typeof str !== "string") return "";
+    return str.toUpperCase();
   },
-
-  "str.includes": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    const sub = await evaluate(args[1], ctx);
-    if (typeof val !== "string" || typeof sub !== "string") return false;
-    return val.includes(sub);
+  "string.to_lower": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 1) {
+        throw new ScriptError("string.to_lower requires 1 argument");
+      }
+    }
+    const [strExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    if (typeof str !== "string") return "";
+    return str.toLowerCase();
   },
-
-  "str.replace": async (args: any[], ctx: any) => {
-    const val = await evaluate(args[0], ctx);
-    const search = await evaluate(args[1], ctx);
-    const replace = await evaluate(args[2], ctx);
+  "string.trim": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 1) {
+        throw new ScriptError("string.trim requires 1 argument");
+      }
+    }
+    const [strExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    if (typeof str !== "string") return "";
+    return str.trim();
+  },
+  "string.replace": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 3) {
+        throw new ScriptError("string.replace requires 3 arguments");
+      }
+    }
+    const [strExpr, searchExpr, replaceExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    const search = await evaluate(searchExpr, ctx);
+    const replace = await evaluate(replaceExpr, ctx);
     if (
-      typeof val !== "string" ||
+      typeof str !== "string" ||
       typeof search !== "string" ||
       typeof replace !== "string"
     )
-      return val;
-    return val.replace(search, replace);
+      return str;
+    return str.replace(search, replace);
+  },
+  "string.includes": async (args, ctx) => {
+    if (config.validateCommands) {
+      if (args.length !== 2) {
+        throw new ScriptError("string.includes requires 2 arguments");
+      }
+    }
+    const [strExpr, searchExpr] = args;
+    const str = await evaluate(strExpr, ctx);
+    const search = await evaluate(searchExpr, ctx);
+    if (typeof str !== "string" || typeof search !== "string") return false;
+    return str.includes(search);
   },
 };
