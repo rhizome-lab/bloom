@@ -307,37 +307,41 @@ export function getVerbs(entityId: number): Verb[] {
   return collectVerbs(entityId, new Set());
 }
 
+// Recursive lookup
+function lookupVerb(
+  id: number,
+  name: string,
+  visited: Set<number>,
+): Verb | null {
+  if (visited.has(id)) return null;
+  visited.add(id);
+
+  const row = db
+    .query("SELECT * FROM verbs WHERE entity_id = ? AND name = ?")
+    .get(id, name) as any;
+
+  if (row) {
+    return {
+      ...row,
+      code: JSON.parse(row.code),
+      permissions: JSON.parse(row.permissions),
+    };
+  }
+
+  // Check prototype
+  const entity = db
+    .query("SELECT prototype_id FROM entities WHERE id = ?")
+    .get(id) as { prototype_id: number | null };
+
+  if (entity?.prototype_id) {
+    return lookupVerb(entity.prototype_id, name, visited);
+  }
+
+  return null;
+}
+
 export function getVerb(entityId: number, name: string): Verb | null {
-  // Recursive lookup
-  const lookup = (id: number, visited: Set<number>): Verb | null => {
-    if (visited.has(id)) return null;
-    visited.add(id);
-
-    const row = db
-      .query("SELECT * FROM verbs WHERE entity_id = ? AND name = ?")
-      .get(id, name) as any;
-
-    if (row) {
-      return {
-        ...row,
-        code: JSON.parse(row.code),
-        permissions: JSON.parse(row.permissions),
-      };
-    }
-
-    // Check prototype
-    const entity = db
-      .query("SELECT prototype_id FROM entities WHERE id = ?")
-      .get(id) as { prototype_id: number | null };
-
-    if (entity && entity.prototype_id) {
-      return lookup(entity.prototype_id, visited);
-    }
-
-    return null;
-  };
-
-  return lookup(entityId, new Set());
+  return lookupVerb(entityId, name, new Set());
 }
 
 export function addVerb(

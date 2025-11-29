@@ -96,6 +96,11 @@ export function startServer(port: number = 8080) {
     const sys: ScriptSystemContext = {
       move: (id, dest) => updateEntity(id, { location_id: dest }),
       create: createEntity,
+      destroy: deleteEntity,
+      getAllEntities,
+      getEntity: async (id) => getEntity(id),
+      getContents: async (id) => getContents(id),
+      getVerbs: async (id) => getVerbs(id),
       send: (msg) => {
         ws.send(
           JSON.stringify({
@@ -105,8 +110,6 @@ export function startServer(port: number = 8080) {
           }),
         );
       },
-      destroy: deleteEntity,
-      getAllEntities,
       schedule: scheduler.schedule.bind(scheduler),
       broadcast: (msg, locationId) => {
         for (const client of wss.clients) {

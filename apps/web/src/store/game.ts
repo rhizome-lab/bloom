@@ -68,16 +68,17 @@ export const gameStore = {
   connect: () => {
     if (state.isConnected) return;
 
-    state.socket = new WebSocket("ws://localhost:8080");
+    const socket = new WebSocket("ws://localhost:8080");
+    setState("socket", socket);
 
-    state.socket.onopen = () => {
+    socket.onopen = () => {
       setState("isConnected", true);
       // Initial fetch
       gameStore.send(["look"]);
       gameStore.send(["inventory"]);
 
       // Fetch opcodes
-      state.socket?.send(
+      socket?.send(
         JSON.stringify({
           jsonrpc: "2.0",
           method: "get_opcodes",
@@ -87,16 +88,16 @@ export const gameStore = {
       );
     };
 
-    state.socket.onclose = () => {
+    socket.onclose = () => {
       setState("isConnected", false);
       gameStore.addMessage({
         type: "error",
         text: "Disconnected from server.",
       });
-      state.socket = null;
+      setState("socket", null);
     };
 
-    state.socket.onmessage = (event) => {
+    socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
 

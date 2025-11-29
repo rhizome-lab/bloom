@@ -523,12 +523,16 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       }
       let sum = await evaluate(args[0], ctx);
       if (typeof sum !== "number") {
-        throw new ScriptError("+: expected a number");
+        throw new ScriptError(
+          `+: expected a number at index 0, got ${JSON.stringify(sum)}`,
+        );
       }
       for (let i = 1; i < args.length; i++) {
         const next = await evaluate(args[i], ctx);
         if (typeof next !== "number") {
-          throw new ScriptError("+: expected a number");
+          throw new ScriptError(
+            `+: expected a number at index ${i}, got ${JSON.stringify(next)}`,
+          );
         }
         sum += next;
       }
@@ -552,12 +556,16 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       }
       let diff = await evaluate(args[0], ctx);
       if (typeof diff !== "number") {
-        throw new ScriptError("-: expected a number");
+        throw new ScriptError(
+          `-: expected a number at index 0, got ${JSON.stringify(diff)}`,
+        );
       }
       for (let i = 1; i < args.length; i++) {
         const next = await evaluate(args[i], ctx);
         if (typeof next !== "number") {
-          throw new ScriptError("-: expected a number");
+          throw new ScriptError(
+            `-: expected a number at index ${i}, got ${JSON.stringify(next)}`,
+          );
         }
         diff -= next;
       }
@@ -581,12 +589,16 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       }
       let prod = await evaluate(args[0], ctx);
       if (typeof prod !== "number") {
-        throw new ScriptError("*: expected a number");
+        throw new ScriptError(
+          `*: expected a number at index 0, got ${JSON.stringify(prod)}`,
+        );
       }
       for (let i = 1; i < args.length; i++) {
         const next = await evaluate(args[i], ctx);
         if (typeof next !== "number") {
-          throw new ScriptError("*: expected a number");
+          throw new ScriptError(
+            `*: expected a number at index ${i}, got ${JSON.stringify(next)}`,
+          );
         }
         prod *= next;
       }
@@ -610,12 +622,16 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       }
       let quot = await evaluate(args[0], ctx);
       if (typeof quot !== "number") {
-        throw new ScriptError("/: expected a number");
+        throw new ScriptError(
+          `/: expected a number at index 0, got ${JSON.stringify(quot)}`,
+        );
       }
       for (let i = 1; i < args.length; i++) {
         const next = await evaluate(args[i], ctx);
         if (typeof next !== "number") {
-          throw new ScriptError("/: expected a number");
+          throw new ScriptError(
+            `/: expected a number at index ${i}, got ${JSON.stringify(next)}`,
+          );
         }
         quot /= next;
       }
@@ -639,11 +655,15 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       }
       const aEval = await evaluate(args[0], ctx);
       if (typeof aEval !== "number") {
-        throw new ScriptError("%: expected a number");
+        throw new ScriptError(
+          `%: expected a number at index 0, got ${JSON.stringify(aEval)}`,
+        );
       }
       const bEval = await evaluate(args[1], ctx);
       if (typeof bEval !== "number") {
-        throw new ScriptError("%: expected a number");
+        throw new ScriptError(
+          `%: expected a number at index 1, got ${JSON.stringify(bEval)}`,
+        );
       }
       return aEval % bEval;
     },
@@ -667,13 +687,17 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       let pow = await evaluate(args[args.length - 1], ctx);
       if (typeof pow !== "number") {
         throw new ScriptError(
-          `^: expected a number at index ${args.length - 1}`,
+          `^: expected a number at index ${
+            args.length - 1
+          }, got ${JSON.stringify(pow)}`,
         );
       }
       for (let i = args.length - 2; i >= 0; i--) {
         const next = await evaluate(args[i], ctx);
         if (typeof next !== "number") {
-          throw new ScriptError(`^: expected a number at index ${i}`);
+          throw new ScriptError(
+            `^: expected a number at index ${i}, got ${JSON.stringify(next)}`,
+          );
         }
         pow = next ** pow;
       }
@@ -1380,6 +1404,7 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
         throw new ScriptError("contents: no system available");
       }
       if (!ctx.sys.getContents) {
+        console.trace();
         throw new ScriptError("contents: no getContents function available");
       }
       const [containerExpr] = args;

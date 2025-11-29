@@ -721,7 +721,11 @@ export function seed() {
     [
       "str.concat",
       "color:hsl(",
-      ["str.concat", ["*", ["time.now"], 0.1], ", 100%, 50%)"],
+      [
+        "str.concat",
+        ["*", ["time.to_timestamp", ["time.now"]], 0.1],
+        ", 100%, 50%)",
+      ],
     ], // Rotating hue
     "material:gold",
   ]);
