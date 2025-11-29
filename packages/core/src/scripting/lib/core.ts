@@ -165,7 +165,7 @@ const jsonParse = defineOpcode<[ScriptValue<string>], unknown>(
 export { jsonParse as "json.parse" };
 
 // Entity Introspection
-const prop = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], unknown>(
+const prop = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], any>(
   "prop",
   {
     metadata: {
