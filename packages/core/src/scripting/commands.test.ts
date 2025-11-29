@@ -20,10 +20,10 @@ import {
   registerLibrary,
   createScriptContext,
 } from "./interpreter";
-import { ListLibrary } from "./lib/list";
-import { StringLibrary } from "./lib/string";
-import { ObjectLibrary } from "./lib/object";
-import { WorldLibrary } from "./lib/world"; // Need world lib for world.find
+import * as Core from "./lib/core";
+import * as List from "./lib/list";
+import * as String from "./lib/string";
+import * as Object from "./lib/object";
 import { seed } from "../seed";
 import {
   createEntity,
@@ -32,17 +32,13 @@ import {
   deleteEntity,
   Entity,
   getVerb,
-  getContents,
 } from "../repo";
-import { CoreLibrary } from "./lib/core";
 
 describe("Player Commands", () => {
-  // Register libraries
-  registerLibrary(CoreLibrary);
-  registerLibrary(ListLibrary);
-  registerLibrary(StringLibrary);
-  registerLibrary(ObjectLibrary);
-  registerLibrary(WorldLibrary);
+  registerLibrary(Core);
+  registerLibrary(List);
+  registerLibrary(String);
+  registerLibrary(Object);
 
   let player: Entity;
   let room: Entity;
@@ -60,25 +56,12 @@ describe("Player Commands", () => {
 
     // Setup Sys Context
     sys = {
-      move: (id, dest) => {
-        updateEntity(id, { location_id: dest });
-        const e = getEntity(id);
-        if (e) e.location_id = dest;
-        if (player && player.id === id) {
-          player.location_id = dest;
-        }
-      },
       create: createEntity,
       destroy: deleteEntity,
       getEntity: async (id) => getEntity(id),
       send: (msg) => {
         sentMessages.push(msg);
       },
-      broadcast: (msg) => {
-        sentMessages.push(msg);
-      },
-      canEdit: () => true,
-      triggerEvent: async () => {},
       call: async (caller, targetId, verbName, args) => {
         const verb = getVerb(targetId, verbName);
         if (verb) {
@@ -93,7 +76,6 @@ describe("Player Commands", () => {
           );
         }
       },
-      getContents: async (id) => getContents(id),
     };
 
     // Seed DB (creates sys:player_base, Lobby, Guest, etc.)

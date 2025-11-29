@@ -29,7 +29,6 @@ import { ObjectLibrary } from "./scripting/lib/object";
 import { CoreLibrary } from "./scripting/lib/core";
 
 describe("Scheduler Verification", () => {
-  // Register libraries
   registerLibrary(CoreLibrary);
   registerLibrary(ObjectLibrary);
 

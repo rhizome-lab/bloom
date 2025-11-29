@@ -10,15 +10,11 @@ initSchema(db);
 mock.module("./db", () => ({ db }));
 
 import { evaluate, registerLibrary } from "./scripting/interpreter";
-import { WorldLibrary } from "./scripting/lib/world";
 import { createEntity, getEntity } from "./repo";
-import { checkPermission } from "./permissions";
-import { CoreLibrary } from "./scripting/lib/core";
+import * as Core from "./scripting/lib/core";
 
 describe("Mailbox Verification", () => {
-  // Register libraries
-  registerLibrary(CoreLibrary);
-  registerLibrary(WorldLibrary);
+  registerLibrary(Core);
 
   let senderId: number;
   let receiverId: number;
@@ -89,16 +85,6 @@ describe("Mailbox Verification", () => {
       },
     } as any;
 
-    // We need to mock evaluateTarget to return entities
-    // But evaluateTarget uses import("../repo"), which uses mocked db. So it should work if we use real evaluateTarget?
-    // But evaluateTarget is not exported from interpreter to be mocked easily, but we can use real evaluate.
-
-    // Let's use evaluate with real entities in DB.
-    // We need to make sure 'move' opcode checks permission.
-
-    // We need to mock sys.move to NOT throw, but the opcode logic throws.
-    // So we expect evaluate to throw ScriptError.
-
     try {
       await evaluate(["move", itemId, mailboxId], ctx);
       expect(true).toBe(false); // Should not reach here
@@ -132,9 +118,9 @@ describe("Mailbox Verification", () => {
     expect(given).toBe(true);
 
     // Verify item state
-    const item = getEntity(itemId);
-    expect(item?.location_id).toBe(mailboxId);
-    expect(item?.owner_id).toBe(receiverId); // Ownership transferred to mailbox owner (receiver)
+    const item = getEntity(itemId)!;
+    expect(item["location_id"]).toBe(mailboxId);
+    expect(item["owner_id"]).toBe(receiverId); // Ownership transferred to mailbox owner (receiver)
   });
 
   it("should hide contents from sender", async () => {
@@ -147,7 +133,7 @@ describe("Mailbox Verification", () => {
       sys: {},
     } as any;
 
-    const contents = await evaluate(["entity.contents", mailboxId], ctx);
+    const contents = await evaluate(Core["prop"](mailboxId, "contents"), ctx);
     expect(contents).toEqual([]); // Should be empty because view denied
   });
 
@@ -158,7 +144,7 @@ describe("Mailbox Verification", () => {
       sys: {},
     } as any;
 
-    const contents = await evaluate(["entity.contents", mailboxId], ctx);
+    const contents = await evaluate(Core["prop"](mailboxId, "contents"), ctx);
     expect(contents).toContain(itemId);
   });
 });

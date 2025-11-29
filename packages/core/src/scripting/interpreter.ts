@@ -1,4 +1,5 @@
 import { Entity, getEntity, Verb } from "../repo";
+import { ScriptValue } from "./def";
 
 export type ScriptSystemContext = {
   create: (data: any) => number;
@@ -113,18 +114,16 @@ export async function executeLambda(
   });
 }
 
-export async function evaluate(ast: unknown, ctx: ScriptContext): Promise<any> {
+export async function evaluate<T>(
+  ast: ScriptValue<T>,
+  ctx: ScriptContext,
+): Promise<T> {
   if (ctx.gas !== undefined) {
     ctx.gas -= 1;
     if (ctx.gas < 0) {
       throw new ScriptError("Script ran out of gas!");
     }
   }
-
-  if (ast === null || typeof ast !== "object") {
-    return ast;
-  }
-
   if (Array.isArray(ast)) {
     const [op, ...args] = ast;
     if (typeof op === "string" && OPS[op]) {
@@ -133,8 +132,7 @@ export async function evaluate(ast: unknown, ctx: ScriptContext): Promise<any> {
       throw new ScriptError(`Unknown opcode: ${op}`);
     }
   }
-
-  return ast;
+  return ast as never;
 }
 
 export function createScriptContext(
@@ -149,6 +147,7 @@ export function createScriptContext(
   };
 }
 
+// TODO: Remove this function
 export async function evaluateTarget(
   targetExpr: unknown,
   ctx: ScriptContext,
@@ -168,17 +167,23 @@ export async function evaluateTarget(
   if (typeof val === "string") {
     // Search in room or inventory
     // 1. Inventory
-    // We assume 'contents' is a list of IDs or Entities
-    // Since we removed getContents, we need to rely on the 'contents' prop
-    // But 'contents' prop might be just IDs.
-    // We need to resolve them to check names.
+    // We assume 'contents' is a list of IDs. We need to resolve them to check names.
 
-    const resolveList = async (ids: number[]) => {
-      if (!ids || !Array.isArray(ids)) return [];
+    const resolveList = async (ids: unknown) => {
+      if (
+        !ids ||
+        !Array.isArray(ids) ||
+        ids.some((id) => typeof id !== "number")
+      ) {
+        throw new Error("Expected a list of ids for 'contents'");
+      }
       const entities = [];
       for (const id of ids) {
-        const e = await getEntity(id);
-        if (e) entities.push(e);
+        const entity = getEntity(id);
+        if (!entity) {
+          throw new Error(`Invalid entity id ${id}`);
+        }
+        entities.push(entity);
       }
       return entities;
     };
@@ -186,18 +191,18 @@ export async function evaluateTarget(
     const inventoryIds = ctx.caller["contents"] || [];
     const inventory = await resolveList(inventoryIds);
     const item = inventory.find(
-      (e) => e["name"]?.toLowerCase() === val.toLowerCase(),
+      (entity) => entity["name"]?.toLowerCase() === val.toLowerCase(),
     );
     if (item) return item;
 
     // 2. Room
     if (ctx.caller["location"]) {
-      const room = await getEntity(ctx.caller["location"]);
+      const room = getEntity(ctx.caller["location"]);
       if (room) {
         const roomContentIds = room["contents"] || [];
         const roomContents = await resolveList(roomContentIds);
         const roomItem = roomContents.find(
-          (e) => e["name"]?.toLowerCase() === val.toLowerCase(),
+          (entity) => entity["name"]?.toLowerCase() === val.toLowerCase(),
         );
         if (roomItem) return roomItem;
       }

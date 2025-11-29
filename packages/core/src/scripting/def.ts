@@ -1,17 +1,30 @@
 import { OpcodeHandler, OpcodeMetadata } from "./interpreter";
 
-export type ScriptValue<T> = T | ScriptExpression<any[], T>;
+type UnknownUnion =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | (Record<string, unknown> & { readonly length?: never })
+  | (Record<string, unknown> & { readonly slice?: never });
+
+export type ScriptValue_<T> = Exclude<T, readonly unknown[]>;
+
+export type ScriptValue<T> =
+  | (unknown extends T ? ScriptValue_<UnknownUnion> : ScriptValue_<T>)
+  | ScriptExpression<any[], T>;
 
 // Phantom type for return type safety
 export type ScriptExpression<
-  Args extends (string | ScriptValue<unknown>)[],
+  Args extends (string | ScriptValue_<unknown>)[],
   Ret,
 > = [string, ...Args] & {
   __returnType: Ret;
 };
 
 export interface OpcodeBuilder<
-  Args extends (string | ScriptValue<unknown>)[],
+  Args extends (string | ScriptValue_<unknown>)[],
   Ret,
 > {
   (...args: Args): ScriptExpression<Args, Ret>;
@@ -21,7 +34,7 @@ export interface OpcodeBuilder<
 }
 
 export function defineOpcode<
-  Args extends (string | ScriptValue<unknown>)[] = never,
+  Args extends (string | ScriptValue_<unknown>)[] = never,
   Ret = never,
 >(
   name: string,

@@ -6,12 +6,12 @@ import {
   ScriptError,
   createScriptContext,
 } from "../interpreter";
-import { CoreLibrary } from "./core";
-import { TimeLibrary } from "./time";
+import * as Core from "./core";
+import * as Time from "./time";
 
 describe("Time Library", () => {
-  registerLibrary(CoreLibrary);
-  registerLibrary(TimeLibrary);
+  registerLibrary(Core);
+  registerLibrary(Time);
 
   let ctx: ScriptContext;
 
@@ -23,7 +23,7 @@ describe("Time Library", () => {
   });
 
   test("time.now", async () => {
-    const ts = await evaluate(["time.now"], ctx);
+    const ts = await evaluate(Time["time.now"](), ctx);
     expect(typeof ts).toBe("string");
     expect(new Date(ts).getTime()).toBeLessThanOrEqual(Date.now());
   });
@@ -51,35 +51,36 @@ describe("Time Library", () => {
     const base = "2023-01-01T00:00:00.000Z";
 
     // Years
-    let res = await evaluate(["time.offset", 1, "years", base], ctx);
+    let res = await evaluate(Time["time.offset"](1, "years", base), ctx);
     expect(new Date(res).getFullYear()).toBe(2024);
 
     // Months
-    res = await evaluate(["time.offset", 1, "months", base], ctx);
+    res = await evaluate(Time["time.offset"](1, "months", base), ctx);
     expect(new Date(res).getMonth()).toBe(1); // Feb
 
     // Days
-    res = await evaluate(["time.offset", 1, "days", base], ctx);
+    res = await evaluate(Time["time.offset"](1, "days", base), ctx);
     expect(new Date(res).getDate()).toBe(2);
 
     // Hours
-    res = await evaluate(["time.offset", 1, "hours", base], ctx);
+    res = await evaluate(Time["time.offset"](1, "hours", base), ctx);
     expect(new Date(res).getHours()).not.toBe(new Date(base).getHours());
 
     // Minutes
-    res = await evaluate(["time.offset", 1, "minutes", base], ctx);
+    res = await evaluate(Time["time.offset"](1, "minutes", base), ctx);
     expect(new Date(res).getMinutes()).not.toBe(new Date(base).getMinutes());
 
     // Seconds
-    res = await evaluate(["time.offset", 1, "seconds", base], ctx);
+    res = await evaluate(Time["time.offset"](1, "seconds", base), ctx);
     expect(new Date(res).getSeconds()).not.toBe(new Date(base).getSeconds());
 
     // Default date (now)
-    res = await evaluate(["time.offset", 0, "days"], ctx);
+    res = await evaluate(Time["time.offset"](0, "days"), ctx);
     expect(typeof res).toBe("string");
 
     // Invalid amount
-    res = await evaluate(["time.offset", "invalid", "days"], ctx).catch(
+    // @ts-expect-error
+    res = await evaluate(Time["time.offset"]("invalid", "days"), ctx).catch(
       (e) => e,
     );
     expect(res).toBeInstanceOf(ScriptError);

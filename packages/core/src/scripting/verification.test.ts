@@ -1,19 +1,17 @@
 import { describe, it, expect, beforeAll, mock } from "bun:test";
 import { evaluate, ScriptContext, registerLibrary } from "./interpreter";
-import { StringLibrary } from "./lib/string";
-import { ListLibrary } from "./lib/list";
-import { TimeLibrary } from "./lib/time";
-import { WorldLibrary } from "./lib/world";
+import * as Core from "./lib/core";
+import * as String from "./lib/string";
+import * as List from "./lib/list";
+import * as Time from "./lib/time";
 import { mockEntity } from "../mock";
-import { CoreLibrary } from "./lib/core";
 
 describe("Scripting Verification", () => {
   beforeAll(() => {
-    registerLibrary(CoreLibrary);
-    registerLibrary(StringLibrary);
-    registerLibrary(ListLibrary);
-    registerLibrary(TimeLibrary);
-    registerLibrary(WorldLibrary);
+    registerLibrary(Core);
+    registerLibrary(String);
+    registerLibrary(List);
+    registerLibrary(Time);
   });
 
   const caller = mockEntity(1);
@@ -37,20 +35,20 @@ describe("Scripting Verification", () => {
   } satisfies ScriptContext;
 
   it("should return current time", async () => {
-    const result = await evaluate(["time.now"], ctx);
+    const result = await evaluate(Time["time.now"](), ctx);
     expect(typeof result).toBe("string");
     expect(new Date(result).getTime()).not.toBeNaN();
   });
 
   it("should format time", async () => {
     const now = new Date().toISOString();
-    const result = await evaluate(["time.format", now, "time"], ctx);
+    const result = await evaluate(Time["time.format"](now, "time"), ctx);
     expect(typeof result).toBe("string");
     expect(result).not.toBe("Invalid Date");
   });
 
   it("should offset time", async () => {
-    const result = await evaluate(["time.offset", 1, "hour"], ctx);
+    const result = await evaluate(Time["time.offset"](1, "hour"), ctx);
     const now = new Date();
     const future = new Date(result);
     // Allow some small delta
@@ -65,7 +63,7 @@ describe("Scripting Verification", () => {
       sys: { ...ctx.sys, getAllEntities: () => [1, 2, 3] },
     });
     expect(result).toEqual([1, 2, 3]);
-    const result2 = await evaluate(["world.entities"], {
+    const result2 = await evaluate(List["list.len"](["world.entities"]), {
       ...ctx,
       sys: { ...ctx.sys, getAllEntities: () => ["a", 2, true] },
     });
@@ -73,12 +71,12 @@ describe("Scripting Verification", () => {
   });
 
   it("should count entities using list.len", async () => {
-    const result = await evaluate(["list.len", ["world.entities"]], {
+    const result = await evaluate(List["list.len"](["world.entities"]), {
       ...ctx,
       sys: { ...ctx.sys, getAllEntities: () => [3, 2, 1] },
     });
     expect(result).toBe(3);
-    const result2 = await evaluate(["list.len", ["world.entities"]], {
+    const result2 = await evaluate(List["list.len"](["world.entities"]), {
       ...ctx,
       sys: { ...ctx.sys, getAllEntities: () => [1, 2, 3, 4, 5] },
     });

@@ -5,7 +5,7 @@ import {
 } from "../interpreter";
 import { defineOpcode, ScriptValue } from "../def";
 
-const listNew = defineOpcode<[...ScriptValue<any>[]], any[]>(
+const listNew = defineOpcode<[...ScriptValue<unknown>[]], any[]>(
   "list.new",
   {
     metadata: {
@@ -25,7 +25,7 @@ const listNew = defineOpcode<[...ScriptValue<any>[]], any[]>(
 );
 export { listNew as "list.new" };
 
-const listLen = defineOpcode<[ScriptValue<any[]>], number>(
+const listLen = defineOpcode<[ScriptValue<readonly unknown[]>], number>(
   "list.len",
   {
     metadata: {
@@ -43,7 +43,7 @@ const listLen = defineOpcode<[ScriptValue<any[]>], number>(
 );
 export { listLen as "list.len" };
 
-const listEmpty = defineOpcode<[ScriptValue<any[]>], boolean>(
+const listEmpty = defineOpcode<[ScriptValue<readonly unknown[]>], boolean>(
   "list.empty",
   {
     metadata: {
@@ -61,7 +61,7 @@ const listEmpty = defineOpcode<[ScriptValue<any[]>], boolean>(
 );
 export { listEmpty as "list.empty" };
 
-const listGet = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>], any>(
+const listGet = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<number>], any>(
   "list.get",
   {
     metadata: {
@@ -83,7 +83,7 @@ const listGet = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>], any>(
 );
 export { listGet as "list.get" };
 
-const listSet = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>, ScriptValue<any>], any>(
+const listSet = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<number>, ScriptValue<unknown>], any>(
   "list.set",
   {
     metadata: {
@@ -108,7 +108,7 @@ const listSet = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>, ScriptVal
 );
 export { listSet as "list.set" };
 
-const listPush = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], number>(
+const listPush = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>], number>(
   "list.push",
   {
     metadata: {
@@ -131,7 +131,7 @@ const listPush = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], number>(
 );
 export { listPush as "list.push" };
 
-const listPop = defineOpcode<[ScriptValue<any[]>], any>(
+const listPop = defineOpcode<[ScriptValue<readonly unknown[]>], any>(
   "list.pop",
   {
     metadata: {
@@ -153,7 +153,7 @@ const listPop = defineOpcode<[ScriptValue<any[]>], any>(
 );
 export { listPop as "list.pop" };
 
-const listUnshift = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], number>(
+const listUnshift = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>], number>(
   "list.unshift",
   {
     metadata: {
@@ -176,7 +176,7 @@ const listUnshift = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], number>
 );
 export { listUnshift as "list.unshift" };
 
-const listShift = defineOpcode<[ScriptValue<any[]>], any>(
+const listShift = defineOpcode<[ScriptValue<readonly unknown[]>], any>(
   "list.shift",
   {
     metadata: {
@@ -194,7 +194,7 @@ const listShift = defineOpcode<[ScriptValue<any[]>], any>(
 );
 export { listShift as "list.shift" };
 
-const listSlice = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>, ScriptValue<number>?], any[]>(
+const listSlice = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<number>, ScriptValue<number>?], any[]>(
   "list.slice",
   {
     metadata: {
@@ -222,7 +222,7 @@ const listSlice = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>, ScriptV
 );
 export { listSlice as "list.slice" };
 
-const listSplice = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>, ScriptValue<number>, ...ScriptValue<any>[]], any[]>(
+const listSplice = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<number>, ScriptValue<number>, ...ScriptValue<unknown>[]], any[]>(
   "list.splice",
   {
     metadata: {
@@ -252,7 +252,7 @@ const listSplice = defineOpcode<[ScriptValue<any[]>, ScriptValue<number>, Script
 );
 export { listSplice as "list.splice" };
 
-const listConcat = defineOpcode<[ScriptValue<any[]>, ScriptValue<any[]>], any[]>(
+const listConcat = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<readonly unknown[]>], any[]>(
   "list.concat",
   {
     metadata: {
@@ -278,7 +278,7 @@ const listConcat = defineOpcode<[ScriptValue<any[]>, ScriptValue<any[]>], any[]>
 );
 export { listConcat as "list.concat" };
 
-const listIncludes = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], boolean>(
+const listIncludes = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>], boolean>(
   "list.includes",
   {
     metadata: {
@@ -300,7 +300,7 @@ const listIncludes = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], boolea
 );
 export { listIncludes as "list.includes" };
 
-const listReverse = defineOpcode<[ScriptValue<any[]>], any[]>(
+const listReverse = defineOpcode<[ScriptValue<readonly unknown[]>], any[]>(
   "list.reverse",
   {
     metadata: {
@@ -318,7 +318,7 @@ const listReverse = defineOpcode<[ScriptValue<any[]>], any[]>(
 );
 export { listReverse as "list.reverse" };
 
-const listSort = defineOpcode<[ScriptValue<any[]>], any[]>(
+const listSort = defineOpcode<[ScriptValue<readonly unknown[]>], any[]>(
   "list.sort",
   {
     metadata: {
@@ -336,7 +336,7 @@ const listSort = defineOpcode<[ScriptValue<any[]>], any[]>(
 );
 export { listSort as "list.sort" };
 
-const listJoin = defineOpcode<[ScriptValue<any[]>, ScriptValue<string>], string>(
+const listJoin = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<string>], string>(
   "list.join",
   {
     metadata: {
@@ -362,7 +362,7 @@ const listJoin = defineOpcode<[ScriptValue<any[]>, ScriptValue<string>], string>
 );
 export { listJoin as "list.join" };
 
-const listFind = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], any>(
+const listFind = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>], any>(
   "list.find",
   {
     metadata: {
@@ -395,7 +395,7 @@ const listFind = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], any>(
 );
 export { listFind as "list.find" };
 
-const listMap = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], any[]>(
+const listMap = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>], any[]>(
   "list.map",
   {
     metadata: {
@@ -427,7 +427,7 @@ const listMap = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], any[]>(
 );
 export { listMap as "list.map" };
 
-const listFilter = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], any[]>(
+const listFilter = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>], any[]>(
   "list.filter",
   {
     metadata: {
@@ -461,7 +461,7 @@ const listFilter = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], any[]>(
 );
 export { listFilter as "list.filter" };
 
-const listReduce = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>, ScriptValue<any>], any>(
+const listReduce = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>, ScriptValue<unknown>], any>(
   "list.reduce",
   {
     metadata: {
@@ -494,7 +494,7 @@ const listReduce = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>, ScriptVal
 );
 export { listReduce as "list.reduce" };
 
-const listFlatMap = defineOpcode<[ScriptValue<any[]>, ScriptValue<any>], any[]>(
+const listFlatMap = defineOpcode<[ScriptValue<readonly unknown[]>, ScriptValue<unknown>], any[]>(
   "list.flatMap",
   {
     metadata: {

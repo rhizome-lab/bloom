@@ -7,7 +7,7 @@ import { defineOpcode, ScriptValue } from "../def";
 
 const DISALLOWED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
-const objNew = defineOpcode<[ScriptValue<string>, ScriptValue<any>, ...ScriptValue<any>[]], any>(
+const objNew = defineOpcode<[ScriptValue<string>, ScriptValue<unknown>, ...ScriptValue<unknown>[]], any>(
   "obj.new",
   {
     metadata: {
@@ -40,7 +40,7 @@ const objNew = defineOpcode<[ScriptValue<string>, ScriptValue<any>, ...ScriptVal
 );
 export { objNew as "obj.new" };
 
-const objKeys = defineOpcode<[ScriptValue<any>], string[]>(
+const objKeys = defineOpcode<[ScriptValue<unknown>], string[]>(
   "obj.keys",
   {
     metadata: {
@@ -66,7 +66,7 @@ const objKeys = defineOpcode<[ScriptValue<any>], string[]>(
 );
 export { objKeys as "obj.keys" };
 
-const objValues = defineOpcode<[ScriptValue<any>], any[]>(
+const objValues = defineOpcode<[ScriptValue<unknown>], any[]>(
   "obj.values",
   {
     metadata: {
@@ -92,7 +92,7 @@ const objValues = defineOpcode<[ScriptValue<any>], any[]>(
 );
 export { objValues as "obj.values" };
 
-const objEntries = defineOpcode<[ScriptValue<any>], [string, any][]>(
+const objEntries = defineOpcode<[ScriptValue<unknown>], [string, any][]>(
   "obj.entries",
   {
     metadata: {
@@ -118,7 +118,7 @@ const objEntries = defineOpcode<[ScriptValue<any>], [string, any][]>(
 );
 export { objEntries as "obj.entries" };
 
-const objGet = defineOpcode<[ScriptValue<any>, ScriptValue<string>], any>(
+const objGet = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], any>(
   "obj.get",
   {
     metadata: {
@@ -156,7 +156,7 @@ const objGet = defineOpcode<[ScriptValue<any>, ScriptValue<string>], any>(
 );
 export { objGet as "obj.get" };
 
-const objSet = defineOpcode<[ScriptValue<any>, ScriptValue<string>, ScriptValue<any>], any>(
+const objSet = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>, ScriptValue<unknown>], any>(
   "obj.set",
   {
     metadata: {
@@ -197,7 +197,7 @@ const objSet = defineOpcode<[ScriptValue<any>, ScriptValue<string>, ScriptValue<
 );
 export { objSet as "obj.set" };
 
-const objHas = defineOpcode<[ScriptValue<any>, ScriptValue<string>], boolean>(
+const objHas = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], boolean>(
   "obj.has",
   {
     metadata: {
@@ -232,7 +232,7 @@ const objHas = defineOpcode<[ScriptValue<any>, ScriptValue<string>], boolean>(
 );
 export { objHas as "obj.has" };
 
-const objDel = defineOpcode<[ScriptValue<any>, ScriptValue<string>], boolean>(
+const objDel = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], boolean>(
   "obj.del",
   {
     metadata: {
@@ -271,7 +271,7 @@ const objDel = defineOpcode<[ScriptValue<any>, ScriptValue<string>], boolean>(
 );
 export { objDel as "obj.del" };
 
-const objMerge = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any>[]], any>(
+const objMerge = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>, ...ScriptValue<unknown>[]], any>(
   "obj.merge",
   {
     metadata: {
@@ -300,7 +300,7 @@ const objMerge = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValu
 );
 export { objMerge as "obj.merge" };
 
-const objMap = defineOpcode<[ScriptValue<any>, ScriptValue<any>], any>(
+const objMap = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>], any>(
   "obj.map",
   {
     metadata: {
@@ -341,7 +341,7 @@ const objMap = defineOpcode<[ScriptValue<any>, ScriptValue<any>], any>(
 );
 export { objMap as "obj.map" };
 
-const objFilter = defineOpcode<[ScriptValue<any>, ScriptValue<any>], any>(
+const objFilter = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>], any>(
   "obj.filter",
   {
     metadata: {
@@ -377,7 +377,7 @@ const objFilter = defineOpcode<[ScriptValue<any>, ScriptValue<any>], any>(
 );
 export { objFilter as "obj.filter" };
 
-const objReduce = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ScriptValue<any>], any>(
+const objReduce = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>, ScriptValue<unknown>], any>(
   "obj.reduce",
   {
     metadata: {
@@ -412,7 +412,7 @@ const objReduce = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ScriptValue<
 );
 export { objReduce as "obj.reduce" };
 
-const objFlatMap = defineOpcode<[ScriptValue<any>, ScriptValue<any>], any>(
+const objFlatMap = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>], any>(
   "obj.flatMap",
   {
     metadata: {

@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { ScriptValue } from "./scripting/def";
 
 /**
  * Represents a game entity.
@@ -13,7 +14,7 @@ export type Entity = {
    * Resolved properties (merged from prototype and instance).
    * Contains arbitrary game data like description, adjectives, custom_css.
    */
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 /**
@@ -101,7 +102,7 @@ export interface Verb {
   /** The name of the verb (command) */
   name: string;
   /** The compiled S-expression code for the verb */
-  code: unknown; // JSON
+  code: ScriptValue<any>;
   /** Permission settings for the verb */
   permissions: Record<string, unknown>;
 }
@@ -187,7 +188,7 @@ export function getVerb(entityId: number, name: string): Verb | null {
 export function addVerb(
   entityId: number,
   name: string,
-  code: any,
+  code: ScriptValue<unknown>,
   permissions: Record<string, any> = { call: "public" },
 ) {
   db.query(

@@ -15,9 +15,9 @@ import {
   registerLibrary,
   ScriptError,
 } from "./interpreter";
-import { ListLibrary } from "./lib/list";
+import * as Core from "./lib/core";
+import * as List from "./lib/list";
 import { beforeAll } from "bun:test";
-import { CoreLibrary } from "./lib/core";
 import { mockEntity } from "../mock";
 
 const checkPermissionMock = mock(() => true);
@@ -27,8 +27,8 @@ mock.module("../permissions", () => ({
 
 describe("Interpreter", () => {
   beforeAll(() => {
-    registerLibrary(CoreLibrary);
-    registerLibrary(ListLibrary);
+    registerLibrary(Core);
+    registerLibrary(List);
   });
 
   const caller = mockEntity(1);
@@ -58,41 +58,46 @@ describe("Interpreter", () => {
   });
 
   test("math", async () => {
-    expect(await evaluate(["+", 1, 2], ctx)).toBe(3);
-    expect(await evaluate(["-", 5, 3], ctx)).toBe(2);
-    expect(await evaluate(["*", 2, 3], ctx)).toBe(6);
-    expect(await evaluate(["/", 6, 2], ctx)).toBe(3);
+    expect(await evaluate(Core["+"](1, 2), ctx)).toBe(3);
+    expect(await evaluate(Core["-"](5, 3), ctx)).toBe(2);
+    expect(await evaluate(Core["*"](2, 3), ctx)).toBe(6);
+    expect(await evaluate(Core["/"](6, 2), ctx)).toBe(3);
+  });
+
+  test("math extended", async () => {
+    expect(await evaluate(Core["%"](10, 3), ctx)).toBe(1);
+    expect(await evaluate(Core["^"](2, 3), ctx)).toBe(8);
   });
 
   test("logic", async () => {
-    expect(await evaluate(["and", true, true], ctx)).toBe(true);
-    expect(await evaluate(["or", true, false], ctx)).toBe(true);
-    expect(await evaluate(["not", true], ctx)).toBe(false);
-    expect(await evaluate(["==", 1, 1], ctx)).toBe(true);
-    expect(await evaluate([">", 2, 1], ctx)).toBe(true);
+    expect(await evaluate(Core["and"](true, true), ctx)).toBe(true);
+    expect(await evaluate(Core["or"](true, false), ctx)).toBe(true);
+    expect(await evaluate(Core["not"](true), ctx)).toBe(false);
+    expect(await evaluate(Core["=="](1, 1), ctx)).toBe(true);
+    expect(await evaluate(Core[">"](2, 1), ctx)).toBe(true);
   });
 
   test("variables", async () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(["let", "x", 10], localCtx);
-    expect(await evaluate(["var", "x"], localCtx)).toBe(10);
+    await evaluate(Core["let"]("x", 10), localCtx);
+    expect(await evaluate(Core["var"]("x"), localCtx)).toBe(10);
   });
 
   test("control flow", async () => {
-    expect(await evaluate(["if", true, 1, 2], ctx)).toBe(1);
-    expect(await evaluate(["if", false, 1, 2], ctx)).toBe(2);
+    expect(await evaluate(Core["if"](true, 1, 2), ctx)).toBe(1);
+    expect(await evaluate(Core["if"](false, 1, 2), ctx)).toBe(2);
 
-    expect(await evaluate(["seq", 1, 2, 3], ctx)).toBe(3);
+    expect(await evaluate(Core["seq"](1, 2, 3), ctx)).toBe(3);
   });
 
   test("actions", async () => {
-    await evaluate(["tell", "me", "hello"], ctx);
+    await evaluate(Core["tell"]("me", "hello"), ctx);
     expect(sys.send).toHaveBeenCalledWith({ type: "message", text: "hello" });
 
-    await evaluate(["move", "this", "me"], ctx);
+    await evaluate(Core["move"]("this", "me"), ctx);
     expect(sys.move).toHaveBeenCalledWith(target.id, caller.id);
 
-    await evaluate(["destroy", "this"], ctx);
+    await evaluate(Core["destroy"]("this"), ctx);
     expect(sys.destroy).toHaveBeenCalledWith(target.id);
   });
 
@@ -131,10 +136,10 @@ describe("Interpreter", () => {
     );
 
     // prop
-    expect(await evaluate(["prop", "this", "foo"], ctx)).toBe("bar");
+    expect(await evaluate(Core["prop"]("this", "foo"), ctx)).toBe("bar");
 
     // set_prop
-    await evaluate(["set_prop", "this", "foo", "baz"], ctx);
+    await evaluate(Core["set_prop"]("this", "foo", "baz"), ctx);
 
     // Verify DB update
     const row = db
@@ -162,11 +167,6 @@ describe("Interpreter", () => {
     expect(await evaluate(script, ctx)).toBe(6);
   });
 
-  test("math extended", async () => {
-    expect(await evaluate(["%", 10, 3], ctx)).toBe(1);
-    expect(await evaluate(["^", 2, 3], ctx)).toBe(8);
-  });
-
   test("create opcode", async () => {
     const ctxWithCreate = {
       ...ctx,
@@ -181,6 +181,7 @@ describe("Interpreter", () => {
   test("errors", async () => {
     // Unknown opcode
     try {
+      // @ts-expect-error
       await evaluate(["unknown_op"], ctx);
       expect(true).toBe(false);
     } catch (e: any) {
@@ -190,7 +191,7 @@ describe("Interpreter", () => {
     // Permission denied (prop)
     checkPermissionMock.mockReturnValue(false);
     try {
-      await evaluate(["prop", "this", "foo"], ctx);
+      await evaluate(Core["prop"]("this", "foo"), ctx);
       expect(true).toBe(false);
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -199,21 +200,21 @@ describe("Interpreter", () => {
   });
 
   test("comparisons", async () => {
-    expect(await evaluate(["!=", 1, 2], ctx)).toBe(true);
-    expect(await evaluate(["<", 1, 2], ctx)).toBe(true);
-    expect(await evaluate([">=", 2, 2], ctx)).toBe(true);
-    expect(await evaluate(["<=", 2, 2], ctx)).toBe(true);
+    expect(await evaluate(Core["!="](1, 2), ctx)).toBe(true);
+    expect(await evaluate(Core["<"](1, 2), ctx)).toBe(true);
+    expect(await evaluate(Core[">="](2, 2), ctx)).toBe(true);
+    expect(await evaluate(Core["<="](2, 2), ctx)).toBe(true);
   });
 
   test("if else", async () => {
-    expect(await evaluate(["if", false, "then", "else"], ctx)).toBe("else");
-    expect(await evaluate(["if", false, "then"], ctx)).toBe(null); // No else branch
+    expect(await evaluate(Core["if"](false, "then", "else"), ctx)).toBe("else");
+    expect(await evaluate(Core["if"](false, "then"), ctx)).toBe(null); // No else branch
   });
 
   test("var retrieval", async () => {
     const localCtx = { ...ctx, vars: { x: 10 } };
-    expect(await evaluate(["var", "x"], localCtx)).toBe(10);
-    expect(await evaluate(["var", "missing"], localCtx)).toBe(null); // Variable not found
+    expect(await evaluate(Core["var"]("x"), localCtx)).toBe(10);
+    expect(await evaluate(Core["var"]("missing"), localCtx)).toBe(null); // Variable not found
   });
 
   test("permission errors", async () => {
@@ -221,7 +222,7 @@ describe("Interpreter", () => {
 
     // set_prop
     try {
-      await evaluate(["set_prop", "this", "foo", "bar"], ctx);
+      await evaluate(Core["set_prop"]("this", "foo", "bar"), ctx);
       throw new Error();
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -229,7 +230,7 @@ describe("Interpreter", () => {
 
     // move
     try {
-      await evaluate(["move", "this", "this"], ctx);
+      await evaluate(Core["move"]("this", "this"), ctx);
       throw new Error();
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -237,7 +238,7 @@ describe("Interpreter", () => {
 
     // destroy
     try {
-      await evaluate(["destroy", "this"], ctx);
+      await evaluate(Core["destroy"]("this"), ctx);
       throw new Error();
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -249,7 +250,7 @@ describe("Interpreter", () => {
   test("tell other", async () => {
     // Should return null if target is not visible to the player
     expect(
-      await evaluate(["tell", "other", "msg"], ctx).catch((e) => e),
+      await evaluate(Core["tell"]("other", "msg"), ctx).catch((e) => e),
     ).toBeInstanceOf(ScriptError);
   });
 
@@ -262,7 +263,7 @@ describe("Interpreter", () => {
     // We need to ensure permission check passes
     checkPermissionMock.mockReturnValue(true);
     // Should not error
-    await evaluate(["destroy", "this"], ctxFallback);
+    await evaluate(Core["destroy"]("this"), ctxFallback);
   });
 
   test("create missing sys", async () => {
@@ -270,7 +271,7 @@ describe("Interpreter", () => {
     const ctxMissing = { ...ctx, sys: sysWithoutCreate };
 
     expect(
-      await evaluate(["create", {}], ctxMissing as never).catch((e) => e),
+      await evaluate(Core["create"]({}), ctxMissing as never).catch((e) => e),
     ).toBeInstanceOf(ScriptError);
   });
 });

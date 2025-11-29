@@ -20,9 +20,10 @@ import {
   registerLibrary,
   createScriptContext,
 } from "./interpreter";
-import { ListLibrary } from "./lib/list";
-import { StringLibrary } from "./lib/string";
-import { ObjectLibrary } from "./lib/object";
+import * as Core from "./lib/core";
+import * as List from "./lib/list";
+import * as String from "./lib/string";
+import * as Object from "./lib/object";
 import { seedHotel } from "../seeds/hotel";
 import {
   createEntity,
@@ -31,16 +32,13 @@ import {
   deleteEntity,
   Entity,
   getVerb,
-  getContents,
 } from "../repo";
-import { CoreLibrary } from "./lib/core";
 
 describe("NPC Interactions", () => {
-  // Register libraries
-  registerLibrary(CoreLibrary);
-  registerLibrary(ListLibrary);
-  registerLibrary(StringLibrary);
-  registerLibrary(ObjectLibrary);
+  registerLibrary(Core);
+  registerLibrary(List);
+  registerLibrary(String);
+  registerLibrary(Object);
 
   let hotelLobby: Entity;
   let caller: Entity;

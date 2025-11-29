@@ -8,7 +8,7 @@ import { updateEntity } from "../../repo";
 import { defineOpcode, ScriptValue } from "../def";
 
 // Control Flow
-const seq = defineOpcode<[ScriptValue<any>[]], any>(
+const seq = defineOpcode<ScriptValue<unknown>[], any>(
   "seq",
   {
     metadata: {
@@ -29,7 +29,7 @@ const seq = defineOpcode<[ScriptValue<any>[]], any>(
 );
 export { seq };
 
-const ifOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<any>, ScriptValue<any>?], any>(
+const ifOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<unknown>, ScriptValue<unknown>?], any>(
   "if",
   {
     metadata: {
@@ -59,7 +59,7 @@ const ifOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<any>, ScriptValue<a
 );
 export { ifOp as "if" };
 
-const whileOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<any>], any>(
+const whileOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<unknown>], any>(
   "while",
   {
     metadata: {
@@ -87,7 +87,7 @@ const whileOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<any>], any>(
 );
 export { whileOp as "while" };
 
-const forOp = defineOpcode<[string, ScriptValue<any[]>, ScriptValue<any>], any>(
+const forOp = defineOpcode<[string, ScriptValue<readonly unknown[]>, ScriptValue<unknown>], any>(
   "for",
   {
     metadata: {
@@ -190,7 +190,7 @@ const prop = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], any>(
       if (typeof key !== "string") {
         throw new ScriptError("prop: key must be a string");
       }
-      return target["props"][key];
+      return target[key];
     },
   }
 );
@@ -223,7 +223,8 @@ const setProp = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>, ScriptV
         throw new ScriptError("set_prop: property name must be a string");
       }
       const val = await evaluate(valExpr, ctx);
-      updateEntity(target.id, { props: { ...target["props"], [prop]: val } });
+      const { id: _, ...props } = target;
+      updateEntity(target.id, { ...props, [prop]: val });
     },
   }
 );
@@ -285,8 +286,8 @@ const deleteProp = defineOpcode<[ScriptValue<any>, ScriptValue<string>], void>(
       if (typeof prop !== "string") {
         throw new ScriptError("delete_prop: property name must be a string");
       }
-      const { [prop]: _, ...newProps } = target["props"];
-      updateEntity(target.id, { props: newProps });
+      const { [prop]: _, ...newProps } = target;
+      updateEntity(target.id, newProps);
     },
   }
 );
@@ -1077,7 +1078,7 @@ const destroy = defineOpcode<[ScriptValue<any>], void>(
 );
 export { destroy };
 
-const lambda = defineOpcode<[string[], ScriptValue<any>], any>(
+const lambda = defineOpcode<[readonly string[], ScriptValue<unknown>], any>(
   "lambda",
   {
     metadata: {
@@ -1102,7 +1103,7 @@ const lambda = defineOpcode<[string[], ScriptValue<any>], any>(
 );
 export { lambda };
 
-const apply = defineOpcode<[ScriptValue<any>, ...ScriptValue<any>[]], any>(
+const apply = defineOpcode<[ScriptValue<unknown>, ...ScriptValue<unknown>[]], any>(
   "apply",
   {
     metadata: {
@@ -1215,7 +1216,7 @@ const get = defineOpcode<[ScriptValue<any>, ScriptValue<string>], any>(
       if (typeof val === "string") {
         if (val.startsWith("prop:")) {
           const propName = val.substring(5);
-          return target["props"][propName];
+          return target[propName];
         }
         // Special properties
         if (val === "name") return target["name"];

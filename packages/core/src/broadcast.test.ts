@@ -21,7 +21,6 @@ import { createEntity, addVerb, getVerb } from "./repo";
 import { CoreLibrary } from "./scripting/lib/core";
 
 describe("Advanced Items Verification", () => {
-  // Register libraries
   registerLibrary(CoreLibrary);
 
   it("should broadcast message", async () => {

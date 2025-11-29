@@ -123,7 +123,7 @@ const timeToTimestamp = defineOpcode<[ScriptValue<string>], number>(
 );
 export { timeToTimestamp as "time.to_timestamp" };
 
-const timeOffset = defineOpcode<[ScriptValue<number>, ScriptValue<string>, ScriptValue<string>?], string>(
+const timeOffset = defineOpcode<[ScriptValue<number>, ScriptValue<"day" | "days" | "hour" | "hours" | "minute" | "minutes" | "month" | "months" | "second" | "seconds" | "year" | "years">, ScriptValue<string>?], string>(
   "time.offset",
   {
     metadata: {

@@ -20,9 +20,10 @@ import {
   registerLibrary,
   createScriptContext,
 } from "./interpreter";
-import { ListLibrary } from "./lib/list";
-import { StringLibrary } from "./lib/string";
-import { ObjectLibrary } from "./lib/object";
+import * as Core from "./lib/core";
+import * as List from "./lib/list";
+import * as String from "./lib/string";
+import * as Object from "./lib/object";
 import { seedHotel } from "../seeds/hotel";
 import {
   createEntity,
@@ -34,6 +35,11 @@ import {
 } from "../repo";
 
 describe("Hotel Scripting", () => {
+  registerLibrary(Core);
+  registerLibrary(List);
+  registerLibrary(String);
+  registerLibrary(Object);
+
   let hotelLobby: Entity;
   let caller: Entity;
   let messages: string[] = [];
@@ -48,17 +54,12 @@ describe("Hotel Scripting", () => {
 
     messages = [];
 
-    // Register libraries
-    registerLibrary(ListLibrary);
-    registerLibrary(StringLibrary);
-    registerLibrary(ObjectLibrary);
-
     // Setup Sys Context
     sys = {
       move: (id: number, dest: number) => {
         updateEntity(id, { location_id: dest });
         if (caller && caller.id === id) {
-          caller.location_id = dest;
+          caller["location_id"] = dest;
         }
       },
       create: createEntity,
@@ -128,7 +129,7 @@ describe("Hotel Scripting", () => {
     );
 
     caller = getEntity(caller.id)!;
-    expect(caller.location_id).toBe(hotelLobby.id); // Back in lobby
+    expect(caller["location_id"]).toBe(hotelLobby.id); // Back in lobby
     expect(getEntity(roomId)).toBeNull(); // Destroyed
   });
 
@@ -165,7 +166,7 @@ describe("Hotel Scripting", () => {
 
     // Verify state
     elevator = getEntity(elevator.id)!;
-    expect(elevator.props["current_floor"]).toBe(5);
+    expect(elevator["current_floor"]).toBe(5);
 
     // 3. Out (to Floor 5 Lobby)
     const outVerb = getVerb(elevator.id, "out");
@@ -175,52 +176,51 @@ describe("Hotel Scripting", () => {
     }
 
     caller = getEntity(caller.id)!;
-    const floorLobbyId = caller.location_id!;
+    const floorLobbyId = caller["location_id"];
     expect(floorLobbyId).not.toBe(elevator.id);
-    const floorLobby = getEntity(floorLobbyId)!;
-    expect(floorLobby.name).toBe("Floor 5 Lobby");
+    const floorLobby = getEntity(floorLobbyId as never)!;
+    expect(floorLobby["name"]).toBe("Floor 5 Lobby");
 
     // 4. West (to West Wing)
-    const westVerb = getVerb(floorLobby.prototype_id!, "west");
+    const westVerb = getVerb(floorLobby.id, "west");
     expect(westVerb).toBeDefined();
     if (westVerb) {
       await evaluate(westVerb.code, { ...ctx, this: floorLobby, args: [] });
     }
 
     caller = getEntity(caller.id)!;
-    const wingId = caller.location_id!;
-    const wing = getEntity(wingId)!;
-    expect(wing.name).toBe("Floor 5 West Wing");
+    const wingId = caller["location_id"];
+    const wing = getEntity(wingId as never)!;
+    expect(wing["name"]).toBe("Floor 5 West Wing");
 
     // 5. Enter 5 (to Room)
-    const enterVerb = getVerb(wing.prototype_id!, "enter");
+    const enterVerb = getVerb(wing.id, "enter");
     expect(enterVerb).toBeDefined();
     if (enterVerb) {
       await evaluate(enterVerb.code, { ...ctx, this: wing, args: ["5"] });
     }
 
     caller = getEntity(caller.id)!;
-    const roomId = caller.location_id!;
-    const room = getEntity(roomId)!;
-    expect(room.name).toBe("Room 5");
+    const roomId = caller["location_id"];
+    const room = getEntity(roomId as never)!;
+    expect(room["name"]).toBe("Room 5");
 
     // Verify furnishings
-    const { getContents } = await import("../repo");
-    const contents = getContents(roomId);
-    expect(contents.some((e) => e.name === "Bed")).toBe(true);
-    expect(contents.some((e) => e.name === "Lamp")).toBe(true);
-    expect(contents.some((e) => e.name === "Chair")).toBe(true);
+    const contents = room["contents"] as Entity[];
+    expect(contents.some((e) => e["name"] === "Bed")).toBe(true);
+    expect(contents.some((e) => e["name"] === "Lamp")).toBe(true);
+    expect(contents.some((e) => e["name"] === "Chair")).toBe(true);
 
     // 6. Leave (back to Wing)
-    const leaveVerb = getVerb(room.prototype_id!, "leave");
+    const leaveVerb = getVerb(room.id, "leave");
     expect(leaveVerb).toBeDefined();
     if (leaveVerb) {
       await evaluate(leaveVerb.code, { ...ctx, this: room, args: [] });
     }
 
     caller = getEntity(caller.id)!;
-    expect(caller.location_id).toBe(wingId);
-    expect(getEntity(roomId)).toBeNull(); // Room destroyed
+    expect(caller["location_id"]).toBe(wingId);
+    expect(getEntity(roomId as never)).toBeNull(); // Room destroyed
 
     // Verify furnishings destroyed (by checking if they exist in DB)
     // Since we don't have IDs, we can check count of entities or just assume if room is gone and we used destroy, they are gone.
@@ -229,29 +229,29 @@ describe("Hotel Scripting", () => {
     // Actually, since we are in-memory and reset DB, we can check total entity count or query by name.
     // But simpler: just trust the script logic if test passes.
     // Or we can capture IDs before leaving.
-    const bed = contents.find((e) => e.name === "Bed")!;
+    const bed = contents.find((e) => e["name"] === "Bed")!;
     expect(getEntity(bed.id)).toBeNull();
 
     // 7. Back (back to Floor Lobby)
-    const backVerb = getVerb(wing.prototype_id!, "back");
+    const backVerb = getVerb(wing.id, "back");
     expect(backVerb).toBeDefined();
     if (backVerb) {
       await evaluate(backVerb.code, { ...ctx, this: wing, args: [] });
     }
 
     caller = getEntity(caller.id)!;
-    expect(caller.location_id).toBe(floorLobbyId);
-    expect(getEntity(wingId)).toBeNull(); // Wing destroyed
+    expect(caller["location_id"]).toBe(floorLobbyId);
+    expect(getEntity(wingId as never)).toBeNull(); // Wing destroyed
 
     // 8. Elevator (back to Elevator)
-    const elevatorVerb = getVerb(floorLobby.prototype_id!, "elevator");
+    const elevatorVerb = getVerb(floorLobby.id, "elevator");
     expect(elevatorVerb).toBeDefined();
     if (elevatorVerb) {
       await evaluate(elevatorVerb.code, { ...ctx, this: floorLobby, args: [] });
     }
 
     caller = getEntity(caller.id)!;
-    expect(caller.location_id).toBe(elevator.id);
-    expect(getEntity(floorLobbyId)).toBeNull(); // Lobby destroyed
+    expect(caller["location_id"]).toBe(elevator.id);
+    expect(getEntity(floorLobbyId as never)).toBeNull(); // Lobby destroyed
   });
 });

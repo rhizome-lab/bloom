@@ -1,12 +1,22 @@
 import { describe, it, expect, beforeEach } from "bun:test";
-import { evaluate, registerLibrary, registerOpcode } from "./interpreter";
-import { ListLibrary } from "./lib/list";
-import { StringLibrary } from "./lib/string";
-import { ObjectLibrary } from "./lib/object";
+import {
+  createScriptContext,
+  evaluate,
+  registerLibrary,
+  registerOpcode,
+} from "./interpreter";
+import * as Core from "./lib/core";
+import * as List from "./lib/list";
+import * as String from "./lib/string";
+import * as Object from "./lib/object";
 import { Entity } from "../repo";
-import { CoreLibrary } from "./lib/core";
 
 describe("Book Item Scripting", () => {
+  registerLibrary(Core);
+  registerLibrary(List);
+  registerLibrary(String);
+  registerLibrary(Object);
+
   let book: Entity;
   let caller: Entity;
   let messages: string[] = [];
@@ -14,12 +24,6 @@ describe("Book Item Scripting", () => {
   beforeEach(() => {
     // Mock system context
     messages = [];
-
-    // Register libraries
-    registerLibrary(CoreLibrary);
-    registerLibrary(ListLibrary);
-    registerLibrary(StringLibrary);
-    registerLibrary(ObjectLibrary);
 
     // Mock tell opcode since we don't have full repo/sys setup in this isolated test
     registerOpcode("tell", async (args, ctx) => {
@@ -54,151 +58,158 @@ describe("Book Item Scripting", () => {
   });
 
   it("should list chapters", async () => {
-    const script = [
-      "seq",
-      ["let", "chapters", ["prop", "this", "chapters"]],
-      [
-        "tell",
+    const script = Core["seq"](
+      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["tell"](
         "me",
-        [
-          "str.join",
-          [
-            "list.map",
-            ["var", "chapters"],
-            ["lambda", ["c"], ["obj.get", ["var", "c"], "title"]],
-          ],
+        String["str.join"](
+          List["list.map"](
+            Core["var"]("chapters"),
+            Core["lambda"](["c"], Object["obj.get"](Core["var"]("c"), "title")),
+          ),
           "\n",
-        ],
-      ],
-    ];
+        ),
+      ),
+    );
 
-    await evaluate(script, { caller, this: book, args: [], warnings: [] });
+    await evaluate(script, createScriptContext({ caller, this: book }));
     expect(messages[0]).toBe("Chapter 1\nChapter 2");
   });
 
   it("should read a chapter", async () => {
-    const script = [
-      "seq",
-      ["let", "index", ["arg", 0]],
-      ["let", "chapters", ["prop", "this", "chapters"]],
-      ["let", "chapter", ["list.get", ["var", "chapters"], ["var", "index"]]],
-      [
-        "if",
-        ["var", "chapter"],
-        [
-          "tell",
+    const script = Core["seq"](
+      Core["let"]("index", Core["arg"](0)),
+      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["let"](
+        "chapter",
+        List["list.get"](Core["var"]("chapters"), Core["var"]("index")),
+      ),
+      Core["if"](
+        Core["var"]("chapter"),
+        Core["tell"](
           "me",
-          [
-            "str.concat",
+          String["str.concat"](
             "Chapter: ",
-            ["obj.get", ["var", "chapter"], "title"],
+            Object["obj.get"](Core["var"]("chapter"), "title"),
             "\n\n",
-            ["obj.get", ["var", "chapter"], "content"],
-          ],
-        ],
-        ["tell", "me", "Chapter not found."],
-      ],
-    ];
+            Object["obj.get"](Core["var"]("chapter"), "content"),
+          ),
+        ),
+        Core["tell"]("me", "Chapter not found."),
+      ),
+    );
 
     // Read Chapter 1 (index 0)
-    await evaluate(script, { caller, this: book, args: [0], warnings: [] });
+    await evaluate(
+      script,
+      createScriptContext({ caller, this: book, args: [0] }),
+    );
     expect(messages[0]).toContain("Chapter: Chapter 1");
     expect(messages[0]).toContain("Content 1");
 
     // Read invalid chapter
     messages = [];
-    await evaluate(script, { caller, this: book, args: [99], warnings: [] });
+    await evaluate(
+      script,
+      createScriptContext({ caller, this: book, args: [99] }),
+    );
     expect(messages[0]).toBe("Chapter not found.");
   });
 
   it("should add a chapter", async () => {
-    const script = [
-      "seq",
-      ["let", "title", ["arg", 0]],
-      ["let", "content", ["arg", 1]],
-      ["let", "chapters", ["prop", "this", "chapters"]],
-      ["let", "newChapter", {}],
-      ["obj.set", ["var", "newChapter"], "title", ["var", "title"]],
-      ["obj.set", ["var", "newChapter"], "content", ["var", "content"]],
-      ["list.push", ["var", "chapters"], ["var", "newChapter"]],
-      ["set_prop", "this", "chapters", ["var", "chapters"]],
-      ["tell", "me", "Chapter added."],
-    ];
+    const script = Core["seq"](
+      Core["let"]("title", Core["arg"]([0])),
+      Core["let"]("content", Core["arg"]([1])),
+      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["let"]("newChapter", {}),
+      Object["obj.set"](
+        Core["var"]("newChapter"),
+        "title",
+        Core["var"]("title"),
+      ),
+      Object["obj.set"](
+        Core["var"]("newChapter"),
+        "content",
+        Core["var"]("content"),
+      ),
+      List["list.push"](Core["var"]("chapters"), Core["var"]("newChapter")),
+      Core["set_prop"]("this", "chapters", Core["var"]("chapters")),
+      Core["tell"]("me", "Chapter added."),
+    );
 
-    await evaluate(script, {
-      caller,
-      this: book,
-      args: ["Chapter 3", "Content 3"],
-      warnings: [],
-    });
+    await evaluate(
+      script,
+      createScriptContext({
+        caller,
+        this: book,
+        args: ["Chapter 3", "Content 3"],
+      }),
+    );
     expect(messages[0]).toBe("Chapter added.");
     expect(book.props["chapters"].length).toBe(3);
     expect(book.props["chapters"][2].title).toBe("Chapter 3");
   });
 
   it("should search chapters", async () => {
-    const script = [
-      "seq",
-      ["let", "query", ["arg", 0]],
-      ["let", "chapters", ["prop", "this", "chapters"]],
-      [
-        "let",
+    const script = Core["seq"](
+      Core["let"]("query", Core["arg"](0)),
+      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["let"](
         "results",
-        [
-          "list.filter",
-          ["var", "chapters"],
-          [
-            "lambda",
+        List["list.filter"](
+          Core["var"]("chapters"),
+          Core["lambda"](
             ["c"],
-            [
-              "or",
-              [
-                "str.includes",
-                ["str.lower", ["obj.get", ["var", "c"], "title"]],
-                ["str.lower", ["var", "query"]],
-              ],
-              [
-                "str.includes",
-                ["str.lower", ["obj.get", ["var", "c"], "content"]],
-                ["str.lower", ["var", "query"]],
-              ],
-            ],
-          ],
-        ],
-      ],
-      [
-        "tell",
+            Core["or"](
+              String["str.includes"](
+                String["str.lower"](
+                  Object["obj.get"](Core["var"]("c"), "title"),
+                ),
+                String["str.lower"](Core["var"]("query")),
+              ),
+              String["str.includes"](
+                String["str.lower"](
+                  Object["obj.get"](Core["var"]("c"), "content"),
+                ),
+                String["str.lower"](Core["var"]("query")),
+              ),
+            ),
+          ),
+        ),
+      ),
+      Core["tell"](
         "me",
-        [
-          "str.concat",
+        String["str.concat"](
           "Found ",
-          ["list.len", ["var", "results"]],
+          List["list.len"](Core["var"]("results")),
           " matches:\n",
-          [
-            "str.join",
-            [
-              "list.map",
-              ["var", "results"],
-              ["lambda", ["c"], ["obj.get", ["var", "c"], "title"]],
-            ],
+          List["list.join"](
+            List["list.map"](
+              Core["var"]("results"),
+              Core["lambda"](
+                ["c"],
+                Object["obj.get"](Core["var"]("c"), "title"),
+              ),
+            ),
             "\n",
-          ],
-        ],
-      ],
-    ];
+          ),
+        ),
+      ),
+    );
 
     // Search for "Content" (should match all)
-    await evaluate(script, {
-      caller,
-      this: book,
-      args: ["Content"],
-      warnings: [],
-    });
+    await evaluate(
+      script,
+      createScriptContext({ caller, this: book, args: ["Content"] }),
+    );
     expect(messages[0]).toContain("Found 2 matches");
 
     // Search for "2" (should match Chapter 2)
     messages = [];
-    await evaluate(script, { caller, this: book, args: ["2"], warnings: [] });
+    await evaluate(
+      script,
+      createScriptContext({ caller, this: book, args: ["2"] }),
+    );
     expect(messages[0]).toContain("Found 1 matches");
     expect(messages[0]).toContain("Chapter 2");
   });

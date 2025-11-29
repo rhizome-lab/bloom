@@ -1,8 +1,9 @@
 import { describe, test, expect, mock, beforeAll } from "bun:test";
 import { evaluate, registerLibrary, ScriptContext } from "./interpreter";
-import { StringLibrary } from "./lib/string";
-import { ListLibrary } from "./lib/list";
-import { ObjectLibrary } from "./lib/object";
+import * as Core from "./lib/core";
+import * as String from "./lib/string";
+import * as List from "./lib/list";
+import * as Object from "./lib/object";
 import { mockEntity } from "../mock";
 
 const ctx: ScriptContext = {
@@ -28,16 +29,17 @@ const ctx: ScriptContext = {
 
 describe("Interpreter Libraries", () => {
   beforeAll(() => {
-    registerLibrary(StringLibrary);
-    registerLibrary(ListLibrary);
-    registerLibrary(ObjectLibrary);
+    registerLibrary(Core);
+    registerLibrary(String);
+    registerLibrary(List);
+    registerLibrary(Object);
   });
 
   describe("Lambda & HOF", () => {
     test("lambda & apply", async () => {
       // (lambda (x) (+ x 1))
-      const inc = ["lambda", ["x"], ["+", ["var", "x"], 1]];
-      expect(await evaluate(["apply", inc, 1], ctx)).toBe(2);
+      const inc = Core["lambda"](["x"], Core["+"](Core["var"]("x"), 1));
+      expect(await evaluate(Core["apply"](inc, 1), ctx)).toBe(2);
     });
 
     test("closure capture", async () => {
@@ -45,12 +47,15 @@ describe("Interpreter Libraries", () => {
       // (let addX (lambda (y) (+ x y)))
       // (apply addX 5) -> 15
       const localCtx = { ...ctx, locals: {} };
-      await evaluate(["let", "x", 10], localCtx);
+      await evaluate(Core["let"]("x", 10), localCtx);
       await evaluate(
-        ["let", "addX", ["lambda", ["y"], ["+", ["var", "x"], ["var", "y"]]]],
+        Core["let"](
+          "addX",
+          Core["lambda"](["y"], Core["+"](Core["var"]("x"), Core["var"]("y"))),
+        ),
         localCtx,
       );
-      expect(await evaluate(["apply", ["var", "addX"], 5], localCtx)).toBe(15);
+      expect(await evaluate(Core["apply"]("addX", 5), localCtx)).toBe(15);
     });
   });
 
@@ -58,7 +63,7 @@ describe("Interpreter Libraries", () => {
     test("call", async () => {
       // call(target, verb, args...)
       // We mocked sys.call to return "called " + args.join(",") if target=2 and verb="test"
-      expect(await evaluate(["call", "this", "test", "a", "b"], ctx)).toBe(
+      expect(await evaluate(Core["call"]("this", "test", "a", "b"), ctx)).toBe(
         "called a,b",
       );
     });

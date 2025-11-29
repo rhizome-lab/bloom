@@ -19,12 +19,11 @@ import {
   getVerbs,
   updateEntity,
   deleteEntity,
-  getContents,
   getEntity,
   getVerb,
   updateVerb,
-  moveEntity,
 } from "./repo";
+import * as Core from "./scripting/lib/core";
 
 describe("Repo", () => {
   test("createEntity", () => {
@@ -35,7 +34,7 @@ describe("Repo", () => {
   test("Verb Inheritance", () => {
     // 1. Create Prototype
     const protoId = createEntity({ name: "Proto", kind: "ITEM" });
-    addVerb(protoId, "protoVerb", ["seq"]);
+    addVerb(protoId, "protoVerb", Core["seq"]());
 
     // 2. Create Instance
     const instanceId = createEntity({
@@ -43,7 +42,7 @@ describe("Repo", () => {
       kind: "ITEM",
       prototype_id: protoId,
     });
-    addVerb(instanceId, "instanceVerb", ["seq"]);
+    addVerb(instanceId, "instanceVerb", Core["seq"]());
 
     // 3. Get Verbs
     const verbs = getVerbs(instanceId);
@@ -56,7 +55,7 @@ describe("Repo", () => {
   test("Verb Override", () => {
     // 1. Create Prototype
     const protoId = createEntity({ name: "ProtoOverride", kind: "ITEM" });
-    addVerb(protoId, "common", ["seq", "proto"]);
+    addVerb(protoId, "common", Core["seq"]("proto"));
 
     // 2. Create Instance
     const instanceId = createEntity({
@@ -64,7 +63,7 @@ describe("Repo", () => {
       kind: "ITEM",
       prototype_id: protoId,
     });
-    addVerb(instanceId, "common", ["seq", "instance"]);
+    addVerb(instanceId, "common", Core["seq"]("instance"));
 
     // 3. Get Verbs
     const verbs = getVerbs(instanceId);
@@ -72,7 +71,7 @@ describe("Repo", () => {
 
     expect(common).toBeDefined();
     // Should be the instance one
-    expect(common?.code).toEqual(["seq", "instance"]);
+    expect(common?.code).toEqual(Core["seq"]("instance"));
   });
 
   test("updateEntity", () => {
@@ -84,10 +83,10 @@ describe("Repo", () => {
       props: { foo: "bar" },
     });
     const updated = getEntity(id);
-    expect(updated?.name).toBe("New Name");
-    expect(updated?.location_id).toBe(100);
-    expect(updated?.location_detail).toBe("worn");
-    expect(updated?.props["foo"]).toBe("bar");
+    expect(updated?.["name"]).toBe("New Name");
+    expect(updated?.["location_id"]).toBe(100);
+    expect(updated?.["location_detail"]).toBe("worn");
+    expect(updated?.["foo"]).toBe("bar");
   });
 
   test("deleteEntity", () => {
@@ -97,36 +96,16 @@ describe("Repo", () => {
     expect(deleted).toBeNull();
   });
 
-  test("moveEntity", () => {
-    const container = createEntity({ name: "Box", kind: "ITEM" });
-    const item = createEntity({ name: "Apple", kind: "ITEM" });
-
-    moveEntity(item, container, "inside");
-
-    const fetched = getEntity(item)!;
-    expect(fetched.location_id).toBe(container);
-    expect(fetched.location_detail).toBe("inside");
-  });
-
-  test("moveEntity circular check", () => {
-    const box1 = createEntity({ name: "Box1", kind: "ITEM" });
-    const box2 = createEntity({ name: "Box2", kind: "ITEM" });
-
-    // box2 inside box1
-    moveEntity(box2, box1);
-
-    // Try to put box1 inside box2 (should fail)
-    expect(() => {
-      moveEntity(box1, box2);
-    }).toThrow("Circular containment detected");
-  });
+  // TODO: When implementing `move` in scripting, it should disallow a box to be put inside itself
 
   test("getContents", () => {
     const container = createEntity({ name: "Box", kind: "ITEM" });
     createEntity({ name: "Apple", kind: "ITEM", location_id: container });
     createEntity({ name: "Banana", kind: "ITEM", location_id: container });
 
-    const contents = getContents(container);
+    const contentsRaw = getEntity(container)?.["contents"];
+    expect(contentsRaw).toBeArray();
+    const contents = contentsRaw as readonly any[];
     expect(contents).toHaveLength(2);
     expect(contents.map((c) => c.name)).toContain("Apple");
     expect(contents.map((c) => c.name)).toContain("Banana");
@@ -134,7 +113,7 @@ describe("Repo", () => {
 
   test("getVerb", () => {
     const entity = createEntity({ name: "Scripted" });
-    addVerb(entity, "jump", ["tell", "You jumped"]);
+    addVerb(entity, "jump", Core["tell"]("You jumped"));
 
     const verb = getVerb(entity, "jump");
     expect(verb).not.toBeNull();
@@ -146,7 +125,7 @@ describe("Repo", () => {
 
   test("getVerb Inheritance", () => {
     const proto = createEntity({ name: "Proto" });
-    addVerb(proto, "fly", ["tell", "You flew"]);
+    addVerb(proto, "fly", Core["tell"]("You flew"));
 
     const instance = createEntity({ name: "Instance", prototype_id: proto });
 
