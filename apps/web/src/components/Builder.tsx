@@ -81,7 +81,9 @@ export default function Builder() {
       </Show>
 
       <Show when={activeTab() === "script"}>
-        <ScriptEditor />
+        <div class="builder__script-panel">
+          <ScriptEditor />
+        </div>
       </Show>
     </div>
   );

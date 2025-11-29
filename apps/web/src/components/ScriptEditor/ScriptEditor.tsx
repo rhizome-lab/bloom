@@ -83,22 +83,26 @@ export const ScriptEditor: Component = () => {
 
   return (
     <div class="script-editor">
-      <BlockPalette />
-      <div
-        class="script-editor__workspace"
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-      >
-        <div class="script-editor__canvas">
-          <BlockNode
-            node={script()}
-            path={[]}
-            onUpdate={updateNode}
-            onDelete={deleteNode}
-          />
-        </div>
-        <div class="script-editor__json-preview">
-          <pre>{JSON.stringify(script())}</pre>
+      <div class="script-editor__palette">
+        <BlockPalette />
+      </div>
+      <div class="script-editor__workspace-container">
+        <div
+          class="script-editor__workspace"
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+        >
+          <div class="script-editor__canvas">
+            <BlockNode
+              node={script()}
+              path={[]}
+              onUpdate={updateNode}
+              onDelete={deleteNode}
+            />
+          </div>
+          <div class="script-editor__json-preview">
+            <pre>{JSON.stringify(script())}</pre>
+          </div>
         </div>
       </div>
     </div>

@@ -133,9 +133,7 @@ function App() {
       <div class="app__room">
         <RoomPanel />
         <Show when={showBuilder()}>
-          <div class="app__builder-overlay">
-            <Builder />
-          </div>
+          <Builder />
         </Show>
       </div>
 
