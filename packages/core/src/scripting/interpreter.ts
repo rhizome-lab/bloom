@@ -1,7 +1,6 @@
-import { Entity, getContents, getEntity, Verb } from "../repo";
+import { Entity, getEntity, Verb } from "../repo";
 
 export type ScriptSystemContext = {
-  move: (id: number, dest: number) => void;
   create: (data: any) => number;
   send: (msg: unknown) => void;
   destroy?: (id: number) => void;
@@ -12,7 +11,6 @@ export type ScriptSystemContext = {
     args: readonly unknown[],
     warnings: string[],
   ) => Promise<any>;
-  getAllEntities?: () => readonly number[];
   schedule?: (
     entityId: number,
     verb: string,
@@ -27,7 +25,6 @@ export type ScriptSystemContext = {
     args: readonly unknown[],
     excludeEntityId?: number,
   ) => void | Promise<void>;
-  getContents?: (containerId: number) => Promise<readonly Entity[]>;
   getVerbs?: (entityId: number) => Promise<readonly Verb[]>;
   getEntity?: (id: number) => Promise<Entity | null>;
   canEdit?: (playerId: number, entityId: number) => boolean;
@@ -170,8 +167,8 @@ export async function evaluateTarget(
   if (val === "me") return ctx.caller;
   if (val === "this") return ctx.this;
   if (val === "here") {
-    if (ctx.caller.location_id) {
-      return getEntity(ctx.caller.location_id);
+    if (ctx.caller["location"]) {
+      return getEntity(ctx.caller["location"]);
     }
     return null;
   }
@@ -181,22 +178,42 @@ export async function evaluateTarget(
   if (typeof val === "string") {
     // Search in room or inventory
     // 1. Inventory
-    const inventory = getContents(ctx.caller.id);
+    // We assume 'contents' is a list of IDs or Entities
+    // Since we removed getContents, we need to rely on the 'contents' prop
+    // But 'contents' prop might be just IDs.
+    // We need to resolve them to check names.
+
+    const resolveList = async (ids: number[]) => {
+      if (!ids || !Array.isArray(ids)) return [];
+      const entities = [];
+      for (const id of ids) {
+        const e = await getEntity(id);
+        if (e) entities.push(e);
+      }
+      return entities;
+    };
+
+    const inventoryIds = ctx.caller["contents"] || [];
+    const inventory = await resolveList(inventoryIds);
     const item = inventory.find(
-      (e) => e.name.toLowerCase() === val.toLowerCase(),
+      (e) => e["name"]?.toLowerCase() === val.toLowerCase(),
     );
     if (item) return item;
 
     // 2. Room
-    if (ctx.caller.location_id) {
-      const roomContents = getContents(ctx.caller.location_id);
-      const roomItem = roomContents.find(
-        (e) => e.name.toLowerCase() === val.toLowerCase(),
-      );
-      if (roomItem) return roomItem;
+    if (ctx.caller["location"]) {
+      const room = await getEntity(ctx.caller["location"]);
+      if (room) {
+        const roomContentIds = room["contents"] || [];
+        const roomContents = await resolveList(roomContentIds);
+        const roomItem = roomContents.find(
+          (e) => e["name"]?.toLowerCase() === val.toLowerCase(),
+        );
+        if (roomItem) return roomItem;
+      }
     }
   }
-  if (typeof val === "object" && val !== null && "id" in val && "kind" in val) {
+  if (typeof val === "object" && val !== null && "id" in val) {
     return val as Entity;
   }
   throw new ScriptError(
@@ -215,8 +232,8 @@ export async function resolveProps(
   }
 
   // We need to clone the props so we don't mutate the actual entity in the repo
-  // Maybe `getEntity` returns a fresh entity, but it doesn't hurt to be safe
-  const props = { ...entity.props };
+  // entity is already a bag of props, so we clone it entirely
+  const resolved = { ...entity };
 
   const verbs = await ctx.sys.getVerbs(entity.id);
   for (const verb of verbs) {
@@ -240,7 +257,7 @@ export async function resolveProps(
       });
 
       if (result !== undefined) {
-        props[propName] = result;
+        resolved[propName] = result;
       }
     } catch (error) {
       // Ignore errors in getters for now, or warn
@@ -250,5 +267,5 @@ export async function resolveProps(
     }
   }
 
-  return { ...entity, props };
+  return resolved;
 }

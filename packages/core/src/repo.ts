@@ -4,35 +4,17 @@ import { db } from "./db";
  * Represents a game entity.
  * Everything in the game is an Entity (Room, Player, Item, Exit, etc.).
  */
-export interface Entity {
+export type Entity = {
   /** Unique ID of the entity */
   id: number;
-  /** ID of the container/room this entity is in */
-  location_id: number | null;
-  /** ID of the prototype this entity inherits from */
-  prototype_id: number | null;
-  /** ID of the player who owns this entity */
-  owner_id: number | null;
-  /** The type of entity */
-  kind: "ZONE" | "ROOM" | "ACTOR" | "ITEM" | "PART" | "EXIT";
-  created_at: string;
-  updated_at: string;
+  /** ID of the prototype this entity inherits from (hidden from public interface mostly) */
+  // prototype_id: number | null;
   /**
    * Resolved properties (merged from prototype and instance).
    * Contains arbitrary game data like description, adjectives, custom_css.
    */
-  props: Record<string, any>;
-}
-
-export const SPECIAL_PROPERTIES = new Set<string>([
-  "id",
-  "location_id",
-  "prototype_id",
-  "owner_id",
-  "kind",
-  "created_at",
-  "updated_at",
-] satisfies readonly (keyof Entity)[]);
+  [key: string]: any;
+};
 
 /**
  * Fetches an entity by ID, resolving its properties against its prototype.
@@ -43,132 +25,49 @@ export const SPECIAL_PROPERTIES = new Set<string>([
  * @returns The resolved Entity object or null if not found.
  */
 export function getEntity(id: number): Entity | null {
-  const raw = db
-    .query(
-      `
-    SELECT 
-      e.*,
-      d.props,
-      proto_data.props as proto_props
-    FROM entities e
-    LEFT JOIN entity_data d ON e.id = d.entity_id
-    LEFT JOIN entities p ON e.prototype_id = p.id
-    LEFT JOIN entity_data proto_data ON p.id = proto_data.entity_id
-    WHERE e.id = $id
-  `,
-    )
-    .get({ $id: id }) as any;
+  const row = db
+    .query("SELECT id, prototype_id, props FROM entities WHERE id = ?")
+    .get(id) as { id: number; prototype_id: number | null; props: string };
 
-  if (!raw) return null;
+  if (!row) return null;
 
-  const { proto_props: basePropsRaw, props: propsRaw, ...rest } = raw;
-  // Merge JSON props (Instance overrides Prototype)
-  const baseProps = basePropsRaw ? JSON.parse(basePropsRaw) : {};
-  const instanceProps = propsRaw ? JSON.parse(propsRaw) : {};
+  let props = JSON.parse(row.props);
 
-  return {
-    ...rest,
-    // The "Resolved" properties
-    props: { ...baseProps, ...instanceProps },
-  };
-}
-
-/**
- * Moves an entity to a new location.
- *
- * @param thingId - The ID of the entity to move.
- * @param containerId - The ID of the destination container/room.
- * @param detail - Optional location detail (e.g. "worn").
- */
-export function moveEntity(thingId: number, containerId: number) {
-  // Prevent circular containment
-  let currentId: number | null = containerId;
-  while (currentId) {
-    if (currentId === thingId) {
-      throw new Error("Circular containment detected");
+  // Recursive prototype resolution
+  if (row.prototype_id) {
+    const proto = getEntity(row.prototype_id);
+    if (proto) {
+      // Merge props: Instance overrides Prototype
+      // We exclude 'id' from proto to avoid overwriting
+      const { id: _, ...protoProps } = proto;
+      props = { ...protoProps, ...props };
     }
-    const parent: { location_id: number | null } | null = db
-      .query("SELECT location_id FROM entities WHERE id = ?")
-      .get(currentId) as any;
-    currentId = parent ? parent.location_id : null;
   }
 
-  db.query("UPDATE entities SET location_id = ? WHERE id = ?").run(
-    containerId,
-    thingId,
-  );
+  return {
+    id: row.id,
+    ...props,
+  };
 }
 
 /**
  * Creates a new entity in the database.
  *
- * @param data - The initial data for the entity.
+ * @param props - The initial properties for the entity.
+ * @param prototypeId - Optional prototype ID.
  * @returns The ID of the newly created entity.
  */
-export function createEntity(data: {
-  name: string;
-  slug?: string;
-  kind?: "ZONE" | "ROOM" | "ACTOR" | "ITEM" | "PART" | "EXIT";
-  location_id?: number;
-  prototype_id?: number;
-  owner_id?: number;
-  props?: Record<string, any>;
-}) {
-  const insertEntity = db.query(`
-    INSERT INTO entities (name, slug, kind, location_id, prototype_id, owner_id)
-    VALUES ($name, $slug, $kind, $location_id, $prototype_id, $owner_id)
-    RETURNING id
-  `);
-
-  const insertData = db.query(`
-    INSERT INTO entity_data (entity_id, props)
-    VALUES ($entity_id, $props)
-  `);
-
-  const transaction = db.transaction(() => {
-    const result = insertEntity.get({
-      $name: data.name,
-      $slug: data.slug || null,
-      $kind: data.kind || "ITEM",
-      $location_id: data.location_id || null,
-      $prototype_id: data.prototype_id || null,
-      $owner_id: data.owner_id || null,
-    }) as { id: number };
-
-    insertData.run({
-      $entity_id: result.id,
-      $props: JSON.stringify(data.props || {}),
-    });
-
-    return result.id;
-  });
-
-  return transaction();
-}
-
-/**
- * Gets all entities contained within a specific location.
- *
- * @param containerId - The ID of the container/room.
- * @returns An array of resolved Entity objects.
- */
-export function getContents(containerId: number): Entity[] {
-  const rows = db
-    .query<{ id: number }, [containerId: number]>(
-      `SELECT id FROM entities WHERE location_id = ?`,
+export function createEntity(
+  props: Record<string, any>,
+  prototypeId?: number,
+): number {
+  const result = db
+    .query(
+      "INSERT INTO entities (prototype_id, props) VALUES (?, ?) RETURNING id",
     )
-    .all(containerId);
-  return rows.map((r) => getEntity(r.id)!);
-}
+    .get(prototypeId || null, JSON.stringify(props)) as { id: number };
 
-/**
- * Gets all entity IDs in the world.
- *
- * @returns An array of all entity IDs.
- */
-export function getAllEntities(): number[] {
-  const rows = db.query<{ id: number }, []>("SELECT id FROM entities").all();
-  return rows.map((r) => r.id);
+  return result.id;
 }
 
 /**
@@ -176,59 +75,21 @@ export function getAllEntities(): number[] {
  * Only provided fields will be updated.
  *
  * @param id - The ID of the entity to update.
- * @param data - The fields to update.
+ * @param props - The properties to update (merged with existing).
  */
-export function updateEntity(
-  id: number,
-  data: {
-    name?: string;
-    location_id?: number;
-    owner_id?: number;
-    props?: Record<string, any>;
-  },
-) {
-  const updates: string[] = [];
-  const params: any[] = [];
+export function updateEntity(id: number, props: Record<string, any>) {
+  const row = db.query("SELECT props FROM entities WHERE id = ?").get(id) as {
+    props: string;
+  };
+  if (!row) return;
 
-  if (data.name !== undefined) {
-    updates.push("name = ?");
-    params.push(data.name);
-  }
-  if (data.location_id !== undefined) {
-    updates.push("location_id = ?");
-    params.push(data.location_id);
-  }
-  if (data.owner_id !== undefined) {
-    updates.push("owner_id = ?");
-    params.push(data.owner_id);
-  }
-  if (data.owner_id !== undefined) {
-    updates.push("owner_id = ?");
-    params.push(data.owner_id);
-  }
+  const currentProps = JSON.parse(row.props);
+  const newProps = { ...currentProps, ...props };
 
-  if (updates.length > 0) {
-    params.push(id);
-    db.query(`UPDATE entities SET ${updates.join(", ")} WHERE id = ?`).run(
-      ...params,
-    );
-  }
-
-  // Update entity_data
-  const dataUpdates: string[] = [];
-  const dataParams: any[] = [];
-
-  if (data.props) {
-    dataUpdates.push("props = ?");
-    dataParams.push(JSON.stringify(data.props));
-  }
-
-  if (dataUpdates.length > 0) {
-    dataParams.push(id);
-    db.query(
-      `UPDATE entity_data SET ${dataUpdates.join(", ")} WHERE entity_id = ?`,
-    ).run(...dataParams);
-  }
+  db.query("UPDATE entities SET props = ? WHERE id = ?").run(
+    JSON.stringify(newProps),
+    id,
+  );
 }
 
 /**

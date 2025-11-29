@@ -1,13 +1,12 @@
 import {
   evaluate,
   evaluateTarget,
-  executeLambda,
   resolveProps,
   ScriptError,
   OpcodeDefinition,
 } from "../interpreter";
 import { checkPermission } from "../../permissions";
-import { Entity, SPECIAL_PROPERTIES, updateEntity } from "../../repo";
+import { updateEntity } from "../../repo";
 
 export const CoreLibrary: Record<string, OpcodeDefinition> = {
   // Control Flow
@@ -167,9 +166,7 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
           `prop: permission denied: cannot view ${target.id}`,
         );
       }
-      return SPECIAL_PROPERTIES.has(key)
-        ? target[key as keyof Entity]
-        : target.props[key];
+      return target["props"][key];
     },
   },
   set_prop: {
@@ -202,7 +199,7 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
           `set_prop: permission denied: cannot set property '${prop}'`,
         );
       }
-      updateEntity(target.id, { props: { ...target.props, [prop]: val } });
+      updateEntity(target.id, { props: { ...target["props"], [prop]: val } });
     },
   },
   has_prop: {
@@ -264,7 +261,7 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
           `delete_prop: permission denied: cannot delete property '${prop}'`,
         );
       }
-      const { [prop]: _, ...newProps } = target.props;
+      const { [prop]: _, ...newProps } = target["props"];
       updateEntity(target.id, { props: newProps });
     },
   },
@@ -877,103 +874,6 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
   },
 
   // Entity Interaction
-  tell: {
-    metadata: {
-      label: "Tell",
-      category: "action",
-      description: "Send a message to an entity",
-      slots: [
-        { name: "Target", type: "block", default: "me" },
-        { name: "Message", type: "string" },
-      ],
-    },
-    handler: async (args, ctx) => {
-      const [targetExpr, msgExpr] = args;
-      const msg = await evaluate(msgExpr, ctx);
-      const target = await evaluateTarget(targetExpr, ctx);
-
-      if (!target) {
-        throw new ScriptError("tell: target not found");
-      }
-
-      // If target is caller (resolved), send to socket
-      if (target.id === ctx.caller.id) {
-        if (ctx.sys?.send) {
-          ctx.sys.send({ type: "message", text: msg });
-        }
-        return true;
-      }
-
-      // Otherwise, trigger on_hear and notify caller
-      if (ctx.sys?.triggerEvent) {
-        // Notify caller
-        if (ctx.sys.send) {
-          ctx.sys.send({
-            type: "message",
-            text: `You tell ${target.name}: "${msg}"`,
-          });
-        }
-
-        // Trigger on_hear
-        // We use sys.call if available to target the specific entity
-        if (ctx.sys.call) {
-          try {
-            await ctx.sys.call(
-              ctx.caller,
-              target.id,
-              "on_hear",
-              [msg, ctx.caller.id, "tell"],
-              ctx.warnings,
-            );
-          } catch {
-            // Ignore if verb not found
-          }
-        }
-      }
-      return true;
-    },
-  },
-
-  move: {
-    metadata: {
-      label: "Move",
-      category: "action",
-      description: "Move an entity to a destination",
-      slots: [
-        { name: "Target", type: "block", default: "this" },
-        { name: "Destination", type: "block" },
-      ],
-    },
-    handler: async (args, ctx) => {
-      const [targetExpr, destExpr] = args;
-      const target = await evaluateTarget(targetExpr, ctx);
-      const dest = await evaluateTarget(destExpr, ctx);
-
-      if (!target) {
-        throw new ScriptError("move: target not found");
-      }
-      if (!dest) {
-        throw new ScriptError("move: destination not found");
-      }
-
-      if (!checkPermission(ctx.caller, target, "edit")) {
-        throw new ScriptError(
-          `move: permission denied: cannot move ${target.id}`,
-        );
-      }
-
-      if (ctx.sys?.move) {
-        // Check enter permission on destination
-        if (!checkPermission(ctx.caller, dest, "enter")) {
-          throw new ScriptError(
-            `move: permission denied: cannot enter ${dest.id}`,
-          );
-        }
-        ctx.sys.move(target.id, dest.id);
-      }
-      return true;
-    },
-  },
 
   create: {
     metadata: {
@@ -1026,52 +926,6 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
         );
       }
       ctx.sys?.destroy?.(target.id);
-    },
-  },
-
-  give: {
-    metadata: {
-      label: "Give",
-      category: "action",
-      description: "Give an item to another entity",
-      slots: [
-        { name: "Item", type: "block" },
-        { name: "Receiver", type: "block" },
-      ],
-    },
-    handler: async (args, ctx) => {
-      const [targetExpr, destExpr] = args;
-      const target = await evaluateTarget(targetExpr, ctx);
-      const dest = await evaluateTarget(destExpr, ctx);
-
-      if (!target) {
-        throw new ScriptError("give: target not found");
-      }
-      if (!dest) {
-        throw new ScriptError("give: destination not found");
-      }
-
-      // Check permission: caller must own target
-      if (target.owner_id !== ctx.caller.id) {
-        throw new ScriptError(
-          `give: permission denied: you do not own ${target.id}`,
-        );
-      }
-
-      if (ctx.sys?.give) {
-        // Transfer ownership to destination's owner
-        // If destination has no owner, check if destination is an ACTOR.
-        // If ACTOR, they become owner. If not, clear owner (public).
-        let newOwnerId = dest.owner_id;
-        if (!newOwnerId) {
-          if (dest.kind === "ACTOR") {
-            newOwnerId = dest.id;
-          } else {
-            newOwnerId = 0; // No owner
-          }
-        }
-        ctx.sys.give(target.id, dest.id, newOwnerId);
-      }
     },
   },
 
@@ -1171,6 +1025,39 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
           evaluatedArgs,
           ctx.warnings,
         );
+      }
+      return null;
+    },
+  },
+  get: {
+    metadata: {
+      label: "Get",
+      category: "world",
+      description: "Get a property of an entity",
+      slots: [
+        { name: "Target", type: "block" },
+        { name: "Property", type: "string" },
+      ],
+    },
+    handler: async (args, ctx) => {
+      const [targetExpr, valExpr] = args;
+      const target = await evaluateTarget(targetExpr, ctx);
+      const val = await evaluate(valExpr, ctx);
+
+      if (!target) {
+        throw new ScriptError("get: target not found");
+      }
+      if (typeof val === "string") {
+        if (val.startsWith("prop:")) {
+          const propName = val.substring(5);
+          return target["props"][propName];
+        }
+        // Special properties
+        if (val === "name") return target["name"];
+        if (val === "location") return target["location_id"];
+        if (val === "owner") return target["owner_id"];
+        if (val === "kind") return target["kind"];
+        if (val === "id") return target.id;
       }
       return null;
     },
@@ -1296,60 +1183,8 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       ctx.sys?.send?.({ type: "message", text: msg });
     },
   },
-  say: {
-    metadata: {
-      label: "Say",
-      category: "action",
-      description: "Say something to the room",
-      slots: [{ name: "Message", type: "string" }],
-    },
-    handler: async (args, ctx) => {
-      const [msgExpr] = args;
-      const msg = await evaluate(msgExpr, ctx);
-
-      if (typeof msg !== "string") {
-        throw new ScriptError("say: message must be a string");
-      }
-
-      ctx.sys?.broadcast?.(
-        `${ctx.caller.name} says: "${msg}"`,
-        ctx.caller.location_id || undefined,
-      );
-
-      if (ctx.caller.location_id) {
-        await ctx.sys?.triggerEvent?.(
-          "on_hear",
-          ctx.caller.location_id,
-          [msg, ctx.caller.id, "say"],
-          ctx.caller.id, // Exclude speaker
-        );
-      }
-      return;
-    },
-  },
 
   // Entity Introspection
-  contents: {
-    metadata: {
-      label: "Contents",
-      category: "world",
-      description: "Get contents of a container",
-      slots: [{ name: "Target", type: "block" }],
-    },
-    handler: async (args, ctx) => {
-      if (!ctx.sys) {
-        throw new ScriptError("contents: no system available");
-      }
-      if (!ctx.sys.getContents) {
-        console.trace();
-        throw new ScriptError("contents: no getContents function available");
-      }
-      const [containerExpr] = args;
-      const container = await evaluateTarget(containerExpr, ctx);
-      if (!container) return [];
-      return ctx.sys.getContents(container.id);
-    },
-  },
   verbs: {
     metadata: {
       label: "Verbs",
@@ -1395,7 +1230,7 @@ export const CoreLibrary: Record<string, OpcodeDefinition> = {
       if (!entity) {
         throw new ScriptError(`entity: entity ${id} not found`);
       }
-      return entity;
+      return entity["props"];
     },
   },
   // Properties

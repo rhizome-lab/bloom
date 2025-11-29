@@ -1,11 +1,11 @@
 import { createEntity, addVerb } from "./repo";
 import { db } from "./db";
-import { seedHotel } from "./seeds/hotel";
-import { seedItems } from "./seeds/items";
 
 export function seed() {
   const root = db
-    .query("SELECT id FROM entities WHERE slug = 'sys:root'")
+    .query(
+      "SELECT id FROM entities WHERE json_extract(props, '$.slug') = 'sys:root'",
+    )
     .get();
   if (root) {
     console.log("Database already seeded.");
@@ -19,9 +19,7 @@ export function seed() {
     name: "The Void",
     slug: "sys:root",
     kind: "ZONE",
-    props: {
-      description: "An endless expanse of nothingness.",
-    },
+    description: "An endless expanse of nothingness.",
   });
 
   // 2. Create Player Prototype
@@ -29,50 +27,48 @@ export function seed() {
     name: "Player Base",
     slug: "sys:player_base",
     kind: "ACTOR",
-    props: {
-      description: "A generic adventurer.",
-      body_type: "humanoid",
-      // Slots are just definitions of where things can go
-      slots: [
-        // Head & Neck
-        "head",
-        "face",
-        "ears",
-        "neck",
-        // Torso & Back
-        "torso",
-        "back",
-        "waist",
-        // Arms
-        "l_shoulder",
-        "r_shoulder",
-        "l_arm",
-        "r_arm",
-        "l_wrist",
-        "r_wrist",
-        "l_hand",
-        "r_hand",
-        // Fingers (Rings)
-        "l_finger_thumb",
-        "l_finger_index",
-        "l_finger_middle",
-        "l_finger_ring",
-        "l_finger_pinky",
-        "r_finger_thumb",
-        "r_finger_index",
-        "r_finger_middle",
-        "r_finger_ring",
-        "r_finger_pinky",
-        // Legs
-        "l_leg",
-        "r_leg",
-        "l_ankle",
-        "r_ankle",
-        // Feet
-        "l_foot",
-        "r_foot",
-      ],
-    },
+    description: "A generic adventurer.",
+    body_type: "humanoid",
+    // Slots are just definitions of where things can go
+    slots: [
+      // Head & Neck
+      "head",
+      "face",
+      "ears",
+      "neck",
+      // Torso & Back
+      "torso",
+      "back",
+      "waist",
+      // Arms
+      "l_shoulder",
+      "r_shoulder",
+      "l_arm",
+      "r_arm",
+      "l_wrist",
+      "r_wrist",
+      "l_hand",
+      "r_hand",
+      // Fingers (Rings)
+      "l_finger_thumb",
+      "l_finger_index",
+      "l_finger_middle",
+      "l_finger_ring",
+      "l_finger_pinky",
+      "r_finger_thumb",
+      "r_finger_index",
+      "r_finger_middle",
+      "r_finger_ring",
+      "r_finger_pinky",
+      // Legs
+      "l_leg",
+      "r_leg",
+      "l_ankle",
+      "r_ankle",
+      // Feet
+      "l_foot",
+      "r_foot",
+    ],
   });
 
   // Add verbs to Player Base
@@ -354,31 +350,27 @@ export function seed() {
     slug: "area:lobby",
     kind: "ROOM",
     location_id: voidId,
-    props: {
-      description: "A cozy lobby with a crackling fireplace.",
-    },
+    description: "A cozy lobby with a crackling fireplace.",
   });
 
   // 4. Create a Test Player
-  const playerId = createEntity({
-    name: "Guest",
-    kind: "ACTOR",
-    location_id: lobbyId,
-    prototype_id: playerBaseId,
-    props: {
+  const playerId = createEntity(
+    {
+      name: "Guest",
+      kind: "ACTOR",
+      location_id: lobbyId,
       description: "A confused looking guest.",
     },
-  });
+    playerBaseId,
+  );
 
   // 5. Create some furniture (Table)
   const tableId = createEntity({
     name: "Oak Table",
     kind: "ITEM",
     location_id: lobbyId,
-    props: {
-      description: "A sturdy oak table.",
-      slots: ["surface", "under"], // Generalizable slots!
-    },
+    description: "A sturdy oak table.",
+    slots: ["surface", "under"], // Generalizable slots!
   });
 
   // 6. Create a Cup ON the table
@@ -386,10 +378,8 @@ export function seed() {
     name: "Ceramic Cup",
     kind: "ITEM",
     location_id: tableId,
-    props: {
-      description: "A chipped ceramic cup.",
-      location_detail: "surface", // It's ON the table
-    },
+    description: "A chipped ceramic cup.",
+    location_detail: "surface", // It's ON the table
   });
 
   // 7. Create a Backpack
@@ -397,11 +387,9 @@ export function seed() {
     name: "Leather Backpack",
     kind: "ITEM",
     location_id: playerId,
-    props: {
-      description: "A worn leather backpack.",
-      slots: ["main", "front_pocket"],
-      location_detail: "back", // Worn on back
-    },
+    description: "A worn leather backpack.",
+    slots: ["main", "front_pocket"],
+    location_detail: "back", // Worn on back
   });
 
   // 8. Create a Badge ON the Backpack
@@ -409,17 +397,15 @@ export function seed() {
     name: "Scout Badge",
     kind: "ITEM",
     location_id: backpackId,
-    props: {
-      description: "A merit badge.",
-      location_detail: "surface", // Attached to the outside? Or maybe we define a slot for it.
-    },
+    description: "A merit badge.",
+    location_detail: "surface", // Attached to the outside? Or maybe we define a slot for it.
   });
 
   // Create another room
   const gardenId = createEntity({
     name: "Garden",
     kind: "ROOM",
-    props: { description: "A lush garden with blooming flowers." },
+    description: "A lush garden with blooming flowers.",
   });
 
   // Link Lobby and Garden
@@ -427,23 +413,23 @@ export function seed() {
     name: "north",
     kind: "EXIT",
     location_id: lobbyId,
-    props: { direction: "north", destination_id: gardenId },
+    direction: "north",
+    destination_id: gardenId,
   });
 
   createEntity({
     name: "south",
     kind: "EXIT",
     location_id: gardenId,
-    props: { direction: "south", destination_id: lobbyId },
+    direction: "south",
+    destination_id: lobbyId,
   });
 
   // 9. Create a Gemstore
   const gemstoreId = createEntity({
     name: "Gemstore",
     kind: "ROOM",
-    props: {
-      description: "A glittering shop filled with rare stones and oddities.",
-    },
+    description: "A glittering shop filled with rare stones and oddities.",
   });
 
   // Link Lobby and Gemstore
@@ -451,14 +437,16 @@ export function seed() {
     name: "east",
     kind: "EXIT",
     location_id: lobbyId,
-    props: { direction: "east", destination_id: gemstoreId },
+    direction: "east",
+    destination_id: gemstoreId,
   });
 
   createEntity({
     name: "west",
     kind: "EXIT",
     location_id: gemstoreId,
-    props: { direction: "west", destination_id: lobbyId },
+    direction: "west",
+    destination_id: lobbyId,
   });
 
   // Items in Gemstore
@@ -466,102 +454,87 @@ export function seed() {
     name: "Black Obsidian",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "A pitch black stone.",
-      adjectives: [
-        "color:black",
-        "effect:shiny",
-        "material:stone",
-        "material:obsidian",
-      ],
-    },
+    description: "A pitch black stone.",
+    adjectives: [
+      "color:black",
+      "effect:shiny",
+      "material:stone",
+      "material:obsidian",
+    ],
   });
 
   createEntity({
     name: "Silver Dagger",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "A gleaming silver blade.",
-      adjectives: ["color:silver", "material:metal", "material:silver"],
-    },
+    description: "A gleaming silver blade.",
+    adjectives: ["color:silver", "material:metal", "material:silver"],
   });
 
   createEntity({
     name: "Gold Coin",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "A heavy gold coin.",
-      adjectives: [
-        "color:gold",
-        "weight:heavy",
-        "material:metal",
-        "material:gold",
-      ],
-    },
+    description: "A heavy gold coin.",
+    adjectives: [
+      "color:gold",
+      "weight:heavy",
+      "material:metal",
+      "material:gold",
+    ],
   });
 
   createEntity({
     name: "Platinum Ring",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "A precious platinum ring.",
-      adjectives: [
-        "color:platinum",
-        "value:precious",
-        "material:metal",
-        "material:platinum",
-      ],
-    },
+    description: "A precious platinum ring.",
+    adjectives: [
+      "color:platinum",
+      "value:precious",
+      "material:metal",
+      "material:platinum",
+    ],
   });
 
   createEntity({
     name: "Radioactive Isotope",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "It glows with a sickly light.",
-      adjectives: ["effect:radioactive", "effect:glowing"],
-    },
+    description: "It glows with a sickly light.",
+    adjectives: ["effect:radioactive", "effect:glowing"],
   });
 
   createEntity({
     name: "Electric Blue Potion",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "A crackling blue liquid.",
-      adjectives: ["color:electric blue", "effect:glowing"],
-    },
+    description: "A crackling blue liquid.",
+    adjectives: ["color:electric blue", "effect:glowing"],
   });
 
   createEntity({
     name: "Ethereal Mist",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "A swirling white mist.",
-      adjectives: ["color:white", "effect:ethereal"],
-    },
+    description: "A swirling white mist.",
+    adjectives: ["color:white", "effect:ethereal"],
   });
 
   createEntity({
     name: "Transparent Cube",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: {
-      description: "You can barely see it.",
-      adjectives: ["effect:transparent", "material:glass"],
-    },
+    description: "You can barely see it.",
+    adjectives: ["effect:transparent", "material:glass"],
   });
 
   const wigStandId = createEntity({
     name: "Wig Stand",
     kind: "ITEM",
     location_id: gemstoreId,
-    props: { description: "A stand holding various wigs.", slots: ["surface"] },
+    description: "A stand holding various wigs.",
+    slots: ["surface"],
   });
 
   if (wigStandId) {
@@ -569,33 +542,27 @@ export function seed() {
       name: "Auburn Wig",
       kind: "ITEM",
       location_id: wigStandId,
-      props: {
-        description: "A reddish-brown wig.",
-        adjectives: ["color:auburn"],
-        location_detail: "surface",
-      },
+      description: "A reddish-brown wig.",
+      adjectives: ["color:auburn"],
+      location_detail: "surface",
     });
 
     createEntity({
       name: "Blonde Wig",
       kind: "ITEM",
       location_id: wigStandId,
-      props: {
-        description: "A bright yellow wig.",
-        adjectives: ["color:blonde"],
-        location_detail: "surface",
-      },
+      description: "A bright yellow wig.",
+      adjectives: ["color:blonde"],
+      location_detail: "surface",
     });
 
     createEntity({
       name: "Brunette Wig",
       kind: "ITEM",
       location_id: wigStandId,
-      props: {
-        description: "A dark brown wig.",
-        adjectives: ["color:brunette"],
-        location_detail: "surface",
-      },
+      description: "A dark brown wig.",
+      adjectives: ["color:brunette"],
+      location_detail: "surface",
     });
   }
 
@@ -841,9 +808,4 @@ export function seed() {
     owner_id: playerId,
   });
 
-  // 6. Items
-  seedItems(lobbyId);
-
-  // 7. Hotel
-  seedHotel(lobbyId, voidId);
 }

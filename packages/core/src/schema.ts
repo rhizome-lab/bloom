@@ -5,26 +5,9 @@ export function initSchema(db: Database) {
     `
     CREATE TABLE IF NOT EXISTS entities (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      location_id INTEGER,
       prototype_id INTEGER,
-      owner_id INTEGER,
-      kind TEXT DEFAULT 'ITEM',
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(location_id) REFERENCES entities(id),
-      FOREIGN KEY(prototype_id) REFERENCES entities(id),
-      FOREIGN KEY(owner_id) REFERENCES entities(id)
-    )
-  `,
-  ).run();
-
-  db.query(
-    `
-    CREATE TABLE IF NOT EXISTS entity_data (
-      entity_id INTEGER PRIMARY KEY,
       props TEXT DEFAULT '{}',
-      FOREIGN KEY(entity_id) REFERENCES entities(id) ON DELETE CASCADE
+      FOREIGN KEY(prototype_id) REFERENCES entities(id)
     )
   `,
   ).run();
