@@ -11,6 +11,7 @@ mock.module("../db", () => ({ db }));
 // Import repo and seed after mocking
 import { getEntity, createEntity, getVerb } from "../repo";
 import {
+  createScriptContext,
   evaluate,
   registerLibrary,
   ScriptSystemContext,
@@ -96,19 +97,18 @@ describe("Hotel Seed", () => {
 
     // 3. Execute 'west' verb to create West Wing
     const westVerb = getVerb(floorLobbyId, "west")!;
-    let warnings: string[] = [];
 
     // Mock player location
     sys.move(player.id, floorLobbyId);
 
-    await evaluate(westVerb.code, {
-      caller: player,
-      this: getEntity(floorLobbyId)!,
-      args: [],
-      gas: 1000,
-      sys,
-      warnings,
-    });
+    await evaluate(
+      westVerb.code,
+      createScriptContext({
+        caller: player,
+        this: getEntity(floorLobbyId)!,
+        sys,
+      }),
+    );
 
     // Player should be in West Wing now
     const playerAfterWest = getEntity(player.id)!;
@@ -123,14 +123,10 @@ describe("Hotel Seed", () => {
       output = msg.text || JSON.stringify(msg);
     }; // Capture output
 
-    await evaluate(enterVerb.code, {
-      caller: player,
-      this: westWing,
-      args: [51],
-      gas: 1000,
-      sys,
-      warnings,
-    });
+    await evaluate(
+      enterVerb.code,
+      createScriptContext({ caller: player, this: westWing, args: [51], sys }),
+    );
 
     // Should fail and tell user
     expect(output).toContain("Room numbers in the West Wing are 1-50");
@@ -139,14 +135,10 @@ describe("Hotel Seed", () => {
     expect(getEntity(player.id)!.location_id).toBe(westWingId);
 
     // 5. Try to enter valid room (e.g. 10)
-    await evaluate(enterVerb.code, {
-      caller: player,
-      this: westWing,
-      args: [10],
-      gas: 1000,
-      sys,
-      warnings,
-    });
+    await evaluate(
+      enterVerb.code,
+      createScriptContext({ caller: player, this: westWing, args: [10], sys }),
+    );
 
     // Player should be in Room 10
     const playerInRoom = getEntity(player.id)!;
@@ -170,18 +162,17 @@ describe("Hotel Seed", () => {
 
     // 3. Execute 'east' verb to create East Wing
     const eastVerb = getVerb(floorLobbyId, "east")!;
-    let warnings: string[] = [];
 
     sys.move(player.id, floorLobbyId);
 
-    await evaluate(eastVerb.code, {
-      caller: player,
-      this: getEntity(floorLobbyId)!,
-      args: [],
-      gas: 1000,
-      sys,
-      warnings,
-    });
+    await evaluate(
+      eastVerb.code,
+      createScriptContext({
+        caller: player,
+        this: getEntity(floorLobbyId)!,
+        sys,
+      }),
+    );
 
     const playerAfterEast = getEntity(player.id)!;
     const eastWingId = playerAfterEast.location_id!;
@@ -195,26 +186,18 @@ describe("Hotel Seed", () => {
       output = msg.text || JSON.stringify(msg);
     };
 
-    await evaluate(enterVerb.code, {
-      caller: player,
-      this: eastWing,
-      args: [10],
-      gas: 1000,
-      sys,
-      warnings,
-    });
+    await evaluate(
+      enterVerb.code,
+      createScriptContext({ caller: player, this: eastWing, args: [10], sys }),
+    );
 
     expect(output).toContain("Room numbers in the East Wing are 51-99");
 
     // 5. Try to enter valid room (e.g. 60)
-    await evaluate(enterVerb.code, {
-      caller: player,
-      this: eastWing,
-      args: [60],
-      gas: 1000,
-      sys,
-      warnings,
-    });
+    await evaluate(
+      enterVerb.code,
+      createScriptContext({ caller: player, this: eastWing, args: [60], sys }),
+    );
 
     const playerInRoom = getEntity(player.id)!;
     const room = getEntity(playerInRoom.location_id!)!;

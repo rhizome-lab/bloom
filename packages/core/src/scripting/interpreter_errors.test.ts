@@ -9,6 +9,7 @@ const ctx: ScriptContext = {
   args: [],
   gas: 1000,
   warnings: [],
+  vars: {},
 };
 
 describe("Interpreter Errors and Warnings", () => {
@@ -67,6 +68,6 @@ describe("Interpreter Errors and Warnings", () => {
       "e",
       ["var", "e"],
     ];
-    expect(await evaluate(script, { ...ctx, locals: {} })).toBe("outer");
+    expect(await evaluate(script, { ...ctx, vars: {} })).toBe("outer");
   });
 });

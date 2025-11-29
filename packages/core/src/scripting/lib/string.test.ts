@@ -4,25 +4,24 @@ import {
   ScriptContext,
   registerLibrary,
   ScriptError,
+  createScriptContext,
 } from "../interpreter";
 import { CoreLibrary } from "./core";
 import { StringLibrary } from "./string";
 import { ListLibrary } from "./list";
 
 describe("String Library", () => {
+  registerLibrary(CoreLibrary);
+  registerLibrary(StringLibrary);
+  registerLibrary(ListLibrary); // Needed for str.join test
+
   let ctx: ScriptContext;
 
   beforeEach(() => {
-    registerLibrary(CoreLibrary);
-    registerLibrary(StringLibrary);
-    registerLibrary(ListLibrary); // Needed for str.join test
-    ctx = {
+    ctx = createScriptContext({
       caller: { id: 1 } as any,
       this: { id: 2 } as any,
-      args: [],
-      gas: 1000,
-      warnings: [],
-    };
+    });
   });
 
   test("str.len", async () => {

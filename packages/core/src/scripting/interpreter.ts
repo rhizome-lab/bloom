@@ -30,7 +30,6 @@ export type ScriptSystemContext = {
   getContents?: (containerId: number) => Promise<readonly Entity[]>;
   getVerbs?: (entityId: number) => Promise<readonly Verb[]>;
   getEntity?: (id: number) => Promise<Entity | null>;
-  sendRoom?: (roomId: number) => void;
   canEdit?: (playerId: number, entityId: number) => boolean;
   sendTo?: (entityId: number, msg: unknown) => void;
 };
@@ -39,11 +38,10 @@ export type ScriptContext = {
   caller: Entity;
   this: Entity;
   args: readonly unknown[];
-  locals?: Record<string, unknown>;
-  gas?: number; // Gas limit
+  gas: number; // Gas limit
   sys?: ScriptSystemContext;
   warnings: string[];
-  vars?: Record<string, unknown>; // New for local variables
+  vars: Record<string, unknown>;
 };
 
 export type ScriptLibraryDefinition = Record<
@@ -129,6 +127,18 @@ export async function evaluate(ast: unknown, ctx: ScriptContext): Promise<any> {
   return ast;
 }
 
+export function createScriptContext(
+  ctx: Pick<ScriptContext, "caller" | "this" | "sys"> & Partial<ScriptContext>,
+): ScriptContext {
+  return {
+    args: [],
+    gas: 1000,
+    warnings: [],
+    vars: {},
+    ...ctx,
+  };
+}
+
 export async function evaluateTarget(
   targetExpr: unknown,
   ctx: ScriptContext,
@@ -171,4 +181,51 @@ export async function evaluateTarget(
       targetExpr,
     )} (evaluated to ${JSON.stringify(val)})`,
   );
+}
+
+export async function resolveProps(
+  entity: Entity,
+  ctx: ScriptContext,
+): Promise<Entity> {
+  if (!ctx.sys?.getVerbs) {
+    return entity;
+  }
+
+  // We need to clone the props so we don't mutate the actual entity in the repo
+  // Maybe `getEntity` returns a fresh entity, but it doesn't hurt to be safe
+  const props = { ...entity.props };
+
+  const verbs = await ctx.sys.getVerbs(entity.id);
+  for (const verb of verbs) {
+    const match = verb.name.match(/^get_(.+)/);
+    if (!match?.[1]) continue;
+    const propName = match[1];
+    try {
+      const result = await evaluate(verb.code, {
+        caller: entity, // The entity itself is the caller for its own getter?
+        this: entity,
+        args: [],
+        get gas() {
+          return ctx.gas ?? 1000;
+        },
+        set gas(value) {
+          ctx.gas = value;
+        },
+        sys: ctx.sys,
+        warnings: ctx.warnings,
+        vars: {},
+      });
+
+      if (result !== undefined) {
+        props[propName] = result;
+      }
+    } catch (error) {
+      // Ignore errors in getters for now, or warn
+      ctx.warnings.push(
+        `Error resolving property ${propName} for ${entity.id}: ${error}`,
+      );
+    }
+  }
+
+  return { ...entity, props };
 }

@@ -14,7 +14,12 @@ mock.module("../permissions", () => ({
   checkPermission: () => true,
 }));
 
-import { evaluate, ScriptSystemContext, registerLibrary } from "./interpreter";
+import {
+  evaluate,
+  ScriptSystemContext,
+  registerLibrary,
+  createScriptContext,
+} from "./interpreter";
 import { ListLibrary } from "./lib/list";
 import { StringLibrary } from "./lib/string";
 import { ObjectLibrary } from "./lib/object";
@@ -77,13 +82,15 @@ describe("Player Commands", () => {
       call: async (caller, targetId, verbName, args) => {
         const verb = getVerb(targetId, verbName);
         if (verb) {
-          await evaluate(verb.code, {
-            caller,
-            this: getEntity(targetId)!,
-            args,
-            sys,
-            warnings: [],
-          });
+          await evaluate(
+            verb.code,
+            createScriptContext({
+              caller,
+              this: getEntity(targetId)!,
+              args,
+              sys,
+            }),
+          );
         }
       },
       getContents: async (id) => getContents(id),
@@ -100,16 +107,18 @@ describe("Player Commands", () => {
     room = getEntity(player.location_id!)!;
   });
 
-  const runCommand = async (command: string, args: any[]) => {
+  const runCommand = async (command: string, args: readonly unknown[]) => {
     const verb = getVerb(player.id, command);
     if (!verb) throw new Error(`Verb ${command} not found on player`);
-    return await evaluate(verb.code, {
-      caller: player,
-      this: player,
-      args,
-      sys,
-      warnings: [],
-    });
+    return await evaluate(
+      verb.code,
+      createScriptContext({
+        caller: player,
+        this: player,
+        args,
+        sys,
+      }),
+    );
   };
 
   it("should look at room", async () => {
@@ -156,7 +165,7 @@ describe("Player Commands", () => {
 
     const updatedPlayer = getEntity(player.id)!;
     expect(updatedPlayer.location_id).toBe(otherRoomId);
-    expect(sentMessages).toContain("Other Room");
+    expect(sentMessages[0]?.name).toBe("Other Room");
   });
 
   it("should dig", async () => {
@@ -179,9 +188,10 @@ describe("Player Commands", () => {
     expect(id, "create should return item id").toBeDefined();
     const createdRock = getEntity(id);
     expect(createdRock, "created item should exist").toBeDefined();
-    expect(sentMessages, "created item should send room update").toContain(
-      "Lobby",
-    );
+    expect(
+      sentMessages[0].name,
+      "created item should send room update",
+    ).toContain("Lobby");
   });
 
   it("should set property", async () => {

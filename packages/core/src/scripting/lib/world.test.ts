@@ -9,7 +9,12 @@ initSchema(db);
 // Mock the db module
 mock.module("../../db", () => ({ db }));
 
-import { evaluate, ScriptContext, registerLibrary } from "../interpreter";
+import {
+  evaluate,
+  ScriptContext,
+  registerLibrary,
+  createScriptContext,
+} from "../interpreter";
 import { CoreLibrary } from "./core";
 import { WorldLibrary } from "./world";
 import * as permissions from "../../permissions";
@@ -20,11 +25,12 @@ mock.module("../../permissions", () => ({
 }));
 
 describe("World Library", () => {
+  registerLibrary(CoreLibrary);
+  registerLibrary(WorldLibrary);
+
   let ctx: ScriptContext;
 
   beforeEach(() => {
-    registerLibrary(CoreLibrary);
-    registerLibrary(WorldLibrary);
     // Reset DB
     db.query("DELETE FROM entities").run();
     db.query("DELETE FROM entity_data").run();
@@ -32,16 +38,13 @@ describe("World Library", () => {
 
     (permissions.checkPermission as any).mockReset();
 
-    ctx = {
+    ctx = createScriptContext({
       caller: { id: 1, kind: "ACTOR", props: {}, location_id: 0 } as any,
       this: { id: 2, kind: "ITEM", props: {}, location_id: 0 } as any,
-      args: [],
-      gas: 1000,
-      warnings: [],
       sys: {
         getAllEntities: mock(() => [1, 2, 3]),
       } as any,
-    };
+    });
   });
 
   test("world.entities", async () => {

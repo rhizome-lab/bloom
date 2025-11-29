@@ -2,6 +2,7 @@ import {
   evaluate,
   evaluateTarget,
   executeLambda,
+  resolveProps,
   ScriptContext,
   ScriptError,
 } from "../interpreter";
@@ -14,13 +15,6 @@ export const CoreLibrary: Record<
 > = {
   // Control Flow
   seq: async (args, ctx) => {
-    let lastResult = null;
-    for (const step of args) {
-      lastResult = await evaluate(step, ctx);
-    }
-    return lastResult;
-  },
-  do: async (args, ctx) => {
     let lastResult = null;
     for (const step of args) {
       lastResult = await evaluate(step, ctx);
@@ -66,9 +60,6 @@ export const CoreLibrary: Record<
       lastResult = await evaluate(body, ctx);
     }
     return lastResult;
-  },
-  return: async (args, ctx) => {
-    return await evaluate(args[0], ctx);
   },
   list: async (args, ctx) => {
     const result = [];
@@ -681,21 +672,6 @@ export const CoreLibrary: Record<
     }
     ctx.sys?.broadcast?.(msg, loc);
   },
-  // TODO: Remove `sys.send_room` and `sys.sendRoom`
-  "sys.send_room": async (args, ctx) => {
-    const [roomIdExpr] = args;
-    const roomId = roomIdExpr
-      ? await evaluate(roomIdExpr, ctx)
-      : ctx.caller.location_id;
-    if (typeof roomId !== "number") {
-      throw new ScriptError(
-        `sys.send_room: room ID must be a number, got ${JSON.stringify(
-          roomId,
-        )}`,
-      );
-    }
-    ctx.sys?.sendRoom?.(roomId);
-  },
   "sys.send": async (args, ctx) => {
     const [msgExpr] = args;
     const msg = await evaluate(msgExpr, ctx);
@@ -831,46 +807,15 @@ export const CoreLibrary: Record<
     return entity;
   },
   resolve_props: async (args, ctx) => {
+    if (args.length !== 1) {
+      throw new ScriptError("resolve_props: expected 1 argument");
+    }
     const [entityExpr] = args;
     const entity = await evaluateTarget(entityExpr, ctx);
     if (!entity) {
       throw new ScriptError("resolve_props: entity not found");
     }
-
-    // We need to clone the props so we don't mutate the actual entity in the repo
-    const props = { ...entity.props };
-
-    if (ctx.sys?.getVerbs) {
-      const verbs = await ctx.sys.getVerbs(entity.id);
-      for (const verb of verbs) {
-        if (verb.name.startsWith("get_")) {
-          const propName = verb.name.substring(4); // remove "get_"
-          try {
-            const result = await evaluate(verb.code, {
-              caller: entity, // The entity itself is the caller for its own getter?
-              this: entity,
-              args: [],
-              gas: 500, // Reduced gas for properties
-              sys: ctx.sys,
-              warnings: ctx.warnings,
-            });
-
-            if (result !== undefined && result !== null) {
-              props[propName] = result;
-            }
-          } catch (e) {
-            // Ignore errors in getters for now, or warn
-            if (ctx.warnings) {
-              ctx.warnings.push(
-                `Error resolving property ${propName} for ${entity.id}: ${e}`,
-              );
-            }
-          }
-        }
-      }
-    }
-
-    return { ...entity, props };
+    return resolveProps(entity, ctx);
   },
   "json.stringify": async (args, ctx) => {
     const [valExpr] = args;

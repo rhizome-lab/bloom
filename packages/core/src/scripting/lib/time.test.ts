@@ -4,23 +4,22 @@ import {
   ScriptContext,
   registerLibrary,
   ScriptError,
+  createScriptContext,
 } from "../interpreter";
 import { CoreLibrary } from "./core";
 import { TimeLibrary } from "./time";
 
 describe("Time Library", () => {
+  registerLibrary(CoreLibrary);
+  registerLibrary(TimeLibrary);
+
   let ctx: ScriptContext;
 
   beforeEach(() => {
-    registerLibrary(CoreLibrary);
-    registerLibrary(TimeLibrary);
-    ctx = {
+    ctx = createScriptContext({
       caller: { id: 1 } as any,
       this: { id: 2 } as any,
-      args: [],
-      gas: 1000,
-      warnings: [],
-    };
+    });
   });
 
   test("time.now", async () => {

@@ -23,6 +23,7 @@ const ctx: ScriptContext = {
     }),
   } as any,
   warnings: [],
+  vars: {},
 };
 
 describe("Interpreter Libraries", () => {

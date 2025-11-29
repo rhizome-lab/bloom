@@ -33,6 +33,7 @@ describe("Scripting Verification", () => {
     gas: 1000,
     sys,
     warnings: [],
+    vars: {},
   } satisfies ScriptContext;
 
   it("should return current time", async () => {

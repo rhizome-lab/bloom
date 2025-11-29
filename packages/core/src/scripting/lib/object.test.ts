@@ -4,25 +4,24 @@ import {
   ScriptContext,
   registerLibrary,
   ScriptError,
+  createScriptContext,
 } from "../interpreter";
 import { CoreLibrary } from "./core";
 import { ObjectLibrary } from "./object";
 import { StringLibrary } from "./string"; // Needed for str.concat in flatMap test
 
 describe("Object Library", () => {
+  registerLibrary(CoreLibrary);
+  registerLibrary(ObjectLibrary);
+  registerLibrary(StringLibrary);
+
   let ctx: ScriptContext;
 
   beforeEach(() => {
-    registerLibrary(CoreLibrary);
-    registerLibrary(ObjectLibrary);
-    registerLibrary(StringLibrary); // Register string lib for dependencies
-    ctx = {
+    ctx = createScriptContext({
       caller: { id: 1 } as any,
       this: { id: 2 } as any,
-      args: [],
-      gas: 1000,
-      warnings: [],
-    };
+    });
   });
 
   test("obj.keys", async () => {

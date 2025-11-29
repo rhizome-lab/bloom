@@ -251,11 +251,14 @@ export class AiPlugin implements Plugin {
           },
         });
         ctx.core.moveEntity(ctx.player.id, newRoomId);
-        ctx.core.sendRoom(newRoomId);
-        ctx.send({
-          type: "message",
-          text: `You are transported to ${data.name}.`,
-        });
+        const room = this.getResolvedRoom(ctx, newRoomId);
+        if (room) {
+          ctx.send(room);
+          ctx.send({
+            type: "message",
+            text: `You are transported to ${data.name}.`,
+          });
+        }
       } else {
         // Default: Create item in current room
         ctx.core.createEntity({
@@ -268,8 +271,11 @@ export class AiPlugin implements Plugin {
             custom_css: data.custom_css,
           },
         });
-        ctx.core.sendRoom(playerEntity.location_id);
-        ctx.send({ type: "message", text: `Created ${data.name}.` });
+        const room = this.getResolvedRoom(ctx, playerEntity.location_id);
+        if (room) {
+          ctx.send(room);
+          ctx.send({ type: "message", text: `Created ${data.name}.` });
+        }
       }
     } catch (error: any) {
       console.error("AI Error:", error);
@@ -353,11 +359,14 @@ export class AiPlugin implements Plugin {
         if (entity) {
           const newProps = { ...entity.props, image: publicUrl };
           ctx.core.updateEntity(targetId, { props: newProps });
-          ctx.core.sendRoom(playerEntity.location_id);
-          ctx.send({
-            type: "message",
-            text: `Image generated for ${entity.name}.`,
-          });
+          const room = { ...ctx.core.getEntity(playerEntity.location_id) };
+          if (room) {
+            ctx.send(room);
+            ctx.send({
+              type: "message",
+              text: `Image generated for ${entity.name}.`,
+            });
+          }
           return;
         }
       }
@@ -370,5 +379,22 @@ export class AiPlugin implements Plugin {
       console.error("AI Image Error:", error);
       ctx.send({ type: "error", text: `AI Image Error: ${error.message}` });
     }
+  }
+
+  async getResolvedRoom(ctx: CommandContext, roomId: number) {
+    const room = ctx.core.getEntity(roomId);
+    if (!room) {
+      return;
+    }
+    const resolved = await ctx.core.resolveProps(room);
+    const withContents = {
+      ...resolved,
+      contents: await Promise.all(
+        ctx.core
+          .getContents(room.id)
+          .map((item) => ctx.core.resolveProps(item)),
+      ),
+    };
+    return withContents;
   }
 }

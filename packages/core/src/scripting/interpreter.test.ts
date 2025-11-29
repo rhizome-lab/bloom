@@ -48,6 +48,7 @@ describe("Interpreter", () => {
     gas: 1000,
     sys,
     warnings: [],
+    vars: {},
   } satisfies ScriptContext;
 
   test("literals", async () => {

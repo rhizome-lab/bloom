@@ -126,7 +126,7 @@ export function seed() {
       ],
     ],
     [
-      "do",
+      "seq",
       ["let", "targetId", ["world.find", ["arg", 0]]],
       [
         "if",
@@ -161,19 +161,22 @@ export function seed() {
       ["not", ["var", "direction"]],
       ["print", "Where do you want to go?"],
       [
-        "do",
+        "seq",
         ["let", "exitId", ["world.find", ["var", "direction"]]],
         [
           "if",
           ["var", "exitId"],
           [
-            "do",
+            "seq",
             [
               "move",
               ["prop", "me", "id"],
               ["prop", ["var", "exitId"], "destination_id"],
             ],
-            ["sys.send_room", ["prop", "me", "location_id"]],
+            [
+              "sys.send",
+              ["resolve_props", ["entity", ["prop", "me", "location_id"]]],
+            ],
             ["print", ["str.concat", "You move ", ["var", "direction"], "."]],
           ],
           ["print", "You can't go that way."],
@@ -191,12 +194,12 @@ export function seed() {
       ["not", ["var", "direction"]],
       ["print", "Where do you want to dig?"],
       [
-        "do",
+        "seq",
         [
           "if",
           ["sys.can_edit", ["prop", "me", "location_id"]],
           [
-            "do",
+            "seq",
             [
               "let",
               "newRoomId",
@@ -221,7 +224,7 @@ export function seed() {
               ["prop", "me", "location_id"],
             ],
             ["move", ["prop", "me", "id"], ["var", "newRoomId"]],
-            ["sys.send_room", ["var", "newRoomId"]],
+            ["sys.send", ["resolve_props", ["entity", ["var", "newRoomId"]]]],
             [
               "print",
               [
@@ -248,21 +251,29 @@ export function seed() {
       ["not", ["var", "name"]],
       ["print", "What do you want to create?"],
       [
-        "do",
+        "seq",
         [
           "if",
           ["sys.can_edit", ["prop", "me", "location_id"]],
           [
-            "do",
+            "seq",
             [
-              "create",
-              "ITEM",
-              ["var", "name"],
-              ["object"],
-              ["prop", "me", "location_id"],
+              "let",
+              "item_id",
+              [
+                "create",
+                "ITEM",
+                ["var", "name"],
+                ["object"],
+                ["prop", "me", "location_id"],
+              ],
             ],
-            ["sys.send_room", ["prop", "me", "location_id"]],
+            [
+              "sys.send",
+              ["resolve_props", ["entity", ["prop", "me", "location_id"]]],
+            ],
             ["print", ["str.concat", "Created ", ["var", "name"], "."]],
+            ["var", "item_id"],
           ],
           ["print", "You can't create items here."],
         ],
@@ -280,7 +291,7 @@ export function seed() {
       ["or", ["not", ["var", "targetName"]], ["not", ["var", "propName"]]],
       ["print", "Usage: set <target> <prop> <value>"],
       [
-        "do",
+        "seq",
         ["let", "targetId", ["world.find", ["var", "targetName"]]],
         [
           "if",
@@ -289,7 +300,7 @@ export function seed() {
             "if",
             ["sys.can_edit", ["var", "targetId"]],
             [
-              "do",
+              "seq",
               [
                 "prop.set",
                 ["var", "targetId"],
@@ -309,7 +320,10 @@ export function seed() {
                   ".",
                 ],
               ],
-              ["sys.send_room", ["prop", "me", "location_id"]],
+              [
+                "sys.send",
+                ["resolve_props", ["entity", ["prop", "me", "location_id"]]],
+              ],
             ],
             ["print", "You can't edit that."],
           ],

@@ -14,6 +14,7 @@ import {
 import { PluginManager, CommandContext } from "./plugin";
 import { scheduler } from "./scheduler";
 import {
+  createScriptContext,
   evaluate,
   registerLibrary,
   ScriptSystemContext,
@@ -95,19 +96,20 @@ export function startServer(port: number = 8080) {
     const sys: ScriptSystemContext = {
       move: (id, dest) => updateEntity(id, { location_id: dest }),
       create: createEntity,
-      send: (msg) =>
+      send: (msg) => {
         ws.send(
           JSON.stringify({
             jsonrpc: "2.0",
             method: "message",
             params: { text: msg },
           }),
-        ),
+        );
+      },
       destroy: deleteEntity,
       getAllEntities,
       schedule: scheduler.schedule.bind(scheduler),
       broadcast: (msg, locationId) => {
-        wss.clients.forEach((client) => {
+        for (const client of wss.clients) {
           const c = client as Client;
           if (c.readyState === WebSocket.OPEN && c.playerId) {
             if (!locationId) {
@@ -133,7 +135,7 @@ export function startServer(port: number = 8080) {
               }
             }
           }
-        });
+        }
       },
       give: (entityId, destId, newOwnerId) => {
         // Update location and owner
@@ -143,6 +145,7 @@ export function startServer(port: number = 8080) {
         const targetVerb = getVerb(targetId, verbName);
         const targetEnt = getEntity(targetId);
         if (targetVerb && targetEnt) {
+          // TODO: Ideally we want to pass all of `ctx` here to preserve gas limit.
           return await evaluate(targetVerb.code, {
             caller, // Caller remains original player? Or the entity? Usually original caller for permissions.
             this: targetEnt,
@@ -150,6 +153,7 @@ export function startServer(port: number = 8080) {
             gas: GAS_LIMIT / 2, // Sub-call gas limit?
             warnings, // Share warnings array
             sys,
+            vars: {},
           });
         }
         return null;
@@ -275,14 +279,10 @@ export function startServer(port: number = 8080) {
         const player = getEntity(playerId);
         if (player) {
           ws.playerId = playerId;
-          const resolvedPlayer = await evaluate(["resolve_props", player.id], {
-            caller: player,
-            this: player,
-            args: [],
-            gas: GAS_LIMIT,
-            sys,
-            warnings: [],
-          });
+          const resolvedPlayer = await evaluate(
+            ["resolve_props", player.id],
+            createScriptContext({ caller: player, this: player, sys }),
+          );
           sendResponse({
             message: `Logged in as ${player.name} (ID: ${player.id}).`,
             playerId: player.id,
@@ -319,14 +319,10 @@ export function startServer(port: number = 8080) {
         });
 
         const newPlayer = getEntity(newId)!;
-        const resolvedPlayer = await evaluate(["resolve_props", newPlayer.id], {
-          caller: newPlayer,
-          this: newPlayer,
-          args: [],
-          gas: GAS_LIMIT,
-          sys,
-          warnings: [],
-        });
+        const resolvedPlayer = await evaluate(
+          ["resolve_props", newPlayer.id],
+          createScriptContext({ caller: newPlayer, this: newPlayer, sys }),
+        );
         sendResponse({
           message: "Player created",
           player: resolvedPlayer,
@@ -407,18 +403,19 @@ export function startServer(port: number = 8080) {
             const result = await evaluate(verb.code, {
               caller: player,
               this: targetEntity,
-              args: verbArgs || [],
+              args: verbArgs,
               gas: GAS_LIMIT,
               warnings,
               sys,
+              vars: {},
             });
 
-            if (warnings.length > 0) {
+            for (const warning of warnings) {
               ws.send(
                 JSON.stringify({
                   jsonrpc: "2.0",
-                  method: "message",
-                  params: { text: `[Warnings]: ${warnings.join(", ")}` },
+                  method: "warning",
+                  params: { text: warning },
                 }),
               );
             }

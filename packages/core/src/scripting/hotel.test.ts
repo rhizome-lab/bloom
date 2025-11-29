@@ -14,7 +14,12 @@ mock.module("../permissions", () => ({
   checkPermission: () => true,
 }));
 
-import { evaluate, ScriptSystemContext, registerLibrary } from "./interpreter";
+import {
+  evaluate,
+  ScriptSystemContext,
+  registerLibrary,
+  createScriptContext,
+} from "./interpreter";
 import { ListLibrary } from "./lib/list";
 import { StringLibrary } from "./lib/string";
 import { ObjectLibrary } from "./lib/object";
@@ -113,13 +118,10 @@ describe("Hotel Scripting", () => {
     const leaveVerb = getVerb(roomId, "leave");
     expect(leaveVerb).toBeDefined();
 
-    await evaluate(leaveVerb!.code, {
-      caller,
-      this: getEntity(roomId)!,
-      args: [],
-      warnings: [],
-      sys,
-    });
+    await evaluate(
+      leaveVerb!.code,
+      createScriptContext({ caller, this: getEntity(roomId)!, sys }),
+    );
 
     expect(messages[0]).toBe(
       "You leave the room and it fades away behind you.",
