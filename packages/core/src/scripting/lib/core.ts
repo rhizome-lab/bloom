@@ -3,8 +3,49 @@ import {
   resolveProps,
   ScriptError,
 } from "../interpreter";
-import { updateEntity } from "../../repo";
+import { Entity, updateEntity, Verb } from "../../repo";
 import { defineOpcode, ScriptValue } from "../def";
+
+// Values
+const this_ = defineOpcode<[], Entity>(
+  "this",
+  {
+    metadata: {
+      label: "This",
+      category: "data",
+      description: "Current entity",
+      layout: "standard",
+      slots: [],
+    },
+    handler: async (args, ctx) => {
+      if (args.length !== 0) {
+        throw new ScriptError("this: expected 0 arguments");
+      }
+      return ctx.this;
+    },
+  }
+);
+export { this_ as "this" };
+
+const caller = defineOpcode<[], Entity>(
+  "caller",
+  {
+    metadata: {
+      label: "Caller",
+      category: "data",
+      description: "Current caller",
+      layout: "standard",
+      slots: [],
+    },
+    handler: async (args, ctx) => {
+      if (args.length !== 0) {
+        throw new ScriptError("caller: expected 0 arguments");
+      }
+      return ctx.caller;
+    },
+  }
+);
+export { caller };
 
 // Control Flow
 const seq = defineOpcode<ScriptValue<unknown>[], any>(
@@ -169,137 +210,8 @@ const jsonParse = defineOpcode<[ScriptValue<string>], unknown>(
 );
 export { jsonParse as "json.parse" };
 
-// Entity Introspection
-const prop = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], any>(
-  "prop",
-  {
-    metadata: {
-      label: "Get Property",
-      category: "data",
-      description: "Get entity property",
-      slots: [
-        { name: "Entity", type: "block" },
-        { name: "Prop", type: "string" },
-      ],
-    },
-    handler: async (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("prop: expected `entity` `prop`");
-      }
-      const [targetExpr, keyExpr] = args;
-      const target = await evaluate(targetExpr, ctx);
-      const key = await evaluate(keyExpr, ctx);
-      if (typeof target !== "object") {
-        throw new ScriptError(`prop: target must be an object, got ${JSON.stringify(target)}`);
-      }
-      if (typeof key !== "string") {
-        throw new ScriptError(`prop: key must be a string, got ${JSON.stringify(key)}`);
-      }
-      return target[key];
-    },
-  }
-);
-export { prop };
-
-const setProp = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>, ScriptValue<unknown>], void>(
-  "set_prop",
-  {
-    metadata: {
-      label: "Set Property",
-      category: "action",
-      description: "Set entity property",
-      slots: [
-        { name: "Entity", type: "block" },
-        { name: "Prop", type: "string" },
-        { name: "Value", type: "block" },
-      ],
-    },
-    handler: async (args, ctx) => {
-      if (args.length !== 3) {
-        throw new ScriptError("set_prop: expected `entity` `prop` `value`");
-      }
-      const [targetExpr, propExpr, valExpr] = args;
-      const target = await evaluate(targetExpr, ctx);
-      if (typeof target !== "object") {
-        throw new ScriptError(`set_prop: target must be an object, got ${JSON.stringify(target)}`);
-      }
-      const prop = await evaluate(propExpr, ctx);
-      if (typeof prop !== "string") {
-        throw new ScriptError(`set_prop: property name must be a string, got ${JSON.stringify(prop)}`);
-      }
-      const val = await evaluate(valExpr, ctx);
-      const { id: _, ...props } = target;
-      updateEntity(target.id, { ...props, [prop]: val });
-    },
-  }
-);
-export { setProp as "set_prop" };
-
-const hasProp = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>], boolean>(
-  "has_prop",
-  {
-    metadata: {
-      label: "Has Property",
-      category: "data",
-      description: "Check if entity has property",
-      slots: [
-        { name: "Entity", type: "block" },
-        { name: "Prop", type: "string" },
-      ],
-    },
-    handler: async (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("has_prop: expected `entity` `prop`");
-      }
-      const [targetExpr, propExpr] = args;
-      const target = await evaluate(targetExpr, ctx);
-      if (typeof target !== "object") {
-        throw new ScriptError(`has_prop: target must be an object, got ${JSON.stringify(target)}`);
-      }
-      const prop = await evaluate(propExpr, ctx);
-      if (typeof prop !== "string") {
-        throw new ScriptError(`has_prop: property name must be a string, got ${JSON.stringify(prop)}`);
-      }
-      return Object.hasOwnProperty.call(target, prop);
-    },
-  }
-);
-export { hasProp as "has_prop" };
-
-const deleteProp = defineOpcode<[ScriptValue<any>, ScriptValue<string>], void>(
-  "delete_prop",
-  {
-    metadata: {
-      label: "Delete Property",
-      category: "action",
-      description: "Delete entity property",
-      slots: [
-        { name: "Entity", type: "block" },
-        { name: "Prop", type: "string" },
-      ],
-    },
-    handler: async (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("delete_prop: expected `entity` `prop`");
-      }
-      const [targetExpr, propExpr] = args;
-      const target = await evaluate(targetExpr, ctx);
-      if (typeof target !== "object") {
-        throw new ScriptError(`delete_prop: target must be an object, got ${JSON.stringify(target)}`);
-      }
-      const prop = await evaluate(propExpr, ctx);
-      if (typeof prop !== "string") {
-        throw new ScriptError(`delete_prop: property name must be a string, got ${JSON.stringify(prop)}`);
-      }
-      const { [prop]: _, ...newProps } = target;
-      updateEntity(target.id, newProps);
-    },
-  }
-);
-export { deleteProp as "delete_prop" };
-
 // Variables
-const letOp = defineOpcode<[string, ScriptValue<any>], any>(
+const letOp = defineOpcode<[string, ScriptValue<unknown>], any>(
   "let",
   {
     metadata: {
@@ -346,7 +258,7 @@ const varOp = defineOpcode<[string], any>(
 );
 export { varOp as "var" };
 
-const setOp = defineOpcode<[string, ScriptValue<any>], any>(
+const setOp = defineOpcode<[string, ScriptValue<unknown>], any>(
   "set",
   {
     metadata: {
@@ -374,7 +286,7 @@ const setOp = defineOpcode<[string, ScriptValue<any>], any>(
 export { setOp as "set" };
 
 // Comparison
-const eq = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any>[]], boolean>(
+const eq = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>, ...ScriptValue<unknown>[]], boolean>(
   "==",
   {
     metadata: {
@@ -405,7 +317,7 @@ const eq = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any>
 );
 export { eq as "==" };
 
-const neq = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any>[]], boolean>(
+const neq = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>, ...ScriptValue<unknown>[]], boolean>(
   "!=",
   {
     metadata: {
@@ -790,7 +702,7 @@ const pow = defineOpcode<[ScriptValue<number>, ScriptValue<number>, ...ScriptVal
 export { pow as "^" };
 
 // Logic
-const and = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any>[]], boolean>(
+const and = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>, ...ScriptValue<unknown>[]], boolean>(
   "and",
   {
     metadata: {
@@ -816,7 +728,7 @@ const and = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any
 );
 export { and };
 
-const or = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any>[]], boolean>(
+const or = defineOpcode<[ScriptValue<unknown>, ScriptValue<unknown>, ...ScriptValue<unknown>[]], boolean>(
   "or",
   {
     metadata: {
@@ -842,7 +754,7 @@ const or = defineOpcode<[ScriptValue<any>, ScriptValue<any>, ...ScriptValue<any>
 );
 export { or };
 
-const not = defineOpcode<[ScriptValue<any>], boolean>(
+const not = defineOpcode<[ScriptValue<unknown>], boolean>(
   "not",
   {
     metadata: {
@@ -862,7 +774,7 @@ const not = defineOpcode<[ScriptValue<any>], boolean>(
 export { not };
 
 // System
-const log = defineOpcode<[ScriptValue<any>, ...ScriptValue<any>[]], void>(
+const log = defineOpcode<[ScriptValue<unknown>, ...ScriptValue<unknown>[]], null>(
   "log",
   {
     metadata: {
@@ -904,7 +816,7 @@ const arg = defineOpcode<[ScriptValue<number>], any>(
 );
 export { arg };
 
-const args = defineOpcode<[], any[]>(
+const args = defineOpcode<[], readonly any[]>(
   "args",
   {
     metadata: {
@@ -957,7 +869,7 @@ const random = defineOpcode<[ScriptValue<number>?, ScriptValue<number>?], number
 );
 export { random };
 
-const warn = defineOpcode<[ScriptValue<any>], void>(
+const warn = defineOpcode<[ScriptValue<unknown>], void>(
   "warn",
   {
     metadata: {
@@ -975,7 +887,7 @@ const warn = defineOpcode<[ScriptValue<any>], void>(
 );
 export { warn };
 
-const throwOp = defineOpcode<[ScriptValue<any>], never>(
+const throwOp = defineOpcode<[ScriptValue<unknown>], never>(
   "throw",
   {
     metadata: {
@@ -992,7 +904,7 @@ const throwOp = defineOpcode<[ScriptValue<any>], never>(
 );
 export { throwOp as "throw" };
 
-const tryOp = defineOpcode<[ScriptValue<any>, string, ScriptValue<any>], any>(
+const tryOp = defineOpcode<[ScriptValue<unknown>, string, ScriptValue<unknown>], any>(
   "try",
   {
     metadata: {
@@ -1026,7 +938,7 @@ export { tryOp as "try" };
 
 // Entity Interaction
 
-const create = defineOpcode<[ScriptValue<any>, ScriptValue<string>?, ScriptValue<any>?, ScriptValue<number>?], number>(
+const create = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>?, ScriptValue<unknown>?, ScriptValue<number>?], number>(
   "create",
   {
     metadata: {
@@ -1062,7 +974,7 @@ const create = defineOpcode<[ScriptValue<any>, ScriptValue<string>?, ScriptValue
 );
 export { create };
 
-const destroy = defineOpcode<[ScriptValue<any>], void>(
+const destroy = defineOpcode<[ScriptValue<Entity>], null>(
   "destroy",
   {
     metadata: {
@@ -1074,10 +986,11 @@ const destroy = defineOpcode<[ScriptValue<any>], void>(
     handler: async (args, ctx) => {
       const [targetExpr] = args;
       const target = await evaluate(targetExpr, ctx);
-      if (typeof target !== "object") {
-        throw new ScriptError(`destroy: target must be an object, got ${JSON.stringify(target)}`);
+      if (typeof target !== "object" || !target || typeof target.id !== "number") {
+        throw new ScriptError(`destroy: target must be an entity, got ${JSON.stringify(target)}`);
       }
       ctx.sys?.destroy?.(target.id);
+      return null
     },
   }
 );
@@ -1152,7 +1065,8 @@ const apply = defineOpcode<[ScriptValue<unknown>, ...ScriptValue<unknown>[]], an
 );
 export { apply };
 
-const call = defineOpcode<[ScriptValue<any>, ScriptValue<string>, ...ScriptValue<any>[]], any>(
+// TODO: Return verb result value?
+const call = defineOpcode<[ScriptValue<unknown>, ScriptValue<string>, ...ScriptValue<unknown>[]], null>(
   "call",
   {
     metadata: {
@@ -1198,7 +1112,7 @@ const call = defineOpcode<[ScriptValue<any>, ScriptValue<string>, ...ScriptValue
 );
 export { call };
 
-const schedule = defineOpcode<[ScriptValue<string>, ScriptValue<any[]>, ScriptValue<number>], void>(
+const schedule = defineOpcode<[ScriptValue<string>, readonly ScriptValue<unknown>[], ScriptValue<number>], null>(
   "schedule",
   {
     metadata: {
@@ -1226,12 +1140,13 @@ const schedule = defineOpcode<[ScriptValue<string>, ScriptValue<any[]>, ScriptVa
         throw new ScriptError(`schedule: delay must be a number, got ${JSON.stringify(delay)}`);
       }
       ctx.sys?.schedule?.(ctx.this.id, verb, callArgs, delay);
+      return null
     },
   }
 );
 export { schedule };
 
-const sysSend = defineOpcode<[ScriptValue<any>], void>(
+const sysSend = defineOpcode<[ScriptValue<unknown>], null>(
   "sys.send",
   {
     metadata: {
@@ -1244,13 +1159,14 @@ const sysSend = defineOpcode<[ScriptValue<any>], void>(
       const [msgExpr] = args;
       const msg = await evaluate(msgExpr, ctx);
       ctx.sys?.send?.(msg);
+      return null;
     },
   }
 );
 export { sysSend as "sys.send" };
 
 // Entity Introspection
-const verbs = defineOpcode<[ScriptValue<any>], any[]>(
+const verbs = defineOpcode<[ScriptValue<unknown>], readonly Verb[]>(
   "verbs",
   {
     metadata: {
@@ -1277,7 +1193,7 @@ const verbs = defineOpcode<[ScriptValue<any>], any[]>(
 );
 export { verbs };
 
-const entity = defineOpcode<[ScriptValue<number>], any>(
+const entity = defineOpcode<[ScriptValue<number>], Entity>(
   "entity",
   {
     metadata: {
@@ -1304,13 +1220,42 @@ const entity = defineOpcode<[ScriptValue<number>], any>(
       if (!entity) {
         throw new ScriptError(`entity: entity ${id} not found`);
       }
-      return entity["props"];
+      return entity;
     },
   }
 );
 export { entity };
 
-const resolvePropsOp = defineOpcode<[ScriptValue<any>], any>(
+const setEntity = defineOpcode<[ScriptValue<Entity>], null>(
+  "set_entity",
+  {
+    metadata: {
+      label: "Set Entity",
+      category: "action",
+      description: "Set entity properties",
+      slots: [
+        { name: "Entity", type: "block" },
+        { name: "Props", type: "block" },
+      ],
+    },
+    handler: async (args, ctx) => {
+      if (args.length !== 1) {
+        throw new ScriptError("delete_prop: expected `entity`");
+      }
+      const [targetExpr] = args;
+      const target = await evaluate(targetExpr, ctx);
+      if (typeof target !== "object" || !target || typeof target.id !== "number") {
+        throw new ScriptError(`delete_prop: target must be an object, got ${JSON.stringify(target)}`);
+      }
+      const { id, ...props } = target;
+      updateEntity(id, props);
+      return null;
+    },
+  }
+);
+export { setEntity as "set_entity" };
+
+const resolvePropsOp = defineOpcode<[ScriptValue<unknown>], any>(
   "resolve_props",
   {
     metadata: {

@@ -25,7 +25,7 @@ const strLen = defineOpcode<[ScriptValue<string>], number>(
 );
 export { strLen as "str.len" };
 
-const strConcat = defineOpcode<[...ScriptValue<any>[]], string>(
+const strConcat = defineOpcode<[...ScriptValue<string | number | boolean | null>[]], string>(
   "str.concat",
   {
     metadata: {

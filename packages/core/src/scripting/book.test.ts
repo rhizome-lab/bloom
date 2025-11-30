@@ -1,15 +1,10 @@
 import { describe, it, expect, beforeEach } from "bun:test";
-import {
-  createScriptContext,
-  evaluate,
-  registerLibrary,
-  registerOpcode,
-} from "./interpreter";
+import { createScriptContext, evaluate, registerLibrary } from "./interpreter";
+import { Entity } from "../repo";
 import * as Core from "./lib/core";
 import * as List from "./lib/list";
 import * as String from "./lib/string";
 import * as Object from "./lib/object";
-import { Entity } from "../repo";
 
 describe("Book Item Scripting", () => {
   registerLibrary(Core);
@@ -24,16 +19,6 @@ describe("Book Item Scripting", () => {
   beforeEach(() => {
     // Mock system context
     messages = [];
-
-    // Mock tell opcode since we don't have full repo/sys setup in this isolated test
-    registerOpcode("tell", async (args, ctx) => {
-      const [targetExpr, msgExpr] = args;
-      if (targetExpr === "me") {
-        const msg = await evaluate(msgExpr, ctx);
-        messages.push(msg);
-      }
-      return null;
-    });
 
     // Setup entities
     book = {
@@ -59,9 +44,9 @@ describe("Book Item Scripting", () => {
 
   it("should list chapters", async () => {
     const script = Core["seq"](
-      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["let"]("chapters", Object["obj.get"]("this", "chapters")),
       Core["tell"](
-        "me",
+        Core["caller"](),
         String["str.join"](
           List["list.map"](
             Core["var"]("chapters"),
@@ -79,7 +64,7 @@ describe("Book Item Scripting", () => {
   it("should read a chapter", async () => {
     const script = Core["seq"](
       Core["let"]("index", Core["arg"](0)),
-      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["let"]("chapters", Object["obj.get"](Core["this"](), "chapters")),
       Core["let"](
         "chapter",
         List["list.get"](Core["var"]("chapters"), Core["var"]("index")),
@@ -87,7 +72,7 @@ describe("Book Item Scripting", () => {
       Core["if"](
         Core["var"]("chapter"),
         Core["tell"](
-          "me",
+          Core["caller"](),
           String["str.concat"](
             "Chapter: ",
             Object["obj.get"](Core["var"]("chapter"), "title"),
@@ -95,7 +80,7 @@ describe("Book Item Scripting", () => {
             Object["obj.get"](Core["var"]("chapter"), "content"),
           ),
         ),
-        Core["tell"]("me", "Chapter not found."),
+        Core["tell"](Core["caller"](), "Chapter not found."),
       ),
     );
 
@@ -120,7 +105,7 @@ describe("Book Item Scripting", () => {
     const script = Core["seq"](
       Core["let"]("title", Core["arg"]([0])),
       Core["let"]("content", Core["arg"]([1])),
-      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["let"]("chapters", Object["obj.get"]("this", "chapters")),
       Core["let"]("newChapter", {}),
       Object["obj.set"](
         Core["var"]("newChapter"),
@@ -133,8 +118,10 @@ describe("Book Item Scripting", () => {
         Core["var"]("content"),
       ),
       List["list.push"](Core["var"]("chapters"), Core["var"]("newChapter")),
-      Core["set_prop"]("this", "chapters", Core["var"]("chapters")),
-      Core["tell"]("me", "Chapter added."),
+      Core["set_entity"](
+        Object["obj.set"](Core["this"](), "chapters", Core["var"]("chapters")),
+      ),
+      Core["tell"](Core["caller"](), "Chapter added."),
     );
 
     await evaluate(
@@ -146,14 +133,14 @@ describe("Book Item Scripting", () => {
       }),
     );
     expect(messages[0]).toBe("Chapter added.");
-    expect(book.props["chapters"].length).toBe(3);
-    expect(book.props["chapters"][2].title).toBe("Chapter 3");
+    expect((book["chapters"] as any).length).toBe(3);
+    expect((book["chapters"] as any)[2].title).toBe("Chapter 3");
   });
 
   it("should search chapters", async () => {
     const script = Core["seq"](
       Core["let"]("query", Core["arg"](0)),
-      Core["let"]("chapters", Core["prop"]("this", "chapters")),
+      Core["let"]("chapters", Object["obj.get"](Core["this"](), "chapters")),
       Core["let"](
         "results",
         List["list.filter"](
@@ -178,7 +165,7 @@ describe("Book Item Scripting", () => {
         ),
       ),
       Core["tell"](
-        "me",
+        Core["caller"](),
         String["str.concat"](
           "Found ",
           List["list.len"](Core["var"]("results")),

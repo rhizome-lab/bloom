@@ -4,9 +4,10 @@ import * as Core from "./scripting/lib/core";
 import * as List from "./scripting/lib/list";
 import * as Str from "./scripting/lib/string";
 import * as Time from "./scripting/lib/time";
-import * as Obj from "./scripting/lib/object";
+import * as Object from "./scripting/lib/object";
 
 export function seed() {
+  // TODO: $.slug no longer exists
   const root = db
     .query(
       "SELECT id FROM entities WHERE json_extract(props, '$.slug') = 'sys:root'",
@@ -94,7 +95,7 @@ export function seed() {
   /*
   addVerb(playerBaseId, "on_hear", [
     "tell",
-    "me",
+    Core["caller"](),
     [
       "str.concat",
       ["prop", ["arg", 1], "name"],
@@ -110,11 +111,13 @@ export function seed() {
     playerBaseId,
     "look",
     Core["if"](
-      List["list.empty"](Core.args()),
-      Core.seq([
+      List["list.empty"](Core["args"]()),
+      Core["seq"](
         Core["let"](
           "room",
-          Core["resolve_props"](Core.entity(Core.prop("me", "location_id"))),
+          Core["resolve_props"](
+            Core["entity"](Object["obj.get"](Core["caller"](), "location_id")),
+          ),
         ),
         Core["let"](
           "richItems",
@@ -129,122 +132,119 @@ export function seed() {
             // But map expects a list. prop(room, contents) is a list of IDs.
             // So:
             List["list.map"](
-              Core.prop(Core["var"]("room"), "contents"),
-              Core.lambda(
+              Object["obj.get"](Core["var"]("room"), "contents"),
+              Core["lambda"](
                 ["id"],
-                Core["resolve_props"](Core.entity(Core["var"]("id"))),
+                Core["resolve_props"](Core["entity"](Core["var"]("id"))),
               ),
             ),
-            Core.lambda(["item"], Core["var"]("item")), // Identity map? No, the original code mapped resolve_props over contents.
+            Core["lambda"](["item"], Core["var"]("item")), // Identity map? No, the original code mapped resolve_props over contents.
             // Original: map(contents(room), lambda(item, resolve_props(item)))
             // If contents(room) returned entities, then item is entity.
             // If contents(room) is gone, we use prop(room, contents) -> IDs.
             // So we map ID -> resolve_props(entity(ID)).
           ),
         ),
-        Obj["obj.merge"](
+        Object["obj.merge"](
           Core["var"]("room"),
-          Obj["obj.new"]("contents", Core["var"]("richItems")),
+          Object["obj.new"]("contents", Core["var"]("richItems")),
         ),
-      ]),
-      Core.seq([
+      ),
+      Core["seq"](
         // world.find is missing.
-        // Core.letOp("targetId", ["world.find", ["arg", 0]]),
+        // Core["letOp"]("targetId", ["world.find", ["arg", 0]]),
         // Commenting out the else branch logic that relies on world.find
         Core["sys.send"]("You don't see that here."),
-      ]),
+      ),
     ),
   );
 
   addVerb(
     playerBaseId,
     "inventory",
-    Core.seq([
+    Core["seq"](
       List["list.map"](
-        Core.prop("me", "contents"),
-        Core.lambda(
+        Object["obj.get"](Core["caller"](), "contents"),
+        Core["lambda"](
           ["id"],
-          Core["resolve_props"](Core.entity(Core["var"]("id"))),
+          Core["resolve_props"](Core["entity"](Core["var"]("id"))),
         ),
       ),
-    ]),
+    ),
   );
 
   addVerb(
     playerBaseId,
     "move",
-    Core.seq([
-      Core["let"]("direction", Core.arg(0)),
+    Core["seq"](
+      Core["let"]("direction", Core["arg"](0)),
       Core["if"](
-        Core.not(Core["var"]("direction")),
+        Core["not"](Core["var"]("direction")),
         Core["sys.send"]("Where do you want to go?"),
-        Core.seq([
+        Core["seq"](
           // world.find missing
-          // Core.letOp("exitId", ["world.find", ["var", "direction"]]),
+          // Core["letOp"]("exitId", ["world.find", ["var", "direction"]]),
           Core["sys.send"]("Movement logic disabled due to missing world.find"),
-        ]),
+        ),
       ),
-    ]),
+    ),
   );
 
   addVerb(
     playerBaseId,
     "dig",
-    Core.seq([
-      Core["let"]("direction", Core.arg(0)),
+    Core["seq"](
+      Core["let"]("direction", Core["arg"](0)),
       Core["let"](
         "roomName",
-        Str["str.join"](List["list.slice"](Core.args(), 1), " "),
+        Str["str.join"](List["list.slice"](Core["args"](), 1), " "),
       ),
       Core["if"](
-        Core.not(Core["var"]("direction")),
+        Core["not"](Core["var"]("direction")),
         Core["sys.send"]("Where do you want to dig?"),
-        Core.seq([
-          // sys.can_edit missing? No, it's likely a system function not an opcode in core.ts?
-          // core.ts has sys.send. It doesn't have sys.can_edit.
-          // Assuming sys.can_edit is also missing or was part of the removed world.ts?
-          // I'll comment out the logic.
+        Core["seq"](
+          // sys.can_edit missing
           Core["sys.send"]("Digging disabled."),
-        ]),
+        ),
       ),
-    ]),
+    ),
   );
 
   addVerb(
     playerBaseId,
     "create",
-    Core.seq([
-      Core["let"]("name", Core.arg(0)),
+    Core["seq"](
+      Core["let"]("name", Core["arg"](0)),
       Core["if"](
-        Core.not(Core["var"]("name")),
+        Core["not"](Core["var"]("name")),
         Core["sys.send"]("What do you want to create?"),
-        Core.seq([
+        Core["seq"](
           // sys.can_edit missing
           Core["sys.send"]("Creation disabled."),
-        ]),
+        ),
       ),
-    ]),
+    ),
   );
 
   addVerb(
     playerBaseId,
     "set",
-    Core.seq([
-      Core["let"]("targetName", Core.arg(0)),
-      Core["let"]("propName", Core.arg(1)),
-      Core["let"]("value", Core.arg(2)),
+    Core["seq"](
+      Core["let"]("targetName", Core["arg"](0)),
+      Core["let"]("propName", Core["arg"](1)),
+      Core["let"]("value", Core["arg"](2)),
       Core["if"](
-        Core.or(
-          Core.not(Core["var"]("targetName")),
-          Core.not(Core["var"]("propName")),
+        Core["or"](
+          Core["not"](Core["var"]("targetName")),
+          Core["not"](Core["var"]("propName")),
         ),
         Core["sys.send"]("Usage: set <target> <prop> <value>"),
-        Core.seq([
+        Core["seq"](
           // world.find missing
           Core["sys.send"]("Set disabled."),
-        ]),
+        ),
       ),
-    ]),
+    ),
   );
 
   // 3. Create a Lobby Room
@@ -503,12 +503,10 @@ export function seed() {
   addVerb(
     teleporterId,
     "teleport",
-    // move is missing/deprecated? No, move was an opcode in seed.ts but not core.ts?
-    // core.ts doesn't have move. It has set_prop.
-    // seed.ts used "move" opcode.
-    // I'll comment it out.
-    // ["move", "me", ["prop", "this", "destination"]]
-    Core["sys.send"]("Teleport disabled."),
+    Core["move"](
+      Core["caller"](),
+      Object["obj.get"](Core["this"](), "destination"),
+    ),
   );
 
   // Status Item
@@ -554,14 +552,17 @@ export function seed() {
     colorLibId,
     "random_color",
     List["list.get"](
-      Core.prop("this", "colors"),
+      Object["obj.get"](Core["this"](), "colors"),
       // floor missing? Math.floor?
       // seed.ts used "floor". core.ts doesn't have it.
       // I'll use random(min, max) which floors if ints.
       // random(0, len-1)
-      Core.random(
+      Core["random"](
         0,
-        Core["-"](List["list.len"](Core.prop("this", "colors")), 1),
+        Core["-"](
+          List["list.len"](Object["obj.get"](Core["this"](), "colors")),
+          1,
+        ),
       ),
     ),
   );
@@ -583,24 +584,29 @@ export function seed() {
   addVerb(
     moodRingId,
     "update_color",
-    Core.seq([
-      Core["let"]("libId", Core.prop("this", "color_lib")),
-      Core["let"]("newColor", Core.call(Core["var"]("libId"), "random_color")),
-      Core["set_prop"](
-        "this",
-        "adjectives",
-        List["list.new"](
-          Str["str.concat"]("color:", Core["var"]("newColor")),
-          "material:silver",
+    Core["seq"](
+      Core["let"]("libId", Object["obj.get"](Core["this"](), "color_lib")),
+      Core["let"](
+        "newColor",
+        Core["call"](Core["var"]("libId"), "random_color"),
+      ),
+      Core["set_entity"](
+        Object["obj.set"](
+          Core["this"](),
+          "adjectives",
+          List["list.new"](
+            Str["str.concat"]("color:", Core["var"]("newColor")),
+            "material:silver",
+          ),
         ),
       ),
-      Core.schedule("update_color", [], 5000),
-    ]),
+      Core["schedule"]("update_color", [], 5000),
+    ),
   );
 
   // Kickoff
   // We need a way to start it. Let's add a 'touch' verb to start it.
-  addVerb(moodRingId, "touch", Core.schedule("update_color", [], 0));
+  addVerb(moodRingId, "touch", Core["schedule"]("update_color", [], 0));
 
   // --- Advanced Items ---
 
@@ -644,7 +650,7 @@ export function seed() {
   addVerb(
     specialWatchId,
     "tick",
-    Core.seq([
+    Core["seq"](
       // broadcast missing
       Core["sys.send"](
         Str["str.concat"](
@@ -652,10 +658,10 @@ export function seed() {
           Time["time.format"](Time["time.now"](), "time"),
         ),
       ),
-      Core.schedule("tick", [], 10000),
-    ]),
+      Core["schedule"]("tick", [], 10000),
+    ),
   );
-  addVerb(specialWatchId, "start", Core.schedule("tick", [], 0));
+  addVerb(specialWatchId, "start", Core["schedule"]("tick", [], 0));
 
   // 3. Clock (Room Broadcast)
   // Watch broadcasts to holder (Player), Clock broadcasts to Room.
@@ -670,7 +676,7 @@ export function seed() {
   addVerb(
     clockId,
     "tick",
-    Core.seq([
+    Core["seq"](
       // broadcast missing
       Core["sys.send"](
         Str["str.concat"](
@@ -678,10 +684,10 @@ export function seed() {
           Time["time.format"](Time["time.now"](), "time"),
         ),
       ),
-      Core.schedule("tick", [], 15000),
-    ]),
+      Core["schedule"]("tick", [], 15000),
+    ),
   );
-  addVerb(clockId, "start", Core.schedule("tick", [], 0));
+  addVerb(clockId, "start", Core["schedule"]("tick", [], 0));
 
   // 4. Clock Tower (Global Broadcast)
   const towerId = createEntity({
@@ -694,7 +700,7 @@ export function seed() {
   addVerb(
     towerId,
     "toll",
-    Core.seq([
+    Core["seq"](
       // broadcast missing
       Core["sys.send"](
         Str["str.concat"](
@@ -702,10 +708,10 @@ export function seed() {
           Time["time.format"](Time["time.now"](), "time"),
         ),
       ),
-      Core.schedule("toll", [], 60000),
-    ]),
+      Core["schedule"]("toll", [], 60000),
+    ),
   );
-  addVerb(towerId, "start", Core.schedule("toll", [], 0));
+  addVerb(towerId, "start", Core["schedule"]("toll", [], 0));
 
   // 5. Mailbox
   // A prototype for mailboxes.

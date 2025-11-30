@@ -18,38 +18,29 @@ import {
   createEntity,
   addVerb,
   getEntity,
-  updateEntity,
   deleteEntity,
-  getAllEntities,
-  getContents,
   getVerbs,
 } from "./repo";
-import { registerLibrary } from "./scripting/interpreter";
-import { ObjectLibrary } from "./scripting/lib/object";
-import { CoreLibrary } from "./scripting/lib/core";
+import { registerLibrary, ScriptSystemContext } from "./scripting/interpreter";
+import * as Core from "./scripting/lib/core";
+import * as Object from "./scripting/lib/object";
 
 describe("Scheduler Verification", () => {
-  registerLibrary(CoreLibrary);
-  registerLibrary(ObjectLibrary);
+  registerLibrary(Core);
+  registerLibrary(Object);
 
   // Start Scheduler
-  scheduler.setContextFactory(() => ({
-    move: (id, dest) => updateEntity(id, { location_id: dest }),
-    create: createEntity,
-    send: (msg) => console.log("[Scheduler System Message]:", msg),
-    destroy: deleteEntity,
-    getAllEntities,
-    schedule: scheduler.schedule.bind(scheduler),
-    broadcast: () => {},
-    give: (entityId, destId, newOwnerId) => {
-      updateEntity(entityId, { location_id: destId, owner_id: newOwnerId });
-    },
-    call: async () => null, // Scheduler doesn't support call yet? Or we can implement it.
-    triggerEvent: async () => {}, // Scheduler doesn't support triggerEvent yet?
-    getContents: async (id) => getContents(id),
-    getVerbs: async (id) => getVerbs(id),
-    getEntity: async (id) => getEntity(id),
-  }));
+  scheduler.setContextFactory(
+    (): ScriptSystemContext => ({
+      create: createEntity,
+      send: (msg) => console.log("[Scheduler System Message]:", msg),
+      destroy: deleteEntity,
+      schedule: scheduler.schedule.bind(scheduler),
+      call: async () => null, // Scheduler doesn't support call yet? Or we can implement it.
+      getVerbs: async (id) => getVerbs(id),
+      getEntity: async (id) => getEntity(id),
+    }),
+  );
 
   setInterval(() => {
     scheduler.process();
@@ -66,12 +57,17 @@ describe("Scheduler Verification", () => {
     });
 
     // Add a verb that increments the count
-    addVerb(entityId, "increment", [
-      "set_prop",
-      "this",
-      "count",
-      ["+", ["prop", "this", "count"], 1],
-    ]);
+    addVerb(
+      entityId,
+      "increment",
+      Core["set_entity"](
+        Object["obj.set"](
+          Core["this"](),
+          "count",
+          Core["+"](Object["obj.get"](Core["this"](), "count"), 1),
+        ),
+      ),
+    );
   });
 
   it("should schedule a task", () => {
@@ -98,6 +94,6 @@ describe("Scheduler Verification", () => {
 
     // Let's check the entity state.
     const entity = getEntity(entityId);
-    expect(entity?.props["count"]).toBe(1);
+    expect(entity?.["count"]).toBe(1);
   });
 });

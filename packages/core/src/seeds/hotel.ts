@@ -1,4 +1,7 @@
 import { createEntity, addVerb, updateVerb, getVerb } from "../repo";
+import * as Core from "../scripting/lib/core";
+import * as Object from "../scripting/lib/object";
+import * as String from "../scripting/lib/string";
 
 export function seedHotel(lobbyId: number, voidId: number) {
   // 7. Hotel Implementation
@@ -7,7 +10,7 @@ export function seedHotel(lobbyId: number, voidId: number) {
   const hotelLobbyId = createEntity({
     name: "Grand Hotel Lobby",
     kind: "ROOM",
-    location_id: voidId, // Or connect to main lobby? Let's connect it.
+    location_id: voidId,
     props: {
       description:
         "The lavish lobby of the Grand Hotel. The elevator is to the side.",
@@ -41,35 +44,42 @@ export function seedHotel(lobbyId: number, voidId: number) {
 
   // Verb: leave (on the prototype)
   // Moves player back to lobby and destroys the room
-  addVerb(hotelRoomProtoId, "leave", [
-    "seq",
-    ["move", "me", hotelLobbyId], // Move player out first
-    ["tell", "me", "You leave the room and it fades away behind you."],
-    ["destroy", "this"], // Destroy the room
-  ]);
+  addVerb(
+    hotelRoomProtoId,
+    "leave",
+    Core["seq"](
+      Core["move"](Core["this"](), hotelLobbyId), // Move player out first
+      Core["tell"](
+        Core["this"](),
+        "You leave the room and it fades away behind you.",
+      ),
+      Core["destroy"](Core["this"]()), // Destroy the room
+    ),
+  );
 
   // Update 'leave' verb to use prop
-  updateVerb(getVerb(hotelRoomProtoId, "leave")!.id, [
-    "seq",
-    ["let", "lobbyId", ["prop", "this", "lobby_id"]],
-    ["move", "me", ["var", "lobbyId"]],
-    ["tell", "me", "You leave the room and it fades away behind you."],
-
-    // Destroy contents (furnishings)
-    ["let", "contents", ["entity.contents", "this"]],
-    [
-      "for",
-      "item",
-      ["var", "contents"],
-      [
-        "if",
-        ["!=", ["prop", ["var", "item"], "kind"], "ACTOR"],
-        ["destroy", ["var", "item"]],
-      ],
-    ],
-
-    ["destroy", "this"],
-  ]);
+  updateVerb(
+    getVerb(hotelRoomProtoId, "leave")!.id,
+    Core["seq"](
+      Core["let"]("lobbyId", Object["obj.get"](Core["this"](), "lobby_id")),
+      Core["move"](Core["caller"](), Core["var"]("lobbyId")),
+      Core["tell"](
+        Core["caller"](),
+        "You leave the room and it fades away behind you.",
+      ),
+      // Destroy contents (furnishings)
+      Core["let"]("contents", Object["obj.get"](Core["this"](), "contents")),
+      Core["for"](
+        "item",
+        Core["var"]("contents"),
+        Core["if"](
+          Core["!="](Object["obj.get"](Core["var"]("item"), "kind"), "ACTOR"),
+          Core["destroy"](Core["var"]("item")),
+        ),
+      ),
+      Core["destroy"](Core["this"]()),
+    ),
+  );
 
   // 8. Hotel Elevator & Floors
 
@@ -112,153 +122,168 @@ export function seedHotel(lobbyId: number, voidId: number) {
   // --- Elevator Verbs ---
 
   // push <floor>
-  addVerb(elevatorId, "push", [
-    "seq",
-    ["let", "floor", ["arg", 0]],
-    ["set_prop", "this", "current_floor", ["var", "floor"]],
-    [
-      "tell",
-      "me",
-      [
-        "str.concat",
-        "The elevator hums and moves to floor ",
-        ["var", "floor"],
-        ".",
-      ],
-    ],
-  ]);
+  addVerb(
+    elevatorId,
+    "push",
+    Core["seq"](
+      Core["let"]("floor", Core["arg"](0)),
+      Object["obj.set"](Core["this"](), "current_floor", Core["var"]("floor")),
+      Core["tell"](
+        Core["caller"](),
+        String["str.concat"](
+          "The elevator hums and moves to floor ",
+          Core["var"]("floor"),
+          ".",
+        ),
+      ),
+    ),
+  );
 
   // out (Exit Elevator to Floor Lobby)
-  addVerb(elevatorId, "out", [
-    "seq",
-    ["let", "floor", ["prop", "this", "current_floor"]],
-    // If floor 1, go to Main Hotel Lobby? Or just create Floor 1 Lobby?
-    // Let's say Floor 1 is the Main Lobby.
-    [
-      "if",
-      ["==", ["var", "floor"], 1],
-      [
-        "seq",
-        ["move", "me", hotelLobbyId],
-        ["tell", "me", "The doors open to the Grand Lobby."],
-      ],
-      [
-        "seq",
-        // Create Ephemeral Floor Lobby
-        ["let", "lobbyData", {}],
-        [
-          "obj.set",
-          ["var", "lobbyData"],
-          "name",
-          ["str.concat", "Floor ", ["var", "floor"], " Lobby"],
-        ],
-        ["obj.set", ["var", "lobbyData"], "kind", "ROOM"],
-        ["obj.set", ["var", "lobbyData"], "prototype_id", floorLobbyProtoId],
-
-        ["let", "props", {}],
-        [
-          "obj.set",
-          ["var", "props"],
-          "description",
-          [
-            "str.concat",
-            "The lobby of floor ",
-            ["var", "floor"],
-            ". West and East wings extend from here.",
-          ],
-        ],
-        ["obj.set", ["var", "props"], "floor", ["var", "floor"]],
-        ["obj.set", ["var", "props"], "elevator_id", elevatorId], // Return point
-
-        ["obj.set", ["var", "lobbyData"], "props", ["var", "props"]],
-
-        ["let", "lobbyId", ["create", ["var", "lobbyData"]]],
-        ["move", "me", ["var", "lobbyId"]],
-        [
-          "tell",
-          "me",
-          ["str.concat", "The doors open to Floor ", ["var", "floor"], "."],
-        ],
-      ],
-    ],
-  ]);
+  addVerb(
+    elevatorId,
+    "out",
+    Core["seq"](
+      Core["let"]("floor", Object["obj.get"](Core["this"](), "current_floor")),
+      // If floor 1, go to Main Hotel Lobby? Or just create Floor 1 Lobby?
+      // Let's say Floor 1 is the Main Lobby.
+      Core["if"](
+        Core["=="](Core["var"]("floor"), 1),
+        Core["seq"](
+          Core["move"](Core["caller"](), hotelLobbyId),
+          Core["tell"](Core["caller"](), "The doors open to the Grand Lobby."),
+        ),
+        Core["seq"](
+          // Create Ephemeral Floor Lobby
+          Core["let"]("lobbyData", {}),
+          Object["obj.set"](
+            Core["var"]("lobbyData"),
+            "name",
+            String["str.concat"]("Floor ", Core["var"]("floor"), " Lobby"),
+          ),
+          Object["obj.set"](Core["var"]("lobbyData"), "kind", "ROOM"),
+          Object["obj.set"](
+            Core["var"]("lobbyData"),
+            "prototype_id",
+            floorLobbyProtoId,
+          ),
+          Core["let"]("props", {}),
+          Object["obj.set"](
+            Core["var"]("props"),
+            "description",
+            String["str.concat"](
+              "The lobby of floor ",
+              Core["var"]("floor"),
+              ". West and East wings extend from here.",
+            ),
+          ),
+          Object["obj.set"](
+            Core["var"]("props"),
+            "floor",
+            Core["var"]("floor"),
+          ),
+          Object["obj.set"](Core["var"]("props"), "elevator_id", elevatorId),
+          Object["obj.set"](
+            Core["var"]("lobbyData"),
+            "props",
+            Core["var"]("props"),
+          ),
+          Core["let"]("lobbyId", Core["create"](Core["var"]("lobbyData"))),
+          Core["move"](Core["caller"](), Core["var"]("lobbyId")),
+          Core["tell"](
+            Core["caller"](),
+            String["str.concat"](
+              "The doors open to Floor ",
+              Core["var"]("floor"),
+              ".",
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   // --- Floor Lobby Verbs ---
 
   // elevator (Return to Elevator)
-  addVerb(floorLobbyProtoId, "elevator", [
-    "seq",
-    ["let", "elevId", ["prop", "this", "elevator_id"]],
-    ["move", "me", ["var", "elevId"]],
-    ["tell", "me", "You step back into the elevator."],
-    ["destroy", "this"],
-  ]);
+  addVerb(
+    floorLobbyProtoId,
+    "elevator",
+    Core["seq"](
+      Core["let"]("elevId", Object["obj.get"](Core["this"](), "elevator_id")),
+      Core["move"](Core["caller"](), Core["var"]("elevId")),
+      Core["tell"](Core["caller"](), "You step back into the elevator."),
+      Core["destroy"](Core["this"]()),
+    ),
+  );
 
   // west (Create Left Wing)
-  addVerb(floorLobbyProtoId, "west", [
-    "seq",
-    ["let", "floor", ["prop", "this", "floor"]],
-
-    ["let", "wingData", {}],
-    [
-      "obj.set",
-      ["var", "wingData"],
-      "name",
-      ["str.concat", "Floor ", ["var", "floor"], " West Wing"],
-    ],
-    ["obj.set", ["var", "wingData"], "kind", "ROOM"],
-    ["obj.set", ["var", "wingData"], "prototype_id", wingProtoId],
-
-    ["let", "props", {}],
-    [
-      "obj.set",
-      ["var", "props"],
-      "description",
-      "A long hallway. Rooms 01-50 are here.",
-    ],
-    ["obj.set", ["var", "props"], "floor", ["var", "floor"]],
-    ["obj.set", ["var", "props"], "side", "West"],
-    ["obj.set", ["var", "props"], "return_id", ["prop", "this", "id"]], // Return to THIS lobby
-
-    ["obj.set", ["var", "wingData"], "props", ["var", "props"]],
-
-    ["let", "wingId", ["create", ["var", "wingData"]]],
-    ["move", "me", ["var", "wingId"]],
-    ["tell", "me", "You walk down the West Wing."],
-  ]);
+  addVerb(
+    floorLobbyProtoId,
+    "west",
+    Core["seq"](
+      Core["let"]("floor", Object["obj.get"](Core["this"](), "floor")),
+      Core["let"]("wingData", {}),
+      Object["obj.set"](
+        Core["var"]("wingData"),
+        "name",
+        String["str.concat"]("Floor ", Core["var"]("floor"), " West Wing"),
+      ),
+      Object["obj.set"](Core["var"]("wingData"), "kind", "ROOM"),
+      Object["obj.set"](Core["var"]("wingData"), "prototype_id", wingProtoId),
+      Core["let"]("props", Object["obj.new"]()),
+      Object["obj.set"](
+        Core["var"]("props"),
+        "description",
+        "A long hallway. Rooms 01-50 are here.",
+      ),
+      Object["obj.set"](Core["var"]("props"), "floor", Core["var"]("floor")),
+      Object["obj.set"](Core["var"]("props"), "side", "West"),
+      Object["obj.set"](
+        Core["var"]("props"),
+        "return_id",
+        Object["obj.get"](Core["this"](), "id"),
+      ), // Return to THIS lobby
+      Object["obj.set"](Core["var"]("wingData"), "props", Core["var"]("props")),
+      Core["let"]("wingId", Core["create"](Core["var"]("wingData"))),
+      Core["move"](Core["caller"](), Core["var"]("wingId")),
+      Core["tell"](Core["caller"](), "You walk down the West Wing."),
+    ),
+  );
 
   // east (Create Right Wing)
-  addVerb(floorLobbyProtoId, "east", [
-    "seq",
-    ["let", "floor", ["prop", "this", "floor"]],
-
-    ["let", "wingData", {}],
-    [
-      "obj.set",
-      ["var", "wingData"],
-      "name",
-      ["str.concat", "Floor ", ["var", "floor"], " East Wing"],
-    ],
-    ["obj.set", ["var", "wingData"], "kind", "ROOM"],
-    ["obj.set", ["var", "wingData"], "prototype_id", wingProtoId],
-
-    ["let", "props", {}],
-    [
-      "obj.set",
-      ["var", "props"],
-      "description",
-      "A long hallway. Rooms 51-99 are here.",
-    ],
-    ["obj.set", ["var", "props"], "floor", ["var", "floor"]],
-    ["obj.set", ["var", "props"], "side", "East"],
-    ["obj.set", ["var", "props"], "return_id", ["prop", "this", "id"]],
-
-    ["obj.set", ["var", "wingData"], "props", ["var", "props"]],
-
-    ["let", "wingId", ["create", ["var", "wingData"]]],
-    ["move", "me", ["var", "wingId"]],
-    ["tell", "me", "You walk down the East Wing."],
-  ]);
+  addVerb(
+    floorLobbyProtoId,
+    "east",
+    Core["seq"](
+      Core["let"]("floor", Object["obj.get"](Core["this"], "floor")),
+      Core["let"]("wingData", Object["obj.new"]()),
+      Object["obj.set"](
+        Core["var"]("wingData"),
+        "name",
+        String["str.concat"]("Floor ", Core["var"]("floor"), " East Wing"),
+      ),
+      Object["obj.set"](Core["var"]("wingData"), "kind", "ROOM"),
+      Object["obj.set"](Core["var"]("wingData"), "prototype_id", wingProtoId),
+      Core["let"]("props", Object["obj.new"]()),
+      Object["obj.set"](
+        Core["var"]("props"),
+        "description",
+        "A long hallway. Rooms 51-99 are here.",
+      ),
+      Object["obj.set"](Core["var"]("props"), "floor", Core["var"]("floor")),
+      Object["obj.set"](Core["var"]("props"), "side", "East"),
+      Object["obj.set"](
+        Core["var"]("props"),
+        "return_id",
+        Object["obj.get"](Core["this"], "id"),
+      ),
+      Object["obj.set"](Core["var"]("wingData"), "props", Core["var"]("props")),
+      Core["let"]("wingId", Core["create"](Core["var"]("wingData"))),
+      Core["move"](Core["caller"](), Core["var"]("wingId")),
+      Core["tell"](Core["caller"](), "You walk down the East Wing."),
+    ),
+  );
 
   // Furnishings Prototypes
   const bedProtoId = createEntity({
@@ -285,104 +310,143 @@ export function seedHotel(lobbyId: number, voidId: number) {
   // --- Wing Verbs ---
 
   // back (Return to Floor Lobby)
-  addVerb(wingProtoId, "back", [
-    "seq",
-    ["let", "returnId", ["prop", "this", "return_id"]],
-    ["move", "me", ["var", "returnId"]],
-    ["tell", "me", "You head back to the lobby."],
-    ["destroy", "this"],
-  ]);
+  addVerb(
+    wingProtoId,
+    "back",
+    Core["seq"](
+      Core["let"]("returnId", Object["obj.get"](Core["this"](), "return_id")),
+      Core["move"](Core["caller"](), Core["var"]("returnId")),
+      Core["tell"](Core["caller"](), "You head back to the lobby."),
+      Core["destroy"](Core["this"]()),
+    ),
+  );
 
   // enter <room_number>
-  addVerb(wingProtoId, "enter", [
-    "seq",
-    ["let", "roomNum", ["arg", 0]],
-    ["let", "valid", true],
-
-    // Validate room number matches wing side
-    ["let", "side", ["prop", "this", "side"]],
-    [
-      "if",
-      ["==", ["var", "side"], "West"],
-      [
-        "if",
-        ["or", ["<", ["var", "roomNum"], 1], [">", ["var", "roomNum"], 50]],
-        [
-          "seq",
-          ["tell", "me", "Room numbers in the West Wing are 1-50."],
-          ["set", "valid", false],
-        ],
-      ],
-    ],
-    [
-      "if",
-      ["==", ["var", "side"], "East"],
-      [
-        "if",
-        ["or", ["<", ["var", "roomNum"], 51], [">", ["var", "roomNum"], 99]],
-        [
-          "seq",
-          ["tell", "me", "Room numbers in the East Wing are 51-99."],
-          ["set", "valid", false],
-        ],
-      ],
-    ],
-
-    // Execute if valid
-    [
-      "if",
-      ["var", "valid"],
-      [
-        "seq",
-        ["let", "roomData", {}],
-        [
-          "obj.set",
-          ["var", "roomData"],
-          "name",
-          ["str.concat", "Room ", ["var", "roomNum"]],
-        ],
-        ["obj.set", ["var", "roomData"], "kind", "ROOM"],
-        ["obj.set", ["var", "roomData"], "prototype_id", hotelRoomProtoId],
-
-        ["let", "props", {}],
-        ["obj.set", ["var", "props"], "description", "A standard hotel room."],
-        ["obj.set", ["var", "props"], "lobby_id", ["prop", "this", "id"]], // Return to THIS wing
-
-        ["obj.set", ["var", "roomData"], "props", ["var", "props"]],
-
-        ["let", "roomId", ["create", ["var", "roomData"]]],
-
-        // Furnish the room
-        ["let", "bedData", {}],
-        ["obj.set", ["var", "bedData"], "name", "Bed"],
-        ["obj.set", ["var", "bedData"], "kind", "ITEM"],
-        ["obj.set", ["var", "bedData"], "prototype_id", bedProtoId],
-        ["obj.set", ["var", "bedData"], "location_id", ["var", "roomId"]],
-        ["create", ["var", "bedData"]],
-
-        ["let", "lampData", {}],
-        ["obj.set", ["var", "lampData"], "name", "Lamp"],
-        ["obj.set", ["var", "lampData"], "kind", "ITEM"],
-        ["obj.set", ["var", "lampData"], "prototype_id", lampProtoId],
-        ["obj.set", ["var", "lampData"], "location_id", ["var", "roomId"]],
-        ["create", ["var", "lampData"]],
-
-        ["let", "chairData", {}],
-        ["obj.set", ["var", "chairData"], "name", "Chair"],
-        ["obj.set", ["var", "chairData"], "kind", "ITEM"],
-        ["obj.set", ["var", "chairData"], "prototype_id", chairProtoId],
-        ["obj.set", ["var", "chairData"], "location_id", ["var", "roomId"]],
-        ["create", ["var", "chairData"]],
-
-        ["move", "me", ["var", "roomId"]],
-        [
-          "tell",
-          "me",
-          ["str.concat", "You enter Room ", ["var", "roomNum"], "."],
-        ],
-      ],
-    ],
-  ]);
+  addVerb(
+    wingProtoId,
+    "enter",
+    Core["seq"](
+      Core["let"]("roomNum", Core["arg"](0)),
+      Core["let"]("valid", true),
+      // Validate room number matches wing side
+      Core["let"]("side", Object["obj.get"](Core["this"](), "side")),
+      Core["if"](
+        Core["=="](Core["var"]("side"), "West"),
+        Core["if"](
+          Core["or"](
+            Core["<"](Core["var"]("roomNum"), 1),
+            Core[">"](Core["var"]("roomNum"), 50),
+          ),
+          Core["seq"](
+            Core["tell"](
+              Core["caller"](),
+              "Room numbers in the West Wing are 1-50.",
+            ),
+            Core["set"]("valid", false),
+          ),
+        ),
+      ),
+      Core["if"](
+        Core["=="](Core["var"]("side"), "East"),
+        Core["if"](
+          Core["or"](
+            Core["<"](Core["var"]("roomNum"), 51),
+            Core[">"](Core["var"]("roomNum"), 99),
+          ),
+          Core["seq"](
+            Core["tell"](
+              Core["caller"](),
+              "Room numbers in the East Wing are 51-99.",
+            ),
+            Core["set"]("valid", false),
+          ),
+        ),
+      ),
+      // Execute if valid
+      Core["if"](
+        Core["var"]("valid"),
+        Core["seq"](
+          Core["let"]("roomData", Object["obj.new"]()),
+          Object["obj.set"](
+            Core["var"]("roomData"),
+            "name",
+            String["str.concat"]("Room ", Core["var"]("roomNum")),
+          ),
+          Object["obj.set"](Core["var"]("roomData"), "kind", "ROOM"),
+          Object["obj.set"](
+            Core["var"]("roomData"),
+            "prototype_id",
+            hotelRoomProtoId,
+          ),
+          Core["let"]("props", Object["obj.new"]()),
+          Object["obj.set"](
+            Core["var"]("props"),
+            "description",
+            "A standard hotel room.",
+          ),
+          Object["obj.set"](
+            Core["var"]("props"),
+            "lobby_id",
+            Object["obj.get"](Core["this"](), "id"),
+          ), // Return to THIS wing
+          Object["obj.set"](
+            Core["var"]("roomData"),
+            "props",
+            Core["var"]("props"),
+          ),
+          Core["let"]("roomId", Core["create"](Core["var"]("roomData"))),
+          // Furnish the room
+          Core["let"]("bedData", Object["obj.new"]()),
+          Object["obj.set"](Core["var"]("bedData"), "name", "Bed"),
+          Object["obj.set"](Core["var"]("bedData"), "kind", "ITEM"),
+          Object["obj.set"](Core["var"]("bedData"), "prototype_id", bedProtoId),
+          Object["obj.set"](
+            Core["var"]("bedData"),
+            "location_id",
+            Core["var"]("roomId"),
+          ),
+          Core["create"](Core["var"]("bedData")),
+          Core["let"]("lampData", Object["obj.new"]()),
+          Object["obj.set"](Core["var"]("lampData"), "name", "Lamp"),
+          Object["obj.set"](Core["var"]("lampData"), "kind", "ITEM"),
+          Object["obj.set"](
+            Core["var"]("lampData"),
+            "prototype_id",
+            lampProtoId,
+          ),
+          Object["obj.set"](
+            Core["var"]("lampData"),
+            "location_id",
+            Core["var"]("roomId"),
+          ),
+          Core["create"](Core["var"]("lampData")),
+          Core["let"]("chairData", Object["obj.new"]()),
+          Object["obj.set"](Core["var"]("chairData"), "name", "Chair"),
+          Object["obj.set"](Core["var"]("chairData"), "kind", "ITEM"),
+          Object["obj.set"](
+            Core["var"]("chairData"),
+            "prototype_id",
+            chairProtoId,
+          ),
+          Object["obj.set"](
+            Core["var"]("chairData"),
+            "location_id",
+            Core["var"]("roomId"),
+          ),
+          Core["create"](Core["var"]("chairData")),
+          Core["move"](Core["caller"](), Core["var"]("roomId")),
+          Core["tell"](
+            Core["caller"](),
+            String["str.concat"](
+              "You enter Room ",
+              Core["var"]("roomNum"),
+              ".",
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   // 9. NPCs
 
@@ -396,26 +460,28 @@ export function seedHotel(lobbyId: number, voidId: number) {
     },
   });
 
-  addVerb(receptionistId, "on_hear", [
-    "seq",
-    ["let", "msg", ["arg", 0]],
-    ["let", "speakerId", ["arg", 1]],
-
-    // Simple heuristics
-    [
-      "if",
-      ["str.includes", ["str.lower", ["var", "msg"]], "room"],
-      [
-        "say",
-        "We have lovely rooms available on floors 1-100. Just use the elevator!",
-      ],
-      [
-        "if",
-        ["str.includes", ["str.lower", ["var", "msg"]], "hello"],
-        ["say", "Welcome to the Grand Hotel! How may I help you?"],
-      ],
-    ],
-  ]);
+  addVerb(
+    receptionistId,
+    "on_hear",
+    Core["seq"](
+      Core["let"]("msg", Core["arg"](0)),
+      Core["let"]("speakerId", Core["arg"](1)),
+      // Simple heuristics
+      Core["if"](
+        String["str.includes"](String["str.lower"](Core["var"]("msg")), "room"),
+        Core["say"](
+          "We have lovely rooms available on floors 1-100. Just use the elevator!",
+        ),
+      ),
+      Core["if"](
+        String["str.includes"](
+          String["str.lower"](Core["var"]("msg")),
+          "hello",
+        ),
+        Core["say"]("Welcome to the Grand Hotel! How may I help you?"),
+      ),
+    ),
+  );
 
   // Golem (in Void for now, maybe move to lobby?)
   // Let's put the Golem in the Hotel Lobby too for testing
@@ -428,14 +494,16 @@ export function seedHotel(lobbyId: number, voidId: number) {
     },
   });
 
-  addVerb(golemId, "on_hear", [
-    "seq",
-    ["let", "msg", ["arg", 0]],
-    ["let", "type", ["arg", 2]],
-    [
-      "if",
-      ["==", ["var", "type"], "tell"],
-      ["say", ["str.concat", "Golem echoes: ", ["var", "msg"]]],
-    ],
-  ]);
+  addVerb(
+    golemId,
+    "on_hear",
+    Core["seq"](
+      Core["let"]("msg", Core["arg"](0)),
+      Core["let"]("type", Core["arg"](2)),
+      Core["if"](
+        Core["=="](Core["var"]("type"), "tell"),
+        Core["say"](String["str.concat"]("Golem echoes: ", Core["var"]("msg"))),
+      ),
+    ),
+  );
 }

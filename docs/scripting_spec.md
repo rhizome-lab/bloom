@@ -7,11 +7,15 @@ The Viwo scripting language is a dynamic, JSON-based language that uses S-expres
 Scripts are represented as JSON arrays where the first element is the opcode (a string) and the subsequent elements are arguments. Arguments can be literals (numbers, strings, booleans, null), other S-expressions (nested arrays), or variable references.
 
 Example:
+
 ```json
-["seq",
+[
+  "seq",
   ["log", "Hello World"],
   ["let", "x", 10],
-  ["if", [">", ["var", "x"], 5],
+  [
+    "if",
+    [">", ["var", "x"], 5],
     ["log", "x is greater than 5"],
     ["log", "x is small"]
   ]
@@ -19,31 +23,24 @@ Example:
 ```
 
 ### Evaluation
+
 - **Literals**: Numbers, strings, booleans, and null evaluate to themselves.
 - **Arrays**: The first element is treated as the opcode. If the opcode is registered, the function is executed with the evaluated arguments (unless the opcode is a special form like `if` or `let` which might handle evaluation differently).
 - **Unknown Opcodes**: If an array starts with a string that is not a known opcode, a `ScriptError` is thrown.
 
-### Target Syntax
-Many opcodes take a `target` argument (e.g., `tell`, `move`, `give`). This argument is flexible and can be:
-- **"me"**: The entity executing the script (`ctx.caller`).
-- **"this"**: The entity the script is attached to (`ctx.this`).
-- **"here"**: The room the caller is currently in.
-- **Entity ID (number)**: The direct ID of an entity.
-- **Entity Name (string)**: Searches for an entity by name, first in the caller's inventory, then in the caller's room.
-- **Entity Object**: An entity object itself (e.g. from a variable).
-
-> [!WARNING]
-> **Common Pitfalls**:
-> - Use `"me"` to refer to the caller. Do NOT use `"caller"`.
-> - Use `"seq"` for a sequence of commands. Do NOT use `"do"`.
-
-
 ## Core Library
-*Defined in: `packages/core/src/scripting/lib/core.ts`*
+
+_Defined in: `packages/core/src/scripting/lib/core.ts`_
 
 The core library provides essential control flow, variable management, arithmetic, logic, and system interaction.
 
+### Targets
+
+- `["this"]`: The `Entity` the script is attached to (`ctx.this`).
+- `["caller"]`: The `Entity` executing the script (`ctx.caller`).
+
 ### Control Flow
+
 - `["seq", ...steps]`: Executes steps in sequence. Returns the result of the last step.
 - `["if", cond, then, else?]`: Conditional execution.
 - `["while", cond, body]`: Repeats body while condition is true.
@@ -52,11 +49,13 @@ The core library provides essential control flow, variable management, arithmeti
 - `["throw", msg]`: Throws an error.
 
 ### Variables
+
 - `["let", name, value]`: Defines a variable in the current scope.
 - `["var", name]`: Retrieves a variable's value.
 - `["set", name, value]`: Updates an existing variable.
 
 ### Comparison
+
 All comparison operators support chaining (e.g., `["<", 1, 2, 3]` checks `1 < 2` AND `2 < 3`).
 
 - `["==", a, b, ...]`: Equality check. Returns true if all adjacent arguments are equal.
@@ -67,6 +66,7 @@ All comparison operators support chaining (e.g., `["<", 1, 2, 3]` checks `1 < 2`
 - `[">=", a, b, ...]`: Greater than or equal. Returns true if `a >= b >= ...`.
 
 ### Arithmetic
+
 All arithmetic operators support multiple arguments, processing them from left to right.
 
 - `["+", a, b, ...]`: Addition. `a + b + ...`
@@ -77,11 +77,13 @@ All arithmetic operators support multiple arguments, processing them from left t
 - `["^", a, b, ...]`: Exponentiation (Power Tower). `a ^ b ^ ...` (evaluated right-to-left, i.e., `base ^ (next ^ ...)`).
 
 ### Logic
+
 - `["and", ...args]`: Logical AND.
 - `["or", ...args]`: Logical OR.
 - `["not", arg]`: Logical NOT.
 
 ### System & Debugging
+
 - `["log", ...msgs]`: Logs messages to the console.
 - `["warn", msg]`: Adds a warning.
 - `["print", msg]`: Sends a message to the user.
@@ -90,6 +92,7 @@ All arithmetic operators support multiple arguments, processing them from left t
 - `["args"]`: Gets all script arguments.
 
 ### Entity Interaction
+
 - `["tell", target, msg]`: Sends a message to a target entity.
 - `["say", msg]`: Broadcasts a message to the room.
 - `["move", target, dest]`: Moves an entity to a destination.
@@ -103,18 +106,21 @@ All arithmetic operators support multiple arguments, processing them from left t
 - `["entity", id]`: Gets an entity by ID.
 
 ### Functions
+
 - `["lambda", [argNames], body]`: Creates a lambda function.
 - `["apply", func, ...args]`: Calls a lambda function.
 - `["call", target, verb, ...args]`: Calls a verb on an entity.
 - `["schedule", verb, args, delay]`: Schedules a verb call.
 
 ### Other
+
 - `["broadcast", msg, location?]`: Broadcasts a message.
 - `["world.find", name]`: Finds an entity ID by name (supports "me", "here", "this").
 - `["sys.can_edit", entityId]`: Checks if the caller can edit an entity.
 
 ## List Library
-*Defined in: `packages/core/src/scripting/lib/list.ts`*
+
+_Defined in: `packages/core/src/scripting/lib/list.ts`_
 
 Operations for working with arrays.
 
@@ -141,7 +147,8 @@ Operations for working with arrays.
 - `["list.flatMap", list, func]`: Maps and flattens the list.
 
 ## Object Library
-*Defined in: `packages/core/src/scripting/lib/object.ts`*
+
+_Defined in: `packages/core/src/scripting/lib/object.ts`_
 
 Operations for working with objects (dictionaries).
 
@@ -160,7 +167,8 @@ Operations for working with objects (dictionaries).
 - `["obj.flatMap", obj, func]`: Maps and flattens.
 
 ## String Library
-*Defined in: `packages/core/src/scripting/lib/string.ts`*
+
+_Defined in: `packages/core/src/scripting/lib/string.ts`_
 
 Operations for working with strings.
 
@@ -176,7 +184,8 @@ Operations for working with strings.
 - `["str.join", list, sep]`: Joins a list of strings.
 
 ## Time Library
-*Defined in: `packages/core/src/scripting/lib/time.ts`*
+
+_Defined in: `packages/core/src/scripting/lib/time.ts`_
 
 Operations for working with time.
 
@@ -188,7 +197,8 @@ Operations for working with time.
 - `["time.offset", amount, unit, base?]`: Adds an offset to a date. Units: "year", "month", "day", "hour", "minute", "second".
 
 ## World Library
-*Defined in: `packages/core/src/scripting/lib/world.ts`*
+
+_Defined in: `packages/core/src/scripting/lib/world.ts`_
 
 Operations for querying the game world.
 

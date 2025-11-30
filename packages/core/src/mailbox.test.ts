@@ -12,9 +12,11 @@ mock.module("./db", () => ({ db }));
 import { evaluate, registerLibrary } from "./scripting/interpreter";
 import { createEntity, getEntity } from "./repo";
 import * as Core from "./scripting/lib/core";
+import * as Object from "./scripting/lib/object";
 
 describe("Mailbox Verification", () => {
   registerLibrary(Core);
+  registerLibrary(Object);
 
   let senderId: number;
   let receiverId: number;
@@ -133,7 +135,10 @@ describe("Mailbox Verification", () => {
       sys: {},
     } as any;
 
-    const contents = await evaluate(Core["prop"](mailboxId, "contents"), ctx);
+    const contents = await evaluate(
+      Object["obj.get"](mailboxId, "contents"),
+      ctx,
+    );
     expect(contents).toEqual([]); // Should be empty because view denied
   });
 
@@ -144,7 +149,10 @@ describe("Mailbox Verification", () => {
       sys: {},
     } as any;
 
-    const contents = await evaluate(Core["prop"](mailboxId, "contents"), ctx);
+    const contents = await evaluate(
+      Object["obj.get"](mailboxId, "contents"),
+      ctx,
+    );
     expect(contents).toContain(itemId);
   });
 });

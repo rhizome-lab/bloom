@@ -16,9 +16,11 @@ import {
   ScriptError,
 } from "./interpreter";
 import * as Core from "./lib/core";
+import * as Object from "./lib/object";
 import * as List from "./lib/list";
 import { beforeAll } from "bun:test";
 import { mockEntity } from "../mock";
+import { createEntity } from "../repo";
 
 const checkPermissionMock = mock(() => true);
 mock.module("../permissions", () => ({
@@ -118,33 +120,30 @@ describe("Interpreter", () => {
   });
 
   test("capabilities", async () => {
-    // Setup props
-    target.props = {
+    // Insert target into DB so updateEntity works
+    const targetId = createEntity({
+      name: "Mock",
       foo: "bar",
       permissions: { view: "public", edit: "public" },
-    };
-
-    // Insert target into DB so updateEntity works
-    db.query("INSERT INTO entities (id, name, kind) VALUES (?, ?, ?)").run(
-      target.id,
-      target.name,
-      target.kind,
-    );
-    db.query("INSERT INTO entity_data (entity_id, props) VALUES (?, ?)").run(
-      target.id,
-      JSON.stringify(target.props),
-    );
+    });
 
     // prop
-    expect(await evaluate(Core["prop"]("this", "foo"), ctx)).toBe("bar");
+    expect(await evaluate(Object["obj.get"](Core["this"](), "foo"), ctx)).toBe(
+      "bar",
+    );
 
     // set_prop
-    await evaluate(Core["set_prop"]("this", "foo", "baz"), ctx);
+    await evaluate(
+      Core["set_entity"](Object["obj.set"](Core["this"](), "foo", "baz")),
+      ctx,
+    );
 
     // Verify DB update
     const row = db
-      .query("SELECT props FROM entity_data WHERE entity_id = ?")
-      .get(target.id) as any;
+      .query<{ props: string }, [targetId: number]>(
+        "SELECT props FROM entity_data WHERE entity_id = ?",
+      )
+      .get(targetId)!;
     const props = JSON.parse(row.props);
     expect(props.foo).toBe("baz");
   });
@@ -153,17 +152,15 @@ describe("Interpreter", () => {
     // for loop
     // sum = 0
     // for x in [1, 2, 3]: sum = sum + x
-    const script = [
-      "seq",
-      ["let", "sum", 0],
-      [
-        "for",
+    const script = Core["seq"](
+      Core["let"]("sum", 0),
+      Core["for"](
         "x",
-        ["list.new", 1, 2, 3],
-        ["let", "sum", ["+", ["var", "sum"], ["var", "x"]]],
-      ],
-      ["var", "sum"],
-    ];
+        List["list.new"](1, 2, 3),
+        Core["let"]("sum", Core["+"](Core["var"]("sum"), Core["var"]("x"))),
+      ),
+      Core["var"]("sum"),
+    );
     expect(await evaluate(script, ctx)).toBe(6);
   });
 
@@ -173,7 +170,7 @@ describe("Interpreter", () => {
       sys: { ...ctx.sys, create: mock(() => 999) },
     };
     expect(
-      await evaluate(["create", { name: "foo" }], ctxWithCreate as never),
+      await evaluate(Core["create"]({ name: "foo" }), ctxWithCreate as never),
     ).toBe(999);
     expect(ctxWithCreate.sys?.create).toHaveBeenCalled();
   });
@@ -191,7 +188,7 @@ describe("Interpreter", () => {
     // Permission denied (prop)
     checkPermissionMock.mockReturnValue(false);
     try {
-      await evaluate(Core["prop"]("this", "foo"), ctx);
+      await evaluate(Object["obj.get"](Core["this"](), "foo"), ctx);
       expect(true).toBe(false);
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -222,7 +219,10 @@ describe("Interpreter", () => {
 
     // set_prop
     try {
-      await evaluate(Core["set_prop"]("this", "foo", "bar"), ctx);
+      await evaluate(
+        Core["set_entity"](Object["obj.set"](Core["this"](), "foo", "bar")),
+        ctx,
+      );
       throw new Error();
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -230,7 +230,7 @@ describe("Interpreter", () => {
 
     // move
     try {
-      await evaluate(Core["move"]("this", "this"), ctx);
+      await evaluate(Core["move"](Core["this"](), Core["this"]()), ctx);
       throw new Error();
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -238,7 +238,7 @@ describe("Interpreter", () => {
 
     // destroy
     try {
-      await evaluate(Core["destroy"]("this"), ctx);
+      await evaluate(Core["destroy"](Core["this"]()), ctx);
       throw new Error();
     } catch (e: any) {
       expect(e.message).toContain("permission denied");
@@ -250,6 +250,7 @@ describe("Interpreter", () => {
   test("tell other", async () => {
     // Should return null if target is not visible to the player
     expect(
+      // TODO: get entity for `other`
       await evaluate(Core["tell"]("other", "msg"), ctx).catch((e) => e),
     ).toBeInstanceOf(ScriptError);
   });
@@ -263,7 +264,7 @@ describe("Interpreter", () => {
     // We need to ensure permission check passes
     checkPermissionMock.mockReturnValue(true);
     // Should not error
-    await evaluate(Core["destroy"]("this"), ctxFallback);
+    await evaluate(Core["destroy"](Core["this"]()), ctxFallback);
   });
 
   test("create missing sys", async () => {

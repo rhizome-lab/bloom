@@ -12,7 +12,11 @@ type UnknownUnion =
 export type ScriptValue_<T> = Exclude<T, readonly unknown[]>;
 
 export type ScriptValue<T> =
-  | (unknown extends T ? ScriptValue_<UnknownUnion> : ScriptValue_<T>)
+  | (unknown extends T
+      ? ScriptValue_<UnknownUnion>
+      : object extends T
+      ? Extract<ScriptValue_<UnknownUnion>, object>
+      : ScriptValue_<T>)
   | ScriptExpression<any[], T>;
 
 // Phantom type for return type safety
@@ -29,7 +33,7 @@ export interface OpcodeBuilder<
 > {
   (...args: Args): ScriptExpression<Args, Ret>;
   opcode: string;
-  handler: OpcodeHandler;
+  handler: OpcodeHandler<Ret>;
   metadata: OpcodeMetadata;
 }
 
@@ -38,7 +42,7 @@ export function defineOpcode<
   Ret = never,
 >(
   name: string,
-  def: { metadata: OpcodeMetadata; handler: OpcodeHandler },
+  def: { metadata: OpcodeMetadata; handler: OpcodeHandler<Ret> },
 ): OpcodeBuilder<Args, Ret> {
   const builder = ((...args: Args) => {
     const expr = [name, ...args] as unknown as ScriptExpression<Args, Ret>;

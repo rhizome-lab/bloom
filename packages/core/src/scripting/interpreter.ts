@@ -60,22 +60,17 @@ export interface OpcodeMetadata {
   returnType?: string;
 }
 
-export type OpcodeHandler = (args: any[], ctx: ScriptContext) => Promise<any>;
+export type OpcodeHandler<Ret> = (
+  args: any[],
+  ctx: ScriptContext,
+) => Promise<Ret>;
 
 export interface OpcodeDefinition {
-  handler: OpcodeHandler;
+  handler: OpcodeHandler<unknown>;
   metadata: OpcodeMetadata;
 }
 
 export const OPS: Record<string, OpcodeDefinition> = {};
-
-export function registerOpcode(
-  name: string,
-  handler: OpcodeHandler,
-  metadata: OpcodeMetadata,
-) {
-  OPS[name] = { handler, metadata };
-}
 
 export function registerLibrary(library: Record<string, OpcodeDefinition>) {
   for (const [name, def] of Object.entries(library)) {
@@ -127,7 +122,7 @@ export async function evaluate<T>(
   if (Array.isArray(ast)) {
     const [op, ...args] = ast;
     if (typeof op === "string" && OPS[op]) {
-      return OPS[op].handler(args, ctx);
+      return OPS[op].handler(args, ctx) as T;
     } else {
       throw new ScriptError(`Unknown opcode: ${op}`);
     }

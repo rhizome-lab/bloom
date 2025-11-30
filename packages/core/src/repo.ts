@@ -1,3 +1,4 @@
+import { SQLQueryBindings } from "bun:sqlite";
 import { db } from "./db";
 import { ScriptValue } from "./scripting/def";
 
@@ -59,16 +60,15 @@ export function getEntity(id: number): Entity | null {
  * @returns The ID of the newly created entity.
  */
 export function createEntity(
-  props: Record<string, any>,
+  props: Record<string, unknown>,
   prototypeId?: number,
 ): number {
   const result = db
-    .query(
+    .query<{ id: number }, [prototypeId: number | null, props: string]>(
       "INSERT INTO entities (prototype_id, props) VALUES (?, ?) RETURNING id",
     )
-    .get(prototypeId || null, JSON.stringify(props)) as { id: number };
-
-  return result.id;
+    .get(prototypeId ?? null, JSON.stringify(props));
+  return result!.id;
 }
 
 /**
@@ -78,10 +78,12 @@ export function createEntity(
  * @param id - The ID of the entity to update.
  * @param props - The properties to update (merged with existing).
  */
-export function updateEntity(id: number, props: Record<string, any>) {
-  const row = db.query("SELECT props FROM entities WHERE id = ?").get(id) as {
-    props: string;
-  };
+export function updateEntity(id: number, props: Record<string, unknown>) {
+  const row = db
+    .query<{ props: string }, [id: number]>(
+      "SELECT props FROM entities WHERE id = ?",
+    )
+    .get(id);
   if (!row) return;
 
   const currentProps = JSON.parse(row.props);
@@ -102,7 +104,7 @@ export interface Verb {
   /** The name of the verb (command) */
   name: string;
   /** The compiled S-expression code for the verb */
-  code: ScriptValue<any>;
+  code: ScriptValue<unknown>;
   /** Permission settings for the verb */
   permissions: Record<string, unknown>;
 }
@@ -114,11 +116,17 @@ export function getVerbs(entityId: number): Verb[] {
     visited.add(id);
 
     const rows = db
-      .query("SELECT * FROM verbs WHERE entity_id = ?")
-      .all(id) as readonly (Omit<Verb, "code" | "permissions"> & {
-      code: string;
-      permissions: string;
-    })[];
+      .query<
+        {
+          id: number;
+          entity_id: number;
+          name: string;
+          code: string;
+          permissions: string;
+        },
+        [id: number]
+      >("SELECT * FROM verbs WHERE entity_id = ?")
+      .all(id);
 
     const verbs = rows.map((r) => ({
       ...r,
@@ -128,10 +136,12 @@ export function getVerbs(entityId: number): Verb[] {
 
     // Check prototype
     const entity = db
-      .query("SELECT prototype_id FROM entities WHERE id = ?")
-      .get(id) as { prototype_id: number | null };
+      .query<{ prototype_id: number | null }, [id: number]>(
+        "SELECT prototype_id FROM entities WHERE id = ?",
+      )
+      .get(id);
 
-    if (entity && entity.prototype_id) {
+    if (entity?.prototype_id) {
       const protoVerbs = collectVerbs(entity.prototype_id, visited);
       // Merge, keeping the child's verb if names collide
       const verbNames = new Set(verbs.map((v) => v.name));
@@ -158,8 +168,17 @@ function lookupVerb(
   visited.add(id);
 
   const row = db
-    .query("SELECT * FROM verbs WHERE entity_id = ? AND name = ?")
-    .get(id, name) as any;
+    .query<
+      {
+        id: number;
+        entity_id: number;
+        name: string;
+        code: string;
+        permissions: string;
+      },
+      [id: number, name: string]
+    >("SELECT * FROM verbs WHERE entity_id = ? AND name = ?")
+    .get(id, name);
 
   if (row) {
     return {
@@ -171,8 +190,10 @@ function lookupVerb(
 
   // Check prototype
   const entity = db
-    .query("SELECT prototype_id FROM entities WHERE id = ?")
-    .get(id) as { prototype_id: number | null };
+    .query<{ prototype_id: number | null }, [id: number]>(
+      "SELECT prototype_id FROM entities WHERE id = ?",
+    )
+    .get(id);
 
   if (entity?.prototype_id) {
     return lookupVerb(entity.prototype_id, name, visited);
@@ -189,20 +210,23 @@ export function addVerb(
   entityId: number,
   name: string,
   code: ScriptValue<unknown>,
-  permissions: Record<string, any> = { call: "public" },
+  permissions: Record<string, unknown> = { call: "public" },
 ) {
-  db.query(
+  db.query<
+    unknown,
+    [entityId: number, name: string, code: string, permissions: string]
+  >(
     "INSERT INTO verbs (entity_id, name, code, permissions) VALUES (?, ?, ?, ?)",
   ).run(entityId, name, JSON.stringify(code), JSON.stringify(permissions));
 }
 
 export function updateVerb(
   id: number,
-  code?: any,
-  permissions?: Record<string, any>,
+  code?: ScriptValue<unknown>,
+  permissions?: Record<string, unknown>,
 ) {
   const updates: string[] = [];
-  const params: any[] = [];
+  const params: SQLQueryBindings[] = [];
 
   if (code !== undefined) {
     updates.push("code = ?");
@@ -215,9 +239,9 @@ export function updateVerb(
 
   if (updates.length > 0) {
     params.push(id);
-    db.query(`UPDATE verbs SET ${updates.join(", ")} WHERE id = ?`).run(
-      ...params,
-    );
+    db.query<unknown, SQLQueryBindings[]>(
+      `UPDATE verbs SET ${updates.join(", ")} WHERE id = ?`,
+    ).run(...params);
   }
 }
 
