@@ -78,21 +78,18 @@ export function createEntity(
  * @param id - The ID of the entity to update.
  * @param props - The properties to update (merged with existing).
  */
-export function updateEntity(id: number, props: Record<string, unknown>) {
-  const row = db
-    .query<{ props: string }, [id: number]>(
-      "SELECT props FROM entities WHERE id = ?",
-    )
-    .get(id);
-  if (!row) return;
-
-  const currentProps = JSON.parse(row.props);
-  const newProps = { ...currentProps, ...props };
-
-  db.query("UPDATE entities SET props = ? WHERE id = ?").run(
-    JSON.stringify(newProps),
-    id,
-  );
+export function updateEntity(...entities: readonly Entity[]) {
+  const ids: number[] = [];
+  const allProps: string[] = [];
+  for (const { id, ...props } of entities) {
+    ids.push(id);
+    allProps.push(JSON.stringify(props));
+  }
+  db.query(
+    `INSERT INTO entities (id, props) VALUES ${entities
+      .map(() => "(?, ?)")
+      .join(", ")} ON CONFLICT (id) DO UPDATE SET props = excluded.props`,
+  ).run(...ids, ...allProps);
 }
 
 /**

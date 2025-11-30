@@ -26,6 +26,7 @@ export function seed() {
   const entityBaseId = createEntity({
     name: "Entity Base",
     description: "The base of all things.",
+    location: voidId,
   });
 
   addVerb(
@@ -35,7 +36,7 @@ export function seed() {
       Core["let"]("query", Core["arg"](0)),
       Core["let"](
         "locationId",
-        Object["obj.get"](Core["caller"](), "location_id"),
+        Object["obj.get"](Core["caller"](), "location"),
       ),
       Core["let"](
         "contents",
@@ -76,7 +77,7 @@ export function seed() {
       Core["let"]("direction", Core["arg"](0)),
       Core["if"](
         Core["not"](Core["var"]("direction")),
-        Core["sys.send"]("Where do you want to go?"),
+        Core["send"]("Where do you want to go?"),
         Core["seq"](
           Core["let"](
             "exitId",
@@ -89,85 +90,85 @@ export function seed() {
                 "dest",
                 Object["obj.get"](
                   Core["resolve_props"](Core["entity"](Core["var"]("exitId"))),
-                  "destination_id",
+                  "destination",
                 ),
               ),
               Core["if"](
                 Core["var"]("dest"),
                 Core["move"](Core["caller"](), Core["var"]("dest")),
-                Core["sys.send"]("That way leads nowhere."),
+                Core["send"]("That way leads nowhere."),
               ),
             ),
-            Core["sys.send"]("You can't go that way."),
+            Core["send"]("You can't go that way."),
           ),
         ),
       ),
     ),
   );
 
-  addVerb(entityBaseId, "say", Core["sys.send"]("Say is not yet implemented."));
+  addVerb(entityBaseId, "say", Core["send"]("Say is not yet implemented."));
 
-  addVerb(
-    entityBaseId,
-    "tell",
-    Core["sys.send"]("Tell is not yet implemented."),
-  );
+  addVerb(entityBaseId, "tell", Core["send"]("Tell is not yet implemented."));
 
   // 3. Create Humanoid Base
-  const humanoidBaseId = createEntity({
-    name: "Humanoid Base",
-    description: "A humanoid creature.",
-    prototype_id: entityBaseId,
-    body_type: "humanoid",
-    // Slots are just definitions of where things can go
-    slots: [
-      // Head & Neck
-      "head",
-      "face",
-      "ears",
-      "neck",
-      // Torso & Back
-      "torso",
-      "back",
-      "waist",
-      // Arms
-      "l_shoulder",
-      "r_shoulder",
-      "l_arm",
-      "r_arm",
-      "l_wrist",
-      "r_wrist",
-      "l_hand",
-      "r_hand",
-      // Fingers (Rings)
-      "l_finger_thumb",
-      "l_finger_index",
-      "l_finger_middle",
-      "l_finger_ring",
-      "l_finger_pinky",
-      "r_finger_thumb",
-      "r_finger_index",
-      "r_finger_middle",
-      "r_finger_ring",
-      "r_finger_pinky",
-      // Legs
-      "l_leg",
-      "r_leg",
-      "l_ankle",
-      "r_ankle",
-      // Feet
-      "l_foot",
-      "r_foot",
-      "l_foot",
-    ],
-  });
+  const humanoidBaseId = createEntity(
+    {
+      name: "Humanoid Base",
+      description: "A humanoid creature.",
+      body_type: "humanoid",
+      // Slots are just definitions of where things can go
+      slots: [
+        // Head & Neck
+        "head",
+        "face",
+        "ears",
+        "neck",
+        // Torso & Back
+        "torso",
+        "back",
+        "waist",
+        // Arms
+        "l_shoulder",
+        "r_shoulder",
+        "l_arm",
+        "r_arm",
+        "l_wrist",
+        "r_wrist",
+        "l_hand",
+        "r_hand",
+        // Fingers (Rings)
+        "l_finger_thumb",
+        "l_finger_index",
+        "l_finger_middle",
+        "l_finger_ring",
+        "l_finger_pinky",
+        "r_finger_thumb",
+        "r_finger_index",
+        "r_finger_middle",
+        "r_finger_ring",
+        "r_finger_pinky",
+        // Legs
+        "l_leg",
+        "r_leg",
+        "l_ankle",
+        "r_ankle",
+        // Feet
+        "l_foot",
+        "r_foot",
+        "l_foot",
+      ],
+    },
+    entityBaseId,
+  );
 
   // 4. Create Player Prototype
-  const playerBaseId = createEntity({
-    name: "Player Base",
-    description: "A generic adventurer.",
-    prototype_id: humanoidBaseId,
-  });
+  const playerBaseId = createEntity(
+    {
+      name: "Player Base",
+      description: "A generic adventurer.",
+    },
+    humanoidBaseId,
+  );
 
   // Add verbs to Player Base
 
@@ -177,13 +178,13 @@ export function seed() {
     Core["if"](
       List["list.empty"](Core["args"]()),
       Core["resolve_props"](
-        Core["entity"](Object["obj.get"](Core["caller"](), "location_id")),
+        Core["entity"](Object["obj.get"](Core["caller"](), "location")),
       ),
       Core["seq"](
         // world.find is missing.
         // Core["letOp"]("targetId", ["world.find", ["arg", 0]]),
         // Commenting out the else branch logic that relies on world.find
-        Core["sys.send"]("You don't see that here."),
+        Core["send"]("You don't see that here."),
       ),
     ),
   );
@@ -213,10 +214,10 @@ export function seed() {
       ),
       Core["if"](
         Core["not"](Core["var"]("direction")),
-        Core["sys.send"]("Where do you want to dig?"),
+        Core["send"]("Where do you want to dig?"),
         Core["seq"](
           // sys.can_edit missing
-          Core["sys.send"]("Digging disabled."),
+          Core["send"]("Digging disabled."),
         ),
       ),
     ),
@@ -229,10 +230,10 @@ export function seed() {
       Core["let"]("name", Core["arg"](0)),
       Core["if"](
         Core["not"](Core["var"]("name")),
-        Core["sys.send"]("What do you want to create?"),
+        Core["send"]("What do you want to create?"),
         Core["seq"](
           // sys.can_edit missing
-          Core["sys.send"]("Creation disabled."),
+          Core["send"]("Creation disabled."),
         ),
       ),
     ),
@@ -250,10 +251,10 @@ export function seed() {
           Core["not"](Core["var"]("targetName")),
           Core["not"](Core["var"]("propName")),
         ),
-        Core["sys.send"]("Usage: set <target> <prop> <value>"),
+        Core["send"]("Usage: set <target> <prop> <value>"),
         Core["seq"](
           // world.find missing
-          Core["sys.send"]("Set disabled."),
+          Core["send"]("Set disabled."),
         ),
       ),
     ),
@@ -262,7 +263,7 @@ export function seed() {
   // 3. Create a Lobby Room
   const lobbyId = createEntity({
     name: "Lobby",
-    location_id: voidId,
+    location: voidId,
     description: "A cozy lobby with a crackling fireplace.",
   });
 
@@ -270,7 +271,7 @@ export function seed() {
   const playerId = createEntity(
     {
       name: "Guest",
-      location_id: lobbyId,
+      location: lobbyId,
       description: "A confused looking guest.",
     },
     playerBaseId,
@@ -279,7 +280,7 @@ export function seed() {
   // 5. Create some furniture (Table)
   const tableId = createEntity({
     name: "Oak Table",
-    location_id: lobbyId,
+    location: lobbyId,
     description: "A sturdy oak table.",
     slots: ["surface", "under"], // Generalizable slots!
   });
@@ -287,7 +288,7 @@ export function seed() {
   // 6. Create a Cup ON the table
   createEntity({
     name: "Ceramic Cup",
-    location_id: tableId,
+    location: tableId,
     description: "A chipped ceramic cup.",
     location_detail: "surface", // It's ON the table
   });
@@ -295,7 +296,7 @@ export function seed() {
   // 7. Create a Backpack
   const backpackId = createEntity({
     name: "Leather Backpack",
-    location_id: playerId,
+    location: playerId,
     description: "A worn leather backpack.",
     slots: ["main", "front_pocket"],
     location_detail: "back", // Worn on back
@@ -304,7 +305,7 @@ export function seed() {
   // 8. Create a Badge ON the Backpack
   createEntity({
     name: "Scout Badge",
-    location_id: backpackId,
+    location: backpackId,
     description: "A merit badge.",
     location_detail: "surface", // Attached to the outside? Or maybe we define a slot for it.
   });
@@ -318,16 +319,16 @@ export function seed() {
   // Link Lobby and Garden
   createEntity({
     name: "north",
-    location_id: lobbyId,
+    location: lobbyId,
     direction: "north",
-    destination_id: gardenId,
+    destination: gardenId,
   });
 
   createEntity({
     name: "south",
-    location_id: gardenId,
+    location: gardenId,
     direction: "south",
-    destination_id: lobbyId,
+    destination: lobbyId,
   });
 
   // 9. Create a Gemstore
@@ -339,22 +340,22 @@ export function seed() {
   // Link Lobby and Gemstore
   createEntity({
     name: "east",
-    location_id: lobbyId,
+    location: lobbyId,
     direction: "east",
-    destination_id: gemstoreId,
+    destination: gemstoreId,
   });
 
   createEntity({
     name: "west",
-    location_id: gemstoreId,
+    location: gemstoreId,
     direction: "west",
-    destination_id: lobbyId,
+    destination: lobbyId,
   });
 
   // Items in Gemstore
   createEntity({
     name: "Black Obsidian",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "A pitch black stone.",
     adjectives: [
       "color:black",
@@ -366,14 +367,14 @@ export function seed() {
 
   createEntity({
     name: "Silver Dagger",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "A gleaming silver blade.",
     adjectives: ["color:silver", "material:metal", "material:silver"],
   });
 
   createEntity({
     name: "Gold Coin",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "A heavy gold coin.",
     adjectives: [
       "color:gold",
@@ -385,7 +386,7 @@ export function seed() {
 
   createEntity({
     name: "Platinum Ring",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "A precious platinum ring.",
     adjectives: [
       "color:platinum",
@@ -397,35 +398,35 @@ export function seed() {
 
   createEntity({
     name: "Radioactive Isotope",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "It glows with a sickly light.",
     adjectives: ["effect:radioactive", "effect:glowing"],
   });
 
   createEntity({
     name: "Electric Blue Potion",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "A crackling blue liquid.",
     adjectives: ["color:electric blue", "effect:glowing"],
   });
 
   createEntity({
     name: "Ethereal Mist",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "A swirling white mist.",
     adjectives: ["color:white", "effect:ethereal"],
   });
 
   createEntity({
     name: "Transparent Cube",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "You can barely see it.",
     adjectives: ["effect:transparent", "material:glass"],
   });
 
   const wigStandId = createEntity({
     name: "Wig Stand",
-    location_id: gemstoreId,
+    location: gemstoreId,
     description: "A stand holding various wigs.",
     slots: ["surface"],
   });
@@ -433,7 +434,7 @@ export function seed() {
   if (wigStandId) {
     createEntity({
       name: "Auburn Wig",
-      location_id: wigStandId,
+      location: wigStandId,
       description: "A reddish-brown wig.",
       adjectives: ["color:auburn"],
       location_detail: "surface",
@@ -441,7 +442,7 @@ export function seed() {
 
     createEntity({
       name: "Blonde Wig",
-      location_id: wigStandId,
+      location: wigStandId,
       description: "A bright yellow wig.",
       adjectives: ["color:blonde"],
       location_detail: "surface",
@@ -449,7 +450,7 @@ export function seed() {
 
     createEntity({
       name: "Brunette Wig",
-      location_id: wigStandId,
+      location: wigStandId,
       description: "A dark brown wig.",
       adjectives: ["color:brunette"],
       location_detail: "surface",
@@ -461,7 +462,7 @@ export function seed() {
   // Watch Item
   const watchId = createEntity({
     name: "Golden Watch",
-    location_id: lobbyId,
+    location: lobbyId,
     props: {
       description: "A beautiful golden pocket watch.",
       adjectives: ["color:gold", "material:gold"],
@@ -471,13 +472,13 @@ export function seed() {
   addVerb(
     watchId,
     "tell",
-    Core["sys.send"](Time["time.format"](Time["time.now"](), "time")),
+    Core["send"](Time["time.format"](Time["time.now"](), "time")),
   );
 
   // Teleporter Item
   const teleporterId = createEntity({
     name: "Teleporter Stone",
-    location_id: lobbyId,
+    location: lobbyId,
     props: {
       description: "A humming stone that vibrates with energy.",
       destination: gardenId,
@@ -497,7 +498,7 @@ export function seed() {
   // Status Item
   const statusId = createEntity({
     name: "Status Orb",
-    location_id: lobbyId,
+    location: lobbyId,
     props: {
       description: "A crystal orb that shows world statistics.",
       adjectives: ["effect:transparent", "material:crystal"],
@@ -508,7 +509,7 @@ export function seed() {
     statusId,
     "check",
     // world.entities missing
-    Core["sys.send"]("Status check disabled."),
+    Core["send"]("Status check disabled."),
   );
 
   console.log("Seeding complete!");
@@ -516,7 +517,7 @@ export function seed() {
   // Color Library
   const colorLibId = createEntity({
     name: "Color Library", // Or a system object
-    location_id: voidId, // Hidden
+    location: voidId, // Hidden
     props: {
       colors: [
         "red",
@@ -553,7 +554,7 @@ export function seed() {
   // Mood Ring
   const moodRingId = createEntity({
     name: "Mood Ring",
-    location_id: lobbyId,
+    location: lobbyId,
     props: {
       description: "A ring that changes color based on... something.",
       adjectives: ["color:grey", "material:silver"],
@@ -595,7 +596,7 @@ export function seed() {
   // 1. Dynamic Mood Ring (Getter)
   const dynamicRingId = createEntity({
     name: "Dynamic Mood Ring",
-    location_id: lobbyId,
+    location: lobbyId,
     props: {
       description: "A ring that shimmers with the current second.",
       // No static adjectives needed if we use getter
@@ -623,7 +624,7 @@ export function seed() {
   // 2. Special Watch (Local Broadcast)
   const specialWatchId = createEntity({
     name: "Broadcasting Watch",
-    location_id: lobbyId,
+    location: lobbyId,
     props: { description: "A watch that announces the time to you." },
   });
 
@@ -632,7 +633,7 @@ export function seed() {
     "tick",
     Core["seq"](
       // broadcast missing
-      Core["sys.send"](
+      Core["send"](
         Str["str.concat"](
           "Tick Tock: ",
           Time["time.format"](Time["time.now"](), "time"),
@@ -648,7 +649,7 @@ export function seed() {
 
   const clockId = createEntity({
     name: "Grandfather Clock",
-    location_id: lobbyId,
+    location: lobbyId,
     props: { description: "A loud clock." },
   });
 
@@ -657,7 +658,7 @@ export function seed() {
     "tick",
     Core["seq"](
       // broadcast missing
-      Core["sys.send"](
+      Core["send"](
         Str["str.concat"](
           "BONG! It is ",
           Time["time.format"](Time["time.now"](), "time"),
@@ -671,7 +672,7 @@ export function seed() {
   // 4. Clock Tower (Global Broadcast)
   const towerId = createEntity({
     name: "Clock Tower", // Or ROOM/BUILDING
-    location_id: voidId, // Hidden, or visible somewhere
+    location: voidId, // Hidden, or visible somewhere
     props: { description: "The source of time." },
   });
 
@@ -680,7 +681,7 @@ export function seed() {
     "toll",
     Core["seq"](
       // broadcast missing
-      Core["sys.send"](
+      Core["send"](
         Str["str.concat"](
           "The Clock Tower tolls: ",
           Time["time.format"](Time["time.now"](), "time"),
@@ -708,15 +709,17 @@ export function seed() {
     mailboxProtoId,
     "deposit",
     // give missing
-    Core["sys.send"]("Deposit disabled."),
+    Core["send"]("Deposit disabled."),
     { call: "public" },
   ); // Anyone can call deposit
 
   // Give the player a mailbox
-  createEntity({
-    name: "My Mailbox",
-    location_id: playerId, // Carried by player
-    prototype_id: mailboxProtoId,
-    owner_id: playerId,
-  });
+  createEntity(
+    {
+      name: "My Mailbox",
+      location: playerId, // Carried by player
+      owner_id: playerId,
+    },
+    mailboxProtoId,
+  );
 }
