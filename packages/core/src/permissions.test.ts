@@ -111,42 +111,10 @@ describe("Scripted Permissions", () => {
       type,
     );
 
-    const sys = {
-      send: () => {},
-      call: async (
-        caller: Entity,
-        targetId: number,
-        verbName: string,
-        args: readonly unknown[],
-        warnings: string[],
-      ) => {
-        const verbs = db
-          .query<any, [number, string]>(
-            "SELECT * FROM verbs WHERE entity_id = ? AND name = ?",
-          )
-          .all(targetId, verbName);
-        const verb = verbs[0];
-
-        if (!verb) return null;
-
-        return await evaluate(
-          JSON.parse(verb.code),
-          createScriptContext({
-            caller,
-            this: getEntity(targetId)!,
-            args,
-            sys,
-            warnings,
-          }),
-        );
-      },
-    };
-
     const ctx = createScriptContext({
       caller: actor,
       this: system,
       args: [],
-      sys,
     });
     return await evaluate(callScript, ctx);
   };
