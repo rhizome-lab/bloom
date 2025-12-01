@@ -14,6 +14,11 @@ import * as String from "./scripting/lib/string";
 import * as Time from "./scripting/lib/time";
 import { seed } from "./seed";
 import { PluginManager, CommandContext } from "./plugin";
+import {
+  JsonRpcRequest,
+  JsonRpcResponse,
+  JsonRpcNotification,
+} from "@viwo/shared/jsonrpc";
 
 export { PluginManager };
 export type { CommandContext };
@@ -60,59 +65,40 @@ export function startServer(port: number = 8080) {
 
         ws.data = { userId: playerId };
 
-        // Send initial state
+        // Send initial state via notification
         const player = getEntity(playerId);
         if (player) {
-          ws.send(
-            JSON.stringify({
-              type: "connected",
-              payload: { player_id: playerId },
-            }),
-          );
+          const msg: JsonRpcNotification = {
+            jsonrpc: "2.0",
+            method: "player_id",
+            params: { playerId },
+          };
+          ws.send(JSON.stringify(msg));
         }
       },
       async message(ws, message) {
-        const data = JSON.parse(message as string);
-        const player = getEntity(ws.data.userId);
-
-        if (!player) return;
-
-        switch (data.type) {
-          case "execute": {
-            const [command, ...args] = data.payload;
-            console.log(`Command: ${command} args: ${args}`);
-
-            // Handle built-in commands or scriptable verbs
-            // We'll try to find a verb on the player, room, or items
-            const verbs = await getAvailableVerbs(player);
-            const verb = verbs.find((v) => v.name === command);
-
-            if (verb) {
-              try {
-                await executeVerb(player, verb, args, ws);
-              } catch (e: any) {
-                ws.send(
-                  JSON.stringify({
-                    type: "error",
-                    payload: { message: e.message },
-                  }),
-                );
-              }
-            } else {
-              ws.send(
-                JSON.stringify({
-                  type: "error",
-                  payload: { message: "Unknown command." },
-                }),
-              );
-            }
-            break;
+        try {
+          const data = JSON.parse(message as string);
+          // Basic JSON-RPC validation
+          if (data.jsonrpc !== "2.0") {
+            console.warn("Invalid JSON-RPC version");
+            return;
           }
-          case "get_opcodes": {
-            const { getOpcodeMetadata } = require("./scripting/interpreter");
-            ws.send(JSON.stringify(getOpcodeMetadata()));
-            break;
+
+          if ("method" in data && "id" in data) {
+            // It's a request
+            const response = await handleJsonRpcRequest(
+              data as JsonRpcRequest,
+              ws.data.userId,
+              ws,
+            );
+            ws.send(JSON.stringify(response));
+          } else if ("method" in data) {
+            // It's a notification
+            console.log("Received notification:", data);
           }
+        } catch (e) {
+          console.error("Failed to handle message", e);
         }
       },
       close() {
@@ -127,6 +113,76 @@ export function startServer(port: number = 8080) {
 
 if (import.meta.main) {
   startServer();
+}
+
+async function handleJsonRpcRequest(
+  req: JsonRpcRequest,
+  playerId: number,
+  ws: any,
+): Promise<JsonRpcResponse> {
+  const player = getEntity(playerId);
+  if (!player) {
+    return {
+      jsonrpc: "2.0",
+      id: req.id,
+      error: { code: -32000, message: "Player not found" },
+    };
+  }
+
+  switch (req.method) {
+    case "execute": {
+      const params = req.params as string[];
+      if (!Array.isArray(params) || params.length === 0) {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32602, message: "Invalid params" },
+        };
+      }
+      const [command, ...args] = params;
+      console.log(`Command: ${command} args: ${args}`);
+
+      const verbs = await getAvailableVerbs(player);
+      const verb = verbs.find((v) => v.name === command);
+
+      if (verb) {
+        try {
+          await executeVerb(player, verb, args, ws);
+          return {
+            jsonrpc: "2.0",
+            id: req.id,
+            result: { status: "ok" },
+          };
+        } catch (e: any) {
+          return {
+            jsonrpc: "2.0",
+            id: req.id,
+            error: { code: -32000, message: e.message },
+          };
+        }
+      } else {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32601, message: "Method not found (unknown verb)" },
+        };
+      }
+    }
+    case "get_opcodes": {
+      const { getOpcodeMetadata } = require("./scripting/interpreter");
+      return {
+        jsonrpc: "2.0",
+        id: req.id,
+        result: getOpcodeMetadata(),
+      };
+    }
+    default:
+      return {
+        jsonrpc: "2.0",
+        id: req.id,
+        error: { code: -32601, message: "Method not found" },
+      };
+  }
 }
 
 // TODO: Move this to scripting too
@@ -196,11 +252,38 @@ async function executeVerb(
 function createSystemContext(ws: WebSocket): ScriptSystemContext {
   return {
     send: (msg: unknown) => {
+      // If it's a string, wrap it in a message notification
       if (typeof msg === "string") {
-        ws.send(JSON.stringify({ type: "info", payload: { message: msg } }));
+        const notification: JsonRpcNotification = {
+          jsonrpc: "2.0",
+          method: "message",
+          params: { type: "info", text: msg },
+        };
+        ws.send(JSON.stringify(notification));
+      } else if (
+        typeof msg === "object" &&
+        msg !== null &&
+        "type" in msg &&
+        (msg as any).type === "update"
+      ) {
+        // Handle update messages specifically as notifications
+        const notification: JsonRpcNotification = {
+          jsonrpc: "2.0",
+          method: "update",
+          params: msg,
+        };
+        ws.send(JSON.stringify(notification));
       } else {
-        // Assume it's an object to send directly
-        ws.send(JSON.stringify(msg));
+        // Fallback for other objects, try to send as notification if it looks like one, or just wrap it
+        // Ideally we should enforce specific notification types
+        // For now, let's assume if it has a 'type' it can be a method name, or we wrap it in 'message'
+        console.warn("Sending unstructured object:", msg);
+        const notification: JsonRpcNotification = {
+          jsonrpc: "2.0",
+          method: "message",
+          params: msg,
+        };
+        ws.send(JSON.stringify(notification));
       }
     },
     call: async (caller, targetId, verbName, args, warnings) => {

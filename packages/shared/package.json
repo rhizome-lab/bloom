@@ -4,7 +4,8 @@
   "type": "module",
   "exports": {
     "./constants/adjectives": "./src/constants/adjectives.ts",
-    "./commands": "./src/commands.ts"
+    "./commands": "./src/commands.ts",
+    "./jsonrpc": "./src/jsonrpc.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

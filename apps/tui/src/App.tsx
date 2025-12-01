@@ -2,21 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { Box, Text, useApp, useStdout } from "ink";
 import WebSocket from "ws";
 import TextInput from "ink-text-input";
+import {
+  JsonRpcRequest,
+  JsonRpcResponse,
+  JsonRpcNotification,
+  MessageNotification,
+  UpdateNotification,
+  RoomIdNotification,
+  PlayerIdNotification,
+  Entity,
+} from "@viwo/shared/jsonrpc";
 
 // Types
-type Message = {
-  type: string;
-  text?: string;
-  name?: string;
-  description?: string;
-  contents?: any[];
-  items?: any[];
-  id?: number;
-};
-
 type LogEntry = {
   id: string;
-  message: Message;
+  message: string | object;
+  type: "info" | "error" | "other";
 };
 
 const App = () => {
@@ -25,9 +26,12 @@ const App = () => {
   const [rows, setRows] = useState(stdout.rows || 24);
   const [query, setQuery] = useState("");
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [room, setRoom] = useState<Message | null>(null);
-  const [inventory, setInventory] = useState<any[]>([]);
+  const [room, setRoom] = useState<Entity | null>(null);
+  const [inventory, setInventory] = useState<Entity[]>([]);
   const [connected, setConnected] = useState(false);
+  const [roomId, setRoomId] = useState<number | null>(null);
+  const [playerId, setPlayerId] = useState<number | null>(null);
+  const [entities, setEntities] = useState<Map<number, Entity>>(new Map());
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -39,12 +43,32 @@ const App = () => {
   }, [stdout]);
 
   useEffect(() => {
+    // Update room and inventory based on entities and IDs
+    if (roomId && entities.has(roomId)) {
+      setRoom(entities.get(roomId)!);
+    }
+    if (playerId && entities.has(playerId)) {
+      const player = entities.get(playerId);
+      const contents = player?.contents as number[] | undefined;
+      if (contents && Array.isArray(contents)) {
+        const items = contents
+          .map((id) => entities.get(id))
+          .filter((e): e is Entity => !!e);
+        setInventory(items);
+      }
+    }
+  }, [entities, roomId, playerId]);
+
+  useEffect(() => {
     const socket = new WebSocket("ws://localhost:8080");
     ws.current = socket;
 
     socket.on("open", () => {
       setConnected(true);
-      addLog({ type: "message", text: "Connected to Viwo Core." });
+      sendRequest("get_opcodes", []);
+      sendRequest("whoami", []);
+      sendRequest("look", []);
+      sendRequest("inventory", []);
     });
 
     socket.on("message", (data) => {
@@ -52,18 +76,18 @@ const App = () => {
         const message = JSON.parse(data.toString());
         handleMessage(message);
       } catch {
-        addLog({ type: "error", text: "Error parsing message." });
+        addLog("Error parsing message.", "error");
       }
     });
 
     socket.on("close", () => {
       setConnected(false);
-      addLog({ type: "error", text: "Disconnected from server." });
+      addLog("Disconnected from server.", "error");
       // exit(); // Optional: exit on disconnect
     });
 
     socket.on("error", (err) => {
-      addLog({ type: "error", text: `WebSocket error: ${err.message}` });
+      addLog(`WebSocket error: ${err.message}`, "error");
     });
 
     return () => {
@@ -71,29 +95,84 @@ const App = () => {
     };
   }, []);
 
-  const addLog = (message: Message) => {
+  const sendRequest = (method: string, params: any[]) => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      const req: JsonRpcRequest = {
+        jsonrpc: "2.0",
+        method: "execute",
+        params: method === "execute" ? params : [method, ...params], // Wrapper for execute command
+        id: Date.now(),
+      };
+      // Special case for get_opcodes which is a direct method
+      if (method === "get_opcodes") {
+        req.method = "get_opcodes";
+        req.params = [];
+      }
+
+      ws.current.send(JSON.stringify(req));
+    }
+  };
+
+  const addLog = (
+    message: string | object,
+    type: "info" | "error" | "other" = "info",
+  ) => {
     setLogs((prev) => [
       ...prev,
-      { id: Math.random().toString(36).substr(2, 9), message },
+      { id: Math.random().toString(36).substr(2, 9), message, type },
     ]);
   };
 
-  const handleMessage = (message: Message) => {
-    if (message.type === "room") {
-      setRoom(message);
-      // Also add to log for history
-      addLog(message);
-    } else if (message.type === "inventory") {
-      setInventory(message.items || []);
-      addLog(message);
-    } else {
-      addLog(message);
+  const handleMessage = (data: any) => {
+    // Basic JSON-RPC validation
+    if (data.jsonrpc !== "2.0") return;
+
+    if ("method" in data) {
+      // Notification
+      const notification = data as JsonRpcNotification;
+      switch (notification.method) {
+        case "message": {
+          const params = (notification as MessageNotification).params;
+          addLog(params.text, params.type === "info" ? "info" : "error");
+          break;
+        }
+        case "update": {
+          const params = (notification as UpdateNotification).params;
+          setEntities((prev) => {
+            const next = new Map(prev);
+            for (const entity of params.entities) {
+              next.set(entity.id, entity);
+            }
+            return next;
+          });
+          break;
+        }
+        case "room_id": {
+          const params = (notification as RoomIdNotification).params;
+          setRoomId(params.roomId);
+          break;
+        }
+        case "player_id": {
+          const params = (notification as PlayerIdNotification).params;
+          setPlayerId(params.playerId);
+          break;
+        }
+      }
+    } else if ("id" in data) {
+      // Response
+      const response = data as JsonRpcResponse;
+      if ("error" in response) {
+        addLog(`Error: ${response.error.message}`, "error");
+      } else {
+        // Success response, maybe log it or handle specific IDs
+        // addLog(`Result: ${JSON.stringify(response.result)}`, "other");
+      }
     }
   };
 
   const handleSubmit = (input: string) => {
     if (!ws.current || ws.current.readyState !== WebSocket.OPEN) {
-      addLog({ type: "error", text: "Not connected." });
+      addLog("Not connected.", "error");
       return;
     }
 
@@ -103,15 +182,23 @@ const App = () => {
     }
 
     // Echo command
-    addLog({ type: "message", text: `> ${input}` });
+    addLog(`> ${input}`, "other");
 
     const parts = input.match(/(?:[^\s"]+|"[^"]*")+/g);
     if (parts) {
       const command = parts[0];
       const args = parts.slice(1).map((arg) => arg.replace(/^"(.*)"$/, "$1"));
-      ws.current.send(JSON.stringify([command, ...args]));
+      sendRequest(command, args);
     }
     setQuery("");
+  };
+
+  // Helper to get room contents
+  const getRoomContents = () => {
+    if (!room || !room.contents || !Array.isArray(room.contents)) return [];
+    return room.contents
+      .map((id: number) => entities.get(id))
+      .filter((e: Entity | undefined): e is Entity => !!e);
   };
 
   return (
@@ -141,16 +228,16 @@ const App = () => {
               <Box key={log.id}>
                 <Text
                   color={
-                    log.message.type === "error"
+                    log.type === "error"
                       ? "red"
-                      : log.message.type === "message"
+                      : log.type === "info"
                       ? "white"
                       : "blue"
                   }
                 >
-                  {log.message.text ||
-                    log.message.name ||
-                    JSON.stringify(log.message)}
+                  {typeof log.message === "string"
+                    ? log.message
+                    : JSON.stringify(log.message)}
                 </Text>
               </Box>
             ))}
@@ -165,14 +252,14 @@ const App = () => {
           {room ? (
             <>
               <Text bold color="cyan">
-                {room.name}
+                {room.name as string}
               </Text>
-              <Text italic>{room.description}</Text>
+              <Text italic>{room.description as string}</Text>
               <Box marginTop={1}>
                 <Text underline>Contents:</Text>
-                {room.contents?.map((item, idx) => (
+                {getRoomContents().map((item: Entity, idx: number) => (
                   <Text key={idx}>
-                    - {item.name} ({item.kind})
+                    - {item.name as string} ({item.kind as string})
                   </Text>
                 ))}
               </Box>
@@ -188,7 +275,9 @@ const App = () => {
             Inventory
           </Text>
           {inventory.length > 0 ? (
-            inventory.map((item, idx) => <Text key={idx}>- {item.name}</Text>)
+            inventory.map((item, idx) => (
+              <Text key={idx}>- {item.name as string}</Text>
+            ))
           ) : (
             <Text color="gray">(empty)</Text>
           )}

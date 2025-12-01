@@ -1,4 +1,16 @@
 import { createStore } from "solid-js/store";
+import {
+  JsonRpcRequest,
+  JsonRpcResponse,
+  JsonRpcNotification,
+  MessageNotification,
+  UpdateNotification,
+  RoomIdNotification,
+  PlayerIdNotification,
+  Entity,
+} from "@viwo/shared/jsonrpc";
+
+export type { Entity } from "@viwo/shared/jsonrpc";
 
 export type CommandArgument =
   | string
@@ -10,31 +22,6 @@ export type CommandArgument =
 export type GameMessage =
   | { type: "message"; text: string }
   | { type: "error"; text: string };
-
-export interface Entity {
-  /** Unique ID of the entity */
-  id: number;
-  /**
-   * Resolved properties (merged from prototype and instance).
-   * Contains arbitrary game data like description, adjectives, custom_css.
-   */
-  [key: string]: unknown;
-}
-
-export interface UpdateMessage {
-  type: "update";
-  entities: readonly Entity[];
-}
-
-export interface RoomIdMessage {
-  type: "room_id";
-  roomId: number;
-}
-
-export interface PlayerIdMessage {
-  type: "player_id";
-  playerId: number;
-}
 
 interface GameState {
   responseResolveFunctions: Map<number, (value: any) => void>;
@@ -79,14 +66,13 @@ export const gameStore = {
       gameStore.execute(["inventory"]);
 
       // Fetch opcodes
-      socket?.send(
-        JSON.stringify({
-          jsonrpc: "2.0",
-          method: "get_opcodes",
-          id: 0, // Static ID for now
-          params: [],
-        }),
-      );
+      const req: JsonRpcRequest = {
+        jsonrpc: "2.0",
+        method: "get_opcodes",
+        id: 0, // Static ID for now
+        params: [],
+      };
+      socket.send(JSON.stringify(req));
     };
 
     socket.onclose = () => {
@@ -98,29 +84,37 @@ export const gameStore = {
       setState("socket", null);
     };
 
-    const handleServerMessage = (message: unknown) => {
-      if (!message || typeof message !== "object" || !("type" in message)) {
-        console.error("Server message could not be handled:", message);
-        return;
-      }
-      switch (message.type) {
+    const handleNotification = (notification: JsonRpcNotification) => {
+      switch (notification.method) {
+        case "message": {
+          const params = (notification as MessageNotification).params;
+          gameStore.addMessage({
+            type: params.type === "info" ? "message" : "error",
+            text: params.text,
+          });
+          break;
+        }
         case "update": {
-          const update = message as UpdateMessage;
+          const params = (notification as UpdateNotification).params;
           const newEntities = new Map(state.entities);
-          for (const entity of update.entities) {
+          for (const entity of params.entities) {
             newEntities.set(entity.id, entity);
           }
           setState("entities", newEntities);
           break;
         }
         case "room_id": {
-          setState("roomId", (message as RoomIdMessage).roomId);
+          const params = (notification as RoomIdNotification).params;
+          setState("roomId", params.roomId);
           break;
         }
         case "player_id": {
-          setState("playerId", (message as PlayerIdMessage).playerId);
+          const params = (notification as PlayerIdNotification).params;
+          setState("playerId", params.playerId);
           break;
         }
+        default:
+          console.warn("Unknown notification method:", notification.method);
       }
     };
 
@@ -128,40 +122,40 @@ export const gameStore = {
       try {
         const data = JSON.parse(event.data);
 
-        // Handle JSON-RPC Responses
-        if (data.jsonrpc === "2.0") {
-          if (data.result) {
-            if (data.id) {
-              const resolve = state.responseResolveFunctions.get(data.id);
-              if (resolve) {
-                resolve(data.result);
-                state.responseResolveFunctions.delete(data.id);
-              }
-            }
-            // Check if this is the opcode response
-            if (
-              Array.isArray(data.result) &&
-              data.result.length > 0 &&
-              data.result[0].opcode
-            ) {
-              setState("opcodes", data.result);
-              return;
-            }
+        // Basic JSON-RPC validation
+        if (data.jsonrpc !== "2.0") {
+          console.warn("Invalid JSON-RPC version", data);
+          return;
+        }
 
-            // Handle Server Messages (Single or Array)
-            if (Array.isArray(data.result)) {
-              for (const message of data.result) {
-                handleServerMessage(message);
+        if ("id" in data && data.id !== null && data.id !== undefined) {
+          // It's a response
+          const response = data as JsonRpcResponse;
+          const resolve = state.responseResolveFunctions.get(
+            Number(response.id),
+          );
+          if (resolve) {
+            if ("result" in response) {
+              resolve(response.result);
+
+              // Special handling for get_opcodes response
+              // We might need a better way to identify this request
+              if (response.id === 0) {
+                setState("opcodes", response.result);
               }
             } else {
-              handleServerMessage(data.result);
+              console.error("RPC Error:", response.error);
+              gameStore.addMessage({
+                type: "error",
+                text: `Error: ${response.error.message}`,
+              });
+              resolve(null); // Resolve with null on error?
             }
-          } else if (data.method === "message" && data.params) {
-            gameStore.addMessage(structuredClone(data.params));
-          } else {
-            console.error("Unknown server message:", data);
+            state.responseResolveFunctions.delete(Number(response.id));
           }
-          return;
+        } else if ("method" in data) {
+          // It's a notification
+          handleNotification(data as JsonRpcNotification);
         }
       } catch (e) {
         console.error("Failed to parse message", e);
@@ -176,14 +170,14 @@ export const gameStore = {
       const id = idCounter;
       idCounter += 1;
 
-      state.socket.send(
-        JSON.stringify({
-          jsonrpc: "2.0",
-          method: "execute",
-          params: command,
-          id,
-        }),
-      );
+      const req: JsonRpcRequest = {
+        jsonrpc: "2.0",
+        method: "execute",
+        params: command,
+        id,
+      };
+
+      state.socket.send(JSON.stringify(req));
       return new Promise((resolve) => {
         state.responseResolveFunctions.set(id, resolve);
       });
