@@ -11,7 +11,7 @@ Viwo is inspired by ChatMUD and LambdaMOO, focusing on a semantic world state, r
 - **Runtime**: Bun
 - **Database**: Bun:SQLite
 - **Frontend**: SolidJS (Web), React + Ink (TUI)
-- **AI**: Vercel AI SDK
+- **AI**: Vercel AI SDK / OpenAI
 
 ## High-Level Overview
 
@@ -30,10 +30,9 @@ The system consists of several main parts:
 
 Everything in the game world is an **Entity**. Entities are stored in a SQLite database and loaded into memory.
 
-- **Kind**: Entities have a `kind` (e.g., `ROOM`, `ACTOR`, `ITEM`, `EXIT`, `ZONE`).
-- **Props**: Entities have a JSON `props` field for flexible data storage (e.g., description, custom CSS, adjectives).
-- **Location**: Entities form a hierarchy via `location_id`.
-- **Inheritance**: Objects can inherit properties and methods from parent objects (Prototypes).
+- **Schema**: `id` (integer), `prototype_id` (integer, nullable), `props` (JSON).
+- **Props**: Entities have a JSON `props` field for flexible data storage (e.g., `name`, `description`, `location`, `contents`).
+- **Inheritance**: Objects can inherit properties and verbs from parent objects (Prototypes). Resolution is recursive.
 
 ### Scripting
 
@@ -41,24 +40,26 @@ Viwo features a custom scripting language (Lisp-like S-expressions) for dynamic 
 
 - **Verbs**: Scripts attached to entities that define actions (e.g., `push`, `open`).
 - **Interpreter**: A secure sandbox that executes scripts with access to game primitives.
+- **Libraries**: Modular libraries (`core`, `list`, `object`, `string`, `time`) provide functionality.
 
 ## AI Integration
 
 - **Text Generation**: For NPC dialogue, room descriptions, and dynamic responses.
 - **Image Generation**: For character avatars and item icons.
-- **Vercel AI SDK**: Used for abstracting LLM providers.
 
-## Data Flow
+## Data Flow (JSON-RPC 2.0)
 
-1.  **Input**: User types a command in the Web Client.
-2.  **Transport**: Command is sent as a JSON array (S-expression) via WebSocket.
-3.  **Processing**:
-    - **Plugin Check**: `PluginManager` checks if a plugin handles the command.
-    - **Validation**: Core validates arguments using Zod schemas from `@viwo/shared`.
+Communication between Client and Server uses the JSON-RPC 2.0 protocol.
+
+1.  **Request**: Client sends a JSON-RPC request (e.g., `execute` command).
+2.  **Processing**:
+    - **Validation**: Core validates the request.
     - **Verb Search**: Core looks for a matching "verb" on the player, room, or target objects.
     - **Execution**: If a verb is found, the script is executed.
-    - **Fallback**: If no verb is found, hardcoded commands (look, move, dig) are executed.
-4.  **Output**: State updates (room description, inventory, messages) are sent back to the client.
+3.  **Notifications**: Server sends JSON-RPC notifications to clients:
+    - `message`: Text output (info/error).
+    - `update`: Entity state updates (normalized list of entities).
+    - `player_id` / `room_id`: Context updates.
 
 ## Directory Structure
 

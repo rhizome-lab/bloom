@@ -34,7 +34,7 @@ _Defined in: `packages/core/src/scripting/lib/core.ts`_
 
 The core library provides essential control flow, variable management, arithmetic, logic, and system interaction.
 
-### Targets
+### Context
 
 - `["this"]`: The `Entity` the script is attached to (`ctx.this`).
 - `["caller"]`: The `Entity` executing the script (`ctx.caller`).
@@ -58,23 +58,21 @@ The core library provides essential control flow, variable management, arithmeti
 
 All comparison operators support chaining (e.g., `["<", 1, 2, 3]` checks `1 < 2` AND `2 < 3`).
 
-- `["==", a, b, ...]`: Equality check. Returns true if all adjacent arguments are equal.
-- `["!=", a, b, ...]`: Inequality check. Returns true if all adjacent arguments are different.
-- `["<", a, b, ...]`: Less than. Returns true if `a < b < ...`.
-- `[">", a, b, ...]`: Greater than. Returns true if `a > b > ...`.
-- `["<=", a, b, ...]`: Less than or equal. Returns true if `a <= b <= ...`.
-- `[">=", a, b, ...]`: Greater than or equal. Returns true if `a >= b >= ...`.
+- `["==", a, b, ...]`: Equality check.
+- `["!=", a, b, ...]`: Inequality check.
+- `["<", a, b, ...]`: Less than.
+- `[">", a, b, ...]`: Greater than.
+- `["<=", a, b, ...]`: Less than or equal.
+- `[">=", a, b, ...]`: Greater than or equal.
 
 ### Arithmetic
 
-All arithmetic operators support multiple arguments, processing them from left to right.
-
-- `["+", a, b, ...]`: Addition. `a + b + ...`
-- `["-", a, b, ...]`: Subtraction. `a - b - ...`
-- `["*", a, b, ...]`: Multiplication. `a * b * ...`
-- `["/", a, b, ...]`: Division. `a / b / ...`
-- `["%", a, b]`: Modulo. `a % b`
-- `["^", a, b, ...]`: Exponentiation (Power Tower). `a ^ b ^ ...` (evaluated right-to-left, i.e., `base ^ (next ^ ...)`).
+- `["+", a, b, ...]`: Addition.
+- `["-", a, b, ...]`: Subtraction.
+- `["*", a, b, ...]`: Multiplication.
+- `["/", a, b, ...]`: Division.
+- `["%", a, b]`: Modulo.
+- `["^", a, b, ...]`: Exponentiation.
 
 ### Logic
 
@@ -84,45 +82,40 @@ All arithmetic operators support multiple arguments, processing them from left t
 
 ### System & Debugging
 
-- `["log", ...msgs]`: Logs messages to the console.
-- `["warn", msg]`: Adds a warning.
-- `["print", msg]`: Sends a message to the user.
+- `["log", ...msgs]`: Logs messages to the server console.
+- `["warn", msg]`: Adds a warning to the context.
+- `["send", msg]`: Sends a system message (notification) to the caller.
 - `["random", min?, max?]`: Generates a random number.
 - `["arg", index]`: Gets a script argument by index.
 - `["args"]`: Gets all script arguments.
+- `["typeof", value]`: Returns the type of the value ("string", "number", "boolean", "object", "null", "array").
 
 ### Entity Interaction
 
-- `["tell", target, msg]`: Sends a message to a target entity.
-- `["say", msg]`: Broadcasts a message to the room.
-- `["move", target, dest]`: Moves an entity to a destination.
-- `["create", data]`: Creates a new entity. `data` can be `{ kind, name, props, location_id }` or arguments `[kind, name, props?, location_id?]`.
+- `["create", data]`: Creates a new entity. `data` is an object with props. Returns the new ID.
 - `["destroy", target]`: Destroys an entity.
-- `["give", target, dest]`: Transfers ownership of an item.
-- `["prop", target, key]`: Gets a property value.
-- `["set_prop", target, key, value]`: Sets a property value.
-- `["contents", container]`: Gets contents of a container.
-- `["verbs", entity]`: Gets verbs of an entity.
 - `["entity", id]`: Gets an entity by ID.
+- `["set_entity", ...entities]`: Updates properties of one or more entities.
+- `["get_prototype", entity]`: Gets the prototype ID of an entity.
+- `["set_prototype", entity, protoId]`: Sets the prototype ID of an entity.
+- `["resolve_props", entity]`: Returns an entity with all properties resolved (merged with prototype).
+- `["verbs", entity]`: Gets a list of verbs available on an entity.
 
-### Functions
+### Functions & Calls
 
 - `["lambda", [argNames], body]`: Creates a lambda function.
 - `["apply", func, ...args]`: Calls a lambda function.
 - `["call", target, verb, ...args]`: Calls a verb on an entity.
-- `["schedule", verb, args, delay]`: Schedules a verb call.
+- `["schedule", verb, args, delay]`: Schedules a verb call on `this` entity after `delay` milliseconds.
 
-### Other
+### Data Structures
 
-- `["broadcast", msg, location?]`: Broadcasts a message.
-- `["world.find", name]`: Finds an entity ID by name (supports "me", "here", "this").
-- `["sys.can_edit", entityId]`: Checks if the caller can edit an entity.
+- `["json.stringify", value]`: Converts value to JSON string.
+- `["json.parse", string]`: Parses JSON string.
 
 ## List Library
 
 _Defined in: `packages/core/src/scripting/lib/list.ts`_
-
-Operations for working with arrays.
 
 - `["list.new", ...items]`: Creates a list.
 - `["list.len", list]`: Returns the length of a list.
@@ -150,8 +143,6 @@ Operations for working with arrays.
 
 _Defined in: `packages/core/src/scripting/lib/object.ts`_
 
-Operations for working with objects (dictionaries).
-
 - `["obj.new", key1, val1, ...]`: Creates an object.
 - `["obj.keys", obj]`: Returns keys.
 - `["obj.values", obj]`: Returns values.
@@ -170,8 +161,6 @@ Operations for working with objects (dictionaries).
 
 _Defined in: `packages/core/src/scripting/lib/string.ts`_
 
-Operations for working with strings.
-
 - `["str.len", str]`: Returns length.
 - `["str.concat", ...strs]`: Concatenates strings.
 - `["str.split", str, sep]`: Splits a string.
@@ -187,27 +176,21 @@ Operations for working with strings.
 
 _Defined in: `packages/core/src/scripting/lib/time.ts`_
 
-Operations for working with time.
-
 - `["time.now"]`: Returns current ISO timestamp.
 - `["time.format", timestamp]`: Formats a timestamp.
 - `["time.parse", datetime]`: Parses a datetime string.
 - `["time.from_timestamp", number]`: Converts number to ISO string.
 - `["time.to_timestamp", datetime]`: Converts ISO string to number.
-- `["time.offset", amount, unit, base?]`: Adds an offset to a date. Units: "year", "month", "day", "hour", "minute", "second".
+- `["time.offset", amount, unit, base?]`: Adds an offset to a date.
 
-## World Library
+## Permissions
 
-_Defined in: `packages/core/src/scripting/lib/world.ts`_
+Permissions are handled via the `System` entity. To check if an actor can edit an entity, use:
 
-Operations for querying the game world.
+```json
+["call", ["entity", SYSTEM_ID], "can_edit", actor, target, type]
+```
 
-- `["world.time"]`: Returns current world time (timestamp).
-- `["world.players"]`: Returns a list of all player IDs.
-- `["world.entities"]`: Returns a list of all entity IDs.
-- `["world.where", target]`: Returns the location ID of a target.
-- `["entity.contents", target]`: Returns contents of an entity (ID list).
-- `["entity.descendants", target]`: Returns all descendants of an entity.
-- `["entity.ancestors", target]`: Returns all ancestors of an entity.
-- `["entity.verbs", target]`: Returns verb names of an entity.
-- `["player.verbs"]`: Returns all available verbs for the current player (from self, room, items, inventory).
+- `actor`: The entity attempting the action.
+- `target`: The entity being accessed.
+- `type`: The type of access (e.g., "edit", "read").
