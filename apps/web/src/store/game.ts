@@ -23,11 +23,11 @@ export interface Entity {
 
 export interface UpdateMessage {
   type: "update";
-  entities: Entity[];
+  entities: readonly Entity[];
 }
 
-export interface RoomChangeMessage {
-  type: "room_change";
+export interface RoomIdMessage {
+  type: "room_id";
   roomId: number;
 }
 
@@ -98,20 +98,29 @@ export const gameStore = {
       setState("socket", null);
     };
 
-    const handleServerMessage = (msg: any) => {
-      if (!msg || typeof msg !== "object") return;
-
-      if (msg.type === "update") {
-        const update = msg as UpdateMessage;
-        const newEntities = new Map(state.entities);
-        for (const entity of update.entities) {
-          newEntities.set(entity.id, entity);
+    const handleServerMessage = (message: unknown) => {
+      if (!message || typeof message !== "object" || !("type" in message)) {
+        console.error("Server message could not be handled:", message);
+        return;
+      }
+      switch (message.type) {
+        case "update": {
+          const update = message as UpdateMessage;
+          const newEntities = new Map(state.entities);
+          for (const entity of update.entities) {
+            newEntities.set(entity.id, entity);
+          }
+          setState("entities", newEntities);
+          break;
         }
-        setState("entities", newEntities);
-      } else if (msg.type === "room_change") {
-        setState("roomId", (msg as RoomChangeMessage).roomId);
-      } else if (msg.type === "player_id") {
-        setState("playerId", (msg as PlayerIdMessage).playerId);
+        case "room_id": {
+          setState("roomId", (message as RoomIdMessage).roomId);
+          break;
+        }
+        case "player_id": {
+          setState("playerId", (message as PlayerIdMessage).playerId);
+          break;
+        }
       }
     };
 
@@ -141,12 +150,16 @@ export const gameStore = {
 
             // Handle Server Messages (Single or Array)
             if (Array.isArray(data.result)) {
-              data.result.forEach(handleServerMessage);
+              for (const message of data.result) {
+                handleServerMessage(message);
+              }
             } else {
               handleServerMessage(data.result);
             }
           } else if (data.method === "message" && data.params) {
             gameStore.addMessage(structuredClone(data.params));
+          } else {
+            console.error("Unknown server message:", data);
           }
           return;
         }

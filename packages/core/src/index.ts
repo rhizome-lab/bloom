@@ -35,7 +35,7 @@ export function startServer(port: number = 8080) {
     port,
     async fetch(req, server) {
       const url = new URL(req.url);
-      if (url.pathname === "/ws") {
+      if (url.pathname === "/" && req.headers.get("upgrade") === "websocket") {
         if (server.upgrade(req, { data: { userId: 0 } })) {
           return;
         }
@@ -63,7 +63,12 @@ export function startServer(port: number = 8080) {
         // Send initial state
         const player = getEntity(playerId);
         if (player) {
-          ws.send(JSON.stringify({ type: "connected", payload: { playerId } }));
+          ws.send(
+            JSON.stringify({
+              type: "connected",
+              payload: { player_id: playerId },
+            }),
+          );
         }
       },
       async message(ws, message) {
