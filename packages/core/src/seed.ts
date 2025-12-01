@@ -29,6 +29,96 @@ export function seed() {
     location: voidId,
   });
 
+  // 3. Create System Entity
+  const systemId = createEntity({
+    name: "System",
+    description: "The system root object.",
+    location: voidId,
+  });
+
+  addVerb(
+    systemId,
+    "can_edit",
+    Core["seq"](
+      Core["let"]("actor", Core["arg"](0)),
+      Core["let"]("target", Core["arg"](1)),
+      Core["let"]("type", Core["arg"](2)),
+      Core["let"]("allowed", false),
+
+      // 1. Admin Check
+      Core["if"](
+        Object["obj.get"](Core["var"]("actor"), "admin", false),
+        Core["set"]("allowed", true),
+      ),
+
+      // 2. Owner Check
+      Core["if"](
+        Core["=="](
+          Object["obj.get"](Core["var"]("target"), "owner", null),
+          Object["obj.get"](Core["var"]("actor"), "id", null),
+        ),
+        Core["set"]("allowed", true),
+      ),
+
+      // 3. Explicit Permissions
+      Core["let"](
+        "perms",
+        Object["obj.get"](Core["var"]("target"), "permissions", null),
+      ),
+      Core["if"](
+        Core["var"]("perms"),
+        Core["seq"](
+          Core["let"](
+            "explicit",
+            Object["obj.get"](Core["var"]("perms"), Core["var"]("type"), null),
+          ),
+          // Public check
+          Core["if"](
+            Core["=="](Core["var"]("explicit"), true),
+            Core["set"]("allowed", true),
+          ),
+          // List check
+          Core["if"](
+            Core["=="](Core["typeof"](Core["var"]("explicit")), "array"),
+            Core["if"](
+              List["list.includes"](
+                Core["var"]("explicit"),
+                Object["obj.get"](Core["var"]("actor"), "id", null),
+              ),
+              Core["set"]("allowed", true),
+            ),
+          ),
+        ),
+      ),
+
+      // 4. Cascading (Location Owner)
+      Core["if"](
+        Core["not"](Core["var"]("allowed")),
+        Core["seq"](
+          Core["let"](
+            "locId",
+            Object["obj.get"](Core["var"]("target"), "location", null),
+          ),
+          Core["if"](
+            Core["var"]("locId"),
+            Core["seq"](
+              Core["let"]("loc", Core["entity"](Core["var"]("locId"))),
+              Core["if"](
+                Core["=="](
+                  Object["obj.get"](Core["var"]("loc"), "owner", null),
+                  Object["obj.get"](Core["var"]("actor"), "id", null),
+                ),
+                Core["set"]("allowed", true),
+              ),
+            ),
+          ),
+        ),
+      ),
+
+      Core["var"]("allowed"),
+    ),
+  );
+
   addVerb(
     entityBaseId,
     "find",
@@ -381,8 +471,24 @@ export function seed() {
         Core["not"](Core["var"]("direction")),
         Core["send"]("Where do you want to dig?"),
         Core["seq"](
-          // sys.can_edit missing
-          Core["send"]("Digging disabled."),
+          // Check permission via System.can_edit
+          Core["let"]("sys", Core["entity"](Core["var"]("systemId"))),
+          Core["if"](
+            Core["call"](
+              Core["var"]("sys"),
+              "can_edit",
+              Core["caller"](),
+              Core["entity"](Object["obj.get"](Core["caller"](), "location")),
+              "edit",
+            ),
+            Core["seq"](
+              // TODO: Implement dig logic
+              Core["send"](
+                "Digging logic not yet implemented, but you have permission!",
+              ),
+            ),
+            Core["send"]("You do not have permission to dig here."),
+          ),
         ),
       ),
     ),
@@ -397,8 +503,24 @@ export function seed() {
         Core["not"](Core["var"]("name")),
         Core["send"]("What do you want to create?"),
         Core["seq"](
-          // sys.can_edit missing
-          Core["send"]("Creation disabled."),
+          // Check permission via System.can_edit
+          Core["let"]("sys", Core["entity"](Core["var"]("systemId"))),
+          Core["if"](
+            Core["call"](
+              Core["var"]("sys"),
+              "can_edit",
+              Core["caller"](),
+              Core["entity"](Object["obj.get"](Core["caller"](), "location")),
+              "edit",
+            ),
+            Core["seq"](
+              // TODO: Implement create logic
+              Core["send"](
+                "Creation logic not yet implemented, but you have permission!",
+              ),
+            ),
+            Core["send"]("You do not have permission to create here."),
+          ),
         ),
       ),
     ),
@@ -418,8 +540,39 @@ export function seed() {
         ),
         Core["send"]("Usage: set <target> <prop> <value>"),
         Core["seq"](
-          // world.find missing
-          Core["send"]("Set disabled."),
+          Core["let"](
+            "targetId",
+            Core["call"](Core["this"](), "find", Core["var"]("targetName")),
+          ),
+          Core["if"](
+            Core["var"]("targetId"),
+            Core["seq"](
+              Core["let"]("sys", Core["entity"](Core["var"]("systemId"))),
+              Core["if"](
+                Core["call"](
+                  Core["var"]("sys"),
+                  "can_edit",
+                  Core["caller"](),
+                  Core["entity"](Core["var"]("targetId")),
+                  "edit",
+                ),
+                Core["seq"](
+                  Core["set_entity"](
+                    Object["obj.merge"](
+                      Core["entity"](Core["var"]("targetId")),
+                      Object["obj.new"](
+                        Core["var"]("propName"),
+                        Core["var"]("value"),
+                      ),
+                    ),
+                  ),
+                  Core["send"]("Property set."),
+                ),
+                Core["send"]("You do not have permission to edit this object."),
+              ),
+            ),
+            Core["send"]("I don't see that here."),
+          ),
         ),
       ),
     ),

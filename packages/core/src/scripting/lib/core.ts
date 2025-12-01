@@ -570,6 +570,29 @@ const add = defineOpcode<
 });
 export { add as "+" };
 
+export const typeof_ = defineOpcode<[ScriptValue<unknown>], "string" | "number" | "boolean" | "object"| "null" | "array">("typeof", {
+  metadata: {
+    label: "Type Of",
+    category: "logic",
+    description: "Get value type",
+    slots: [{ name: "Value", type: "block" }],
+    parameters: [{ name: "value", type: "unknown" }],
+    returnType: "string",
+  },
+  handler: async (args, ctx) => {
+    if (args.length !== 1) {
+      throw new ScriptError("typeof: expected 1 argument");
+    }
+    const [valExpr] = args;
+    const val = await evaluate(valExpr, ctx);
+    if (Array.isArray(val)) return "array";
+    if (val === null) return "null";
+    return typeof val as "string" | "number" | "boolean" | "object"| "null" | "array";
+  },
+});
+export { typeof_ as typeof };
+
+
 const sub = defineOpcode<
   [ScriptValue<number>, ScriptValue<number>, ...ScriptValue<number>[]],
   number
@@ -1471,3 +1494,4 @@ export const resolve_props = defineOpcode<[ScriptValue<Entity>], Entity>(
     },
   },
 );
+

@@ -126,7 +126,7 @@ const objEntries = defineOpcode<[ScriptValue<object>], [string, any][]>(
 );
 export { objEntries as "obj.entries" };
 
-const objGet = defineOpcode<[ScriptValue<object>, ScriptValue<string>], any>(
+const objGet = defineOpcode<[ScriptValue<object>, ScriptValue<string>, ScriptValue<unknown>?], any>(
   "obj.get",
   {
     metadata: {
@@ -136,18 +136,20 @@ const objGet = defineOpcode<[ScriptValue<object>, ScriptValue<string>], any>(
       slots: [
         { name: "Object", type: "block" },
         { name: "Key", type: "string" },
+        { name: "Default", type: "block", default: null },
       ],
       parameters: [
         { name: "object", type: "object" },
         { name: "key", type: "string" },
+        { name: "default", type: "unknown" },
       ],
       returnType: "any",
     },
     handler: async (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("obj.get: expected 2 arguments");
+      if (args.length < 2 || args.length > 3) {
+        throw new ScriptError("obj.get: expected 2 or 3 arguments");
       }
-      const [objExpr, keyExpr] = args;
+      const [objExpr, keyExpr, defExpr] = args;
       const obj = await evaluate(objExpr, ctx);
       const key = await evaluate(keyExpr, ctx);
       if (!obj || typeof obj !== "object") {
@@ -161,6 +163,9 @@ const objGet = defineOpcode<[ScriptValue<object>, ScriptValue<string>], any>(
         );
       }
       if (!Object.hasOwnProperty.call(obj, key)) {
+        if (args.length === 3) {
+          return await evaluate(defExpr, ctx);
+        }
         throw new ScriptError(`obj.get: key '${key}' not found`);
       }
       return obj[key];
