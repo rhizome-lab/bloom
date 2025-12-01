@@ -471,11 +471,9 @@ export function seed() {
         Core["not"](Core["var"]("direction")),
         Core["send"]("Where do you want to dig?"),
         Core["seq"](
-          // Check permission via System.can_edit
-          Core["let"]("sys", Core["entity"](Core["var"]("systemId"))),
           Core["if"](
             Core["call"](
-              Core["var"]("sys"),
+              Core["entity"](systemId),
               "can_edit",
               Core["caller"](),
               Core["entity"](Object["obj.get"](Core["caller"](), "location")),
@@ -503,11 +501,9 @@ export function seed() {
         Core["not"](Core["var"]("name")),
         Core["send"]("What do you want to create?"),
         Core["seq"](
-          // Check permission via System.can_edit
-          Core["let"]("sys", Core["entity"](Core["var"]("systemId"))),
           Core["if"](
             Core["call"](
-              Core["var"]("sys"),
+              Core["entity"](systemId),
               "can_edit",
               Core["caller"](),
               Core["entity"](Object["obj.get"](Core["caller"](), "location")),
@@ -547,10 +543,9 @@ export function seed() {
           Core["if"](
             Core["var"]("targetId"),
             Core["seq"](
-              Core["let"]("sys", Core["entity"](Core["var"]("systemId"))),
               Core["if"](
                 Core["call"](
-                  Core["var"]("sys"),
+                  Core["entity"](systemId),
                   "can_edit",
                   Core["caller"](),
                   Core["entity"](Core["var"]("targetId")),
