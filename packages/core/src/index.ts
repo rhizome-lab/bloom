@@ -77,33 +77,41 @@ export function startServer(port: number = 8080) {
 
         if (!player) return;
 
-        if (data.type === "command") {
-          const { command, args } = data.payload;
-          console.log(`Command: ${command} args: ${args}`);
+        switch (data.type) {
+          case "execute": {
+            const [command, ...args] = data.payload;
+            console.log(`Command: ${command} args: ${args}`);
 
-          // Handle built-in commands or scriptable verbs
-          // We'll try to find a verb on the player, room, or items
-          const verbs = await getAvailableVerbs(player);
-          const verb = verbs.find((v) => v.name === command);
+            // Handle built-in commands or scriptable verbs
+            // We'll try to find a verb on the player, room, or items
+            const verbs = await getAvailableVerbs(player);
+            const verb = verbs.find((v) => v.name === command);
 
-          if (verb) {
-            try {
-              await executeVerb(player, verb, args, ws);
-            } catch (e: any) {
+            if (verb) {
+              try {
+                await executeVerb(player, verb, args, ws);
+              } catch (e: any) {
+                ws.send(
+                  JSON.stringify({
+                    type: "error",
+                    payload: { message: e.message },
+                  }),
+                );
+              }
+            } else {
               ws.send(
                 JSON.stringify({
                   type: "error",
-                  payload: { message: e.message },
+                  payload: { message: "Unknown command." },
                 }),
               );
             }
-          } else {
-            ws.send(
-              JSON.stringify({
-                type: "error",
-                payload: { message: "Unknown command." },
-              }),
-            );
+            break;
+          }
+          case "get_opcodes": {
+            const { getOpcodeMetadata } = require("./scripting/interpreter");
+            ws.send(JSON.stringify(getOpcodeMetadata()));
+            break;
           }
         }
       },
