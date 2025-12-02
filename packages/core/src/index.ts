@@ -53,6 +53,9 @@ scheduler.setSendFactory((entityId: number) => {
   };
 });
 
+// Start scheduler
+scheduler.start(100);
+
 // Seed the database
 seed();
 

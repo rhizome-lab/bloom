@@ -44,6 +44,30 @@ export class TaskScheduler {
     this.sendFactory = factory;
   }
 
+  private intervalId: Timer | null = null;
+
+  /**
+   * Starts the scheduler loop.
+   *
+   * @param intervalMs - The interval in milliseconds to check for due tasks.
+   */
+  start(intervalMs: number = 1000) {
+    if (this.intervalId) return;
+    this.intervalId = setInterval(() => this.process(), intervalMs);
+    console.log(`[Scheduler] Started with interval ${intervalMs}ms`);
+  }
+
+  /**
+   * Stops the scheduler loop.
+   */
+  stop() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+      console.log("[Scheduler] Stopped");
+    }
+  }
+
   /**
    * Processes all due tasks.
    * Should be called periodically (e.g., every tick).
