@@ -35,6 +35,24 @@ export function transpile(code: string): any {
 }
 
 function transpileNode(node: ts.Node, scope: Set<string>): any {
+  // Ignore ambient declarations (declare var, declare function, etc.)
+  if (
+    ts.isVariableStatement(node) ||
+    ts.isFunctionDeclaration(node) ||
+    ts.isClassDeclaration(node) ||
+    ts.isModuleDeclaration(node) ||
+    ts.isEnumDeclaration(node) ||
+    ts.isInterfaceDeclaration(node) ||
+    ts.isTypeAliasDeclaration(node)
+  ) {
+    if (
+      node.modifiers &&
+      node.modifiers.some((m) => m.kind === ts.SyntaxKind.DeclareKeyword)
+    ) {
+      return undefined;
+    }
+  }
+
   if (ts.isExpressionStatement(node)) {
     return transpileNode(node.expression, scope);
   }
@@ -78,6 +96,18 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
         const value = transpileNode(decl.initializer, scope);
         return Std.let(name, value);
       }
+    }
+  }
+
+  if (ts.isFunctionDeclaration(node)) {
+    if (node.name && node.body) {
+      const name = node.name.text;
+      scope.add(name);
+      const params = node.parameters.map((p) => p.name.getText());
+      const fnScope = new Set(scope);
+      params.forEach((p) => fnScope.add(p));
+      const body = transpileNode(node.body, fnScope);
+      return Std.let(name, Std.lambda(params, body));
     }
   }
 
@@ -305,5 +335,5 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
   }
 
   console.warn(`Unsupported node kind: ${node.kind}`);
-  return null;
+  return undefined;
 }

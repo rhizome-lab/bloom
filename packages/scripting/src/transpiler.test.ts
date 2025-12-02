@@ -118,6 +118,38 @@ describe("transpiler", () => {
     expect(transpile(code)).toEqual(expected);
   });
 
+  test("declare statements", () => {
+    const code = `
+      declare var log;
+      log("hello");
+    `;
+    // Should be treated as opcode call because log is not in scope (declare ignored)
+    expect(transpile(code)).toEqual(Std.log("hello"));
+  });
+
+  test("declare namespace", () => {
+    const code = `
+      declare namespace MyLib {
+        function foo(x);
+      }
+      MyLib.foo(1);
+    `;
+    // Should be treated as opcode call ["MyLib.foo", 1]
+    expect(transpile(code)).toEqual(["MyLib.foo", 1]);
+  });
+
+  test("function declarations", () => {
+    const code = `
+      function inc(x) { return x + 1; }
+      inc(1);
+    `;
+    const expected = Std.seq(
+      Std.let("inc", Std.lambda(["x"], Std.seq(MathLib["+"](Std.var("x"), 1)))),
+      Std.apply(Std.var("inc"), 1),
+    );
+    expect(transpile(code)).toEqual(expected);
+  });
+
   test("lambdas", () => {
     expect(transpile("(x) => x + 1")).toEqual(
       Std.lambda(["x"], MathLib["+"](Std.var("x"), 1)),
