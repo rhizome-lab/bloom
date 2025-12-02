@@ -1,6 +1,7 @@
 import { defineConfig } from "vitepress";
 
 export default defineConfig({
+  base: "/viwo/",
   title: "Viwo Docs",
   description: "Documentation for the Viwo project",
   themeConfig: {
