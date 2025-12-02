@@ -148,11 +148,19 @@ export class AiPlugin implements Plugin {
     this.templates.set(template.name, template);
   }
 
-  async handleCompletion(params: any, _ctx: CommandContext) {
+  async handleCompletion(params: any, ctx: CommandContext) {
     const { code, position } = params; // position is { lineNumber, column }
 
-    // TODO: Use getOpcodeMetadata to provide context about available functions
-    // const opcodes = getOpcodeMetadata();
+    // Get opcode metadata to provide context about available functions
+    const opcodes = ctx.core.getOpcodeMetadata();
+    const functionSignatures = opcodes
+      .map((op) => {
+        const params = op.parameters
+          ? op.parameters.map((p) => `${p.name}: ${p.type}`).join(", ")
+          : "";
+        return `${op.opcode}(${params}): ${op.returnType || "any"}`;
+      })
+      .join("\n");
 
     try {
       const model = await getModel();
@@ -161,6 +169,9 @@ export class AiPlugin implements Plugin {
       const prompt = `
         You are an expert ViwoScript developer. ViwoScript is a TypeScript-like scripting language.
         Provide code completion suggestions for the following code at the cursor position.
+        
+        Available Functions:
+        ${functionSignatures}
         
         Code:
         ${code}

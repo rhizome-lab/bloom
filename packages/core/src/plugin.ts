@@ -1,3 +1,4 @@
+import { OpcodeMetadata } from "@viwo/scripting";
 import { Entity } from "@viwo/shared/jsonrpc";
 import { WebSocket } from "ws";
 
@@ -26,6 +27,7 @@ export interface CommandContext {
     deleteEntity: (id: number) => void;
     canEdit: (playerId: number, entityId: number) => boolean;
     resolveProps: (entity: Entity) => Entity;
+    getOpcodeMetadata: () => readonly OpcodeMetadata[];
   };
 }
 

@@ -2,7 +2,6 @@
 
 ## Long-term Vision
 
-- **AI**: AI support for the Monaco editor using the above types, using live feedback from LSP. This should use the AI plugin.
 - **Frontends**: Flesh out all frontends
   - TUI (should have the same layout as web frontend)
   - Discord bot
