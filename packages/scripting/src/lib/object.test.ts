@@ -8,6 +8,7 @@ import {
 } from "../interpreter";
 import * as Core from "./std";
 import * as ObjectLib from "./object";
+import * as ListLib from "./list";
 import * as String from "./string";
 import * as MathLib from "./math";
 import * as BooleanLib from "./boolean";
@@ -16,6 +17,7 @@ import { createLibraryTester } from "./test-utils";
 createLibraryTester(ObjectLib, "Object Library", (test) => {
   registerLibrary(Core);
   registerLibrary(ObjectLib);
+  registerLibrary(ListLib);
   registerLibrary(String);
   registerLibrary(MathLib);
   registerLibrary(BooleanLib);
@@ -30,7 +32,9 @@ createLibraryTester(ObjectLib, "Object Library", (test) => {
   });
 
   test("obj.new", async () => {
-    expect(await evaluate(ObjectLib["obj.new"]("a", 1, "b", 2), ctx)).toEqual({
+    expect(
+      await evaluate(ObjectLib["obj.new"](["a", 1], ["b", 2]), ctx),
+    ).toEqual({
       a: 1,
       b: 2,
     });

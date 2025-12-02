@@ -83,6 +83,7 @@ const ifOp = defineOpcode<
     category: "logic",
     description: "Conditional execution",
     layout: "control-flow",
+    genericParameters: ["T"],
     slots: [
       { name: "Condition", type: "block" },
       { name: "Then", type: "block" },
@@ -90,10 +91,10 @@ const ifOp = defineOpcode<
     ],
     parameters: [
       { name: "condition", type: "boolean" },
-      { name: "then", type: "unknown" },
-      { name: "else", type: "unknown" },
+      { name: "then", type: "T" },
+      { name: "else", type: "T" },
     ],
-    returnType: "any",
+    returnType: "T",
   },
   handler: async (args, ctx) => {
     if (args.length < 2 || args.length > 3) {

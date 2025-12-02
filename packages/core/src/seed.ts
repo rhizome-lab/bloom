@@ -423,7 +423,7 @@ export function seed() {
                   ),
                   Std["send"](
                     "room_id",
-                    Object["obj.new"]("roomId", Std["var"]("destId")),
+                    Object["obj.new"](["roomId", Std["var"]("destId")]),
                   ),
                   Core["call"](Std["var"]("mover"), "look"),
                 ),
@@ -555,7 +555,7 @@ export function seed() {
         ),
         Std["send"](
           "update",
-          Object["obj.new"](
+          Object["obj.new"]([
             "entities",
             List["list.concat"](
               List["list.new"](Std["var"]("room")),
@@ -564,7 +564,7 @@ export function seed() {
                 Std["var"]("resolvedExits"),
               ),
             ),
-          ),
+          ]),
         ),
       ),
       Std["seq"](
@@ -582,10 +582,10 @@ export function seed() {
             ),
             Std["send"](
               "update",
-              Object["obj.new"](
+              Object["obj.new"]([
                 "entities",
                 List["list.new"](Std["var"]("target")),
-              ),
+              ]),
             ),
           ),
           Std["send"]("message", "You don't see that here."),
@@ -622,7 +622,7 @@ export function seed() {
       ),
       Std["send"](
         "update",
-        Object["obj.new"]("entities", Std["var"]("finalList")),
+        Object["obj.new"](["entities", Std["var"]("finalList")]),
       ),
     ),
   );
@@ -632,7 +632,7 @@ export function seed() {
     "whoami",
     Std["send"](
       "player_id",
-      Object["obj.new"]("playerId", Object["obj.get"](Std["caller"](), "id")),
+      Object["obj.new"](["playerId", Object["obj.get"](Std["caller"](), "id")]),
     ),
   );
 
@@ -832,10 +832,10 @@ export function seed() {
                   Core["set_entity"](
                     Object["obj.merge"](
                       Core["entity"](Std["var"]("targetId")),
-                      Object["obj.new"](
+                      Object["obj.new"]([
                         Std["var"]("propName"),
                         Std["var"]("value"),
-                      ),
+                      ]),
                     ),
                   ),
                   Std["send"]("message", "Property set."),
@@ -1120,12 +1120,12 @@ export function seed() {
         // Update mover
         Object["obj.merge"](
           Std["var"]("mover"),
-          Object["obj.new"]("location", Std["var"]("destId")),
+          Object["obj.new"](["location", Std["var"]("destId")]),
         ),
         // Update old location
         Object["obj.merge"](
           Std["var"]("oldLoc"),
-          Object["obj.new"](
+          Object["obj.new"]([
             "contents",
             List["list.filter"](
               Object["obj.get"](Std["var"]("oldLoc"), "contents"),
@@ -1137,18 +1137,18 @@ export function seed() {
                 ),
               ),
             ),
-          ),
+          ]),
         ),
         // Update new location
         Object["obj.merge"](
           Std["var"]("newLoc"),
-          Object["obj.new"](
+          Object["obj.new"]([
             "contents",
             List["list.concat"](
               Object["obj.get"](Std["var"]("newLoc"), "contents"),
               List["list.new"](Object["obj.get"](Std["var"]("mover"), "id")),
             ),
-          ),
+          ]),
         ),
       ),
       Std["send"]("message", "Whoosh! You have been teleported."),

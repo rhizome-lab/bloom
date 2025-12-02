@@ -10,7 +10,7 @@ const DISALLOWED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 /**
  * Creates a new object from key-value pairs.
  */
-const objNew = defineOpcode<[...ScriptValue<unknown>[]], any>(
+const objNew = defineOpcode<[...[key: ScriptValue<string>, value: ScriptValue<unknown>][]], any>(
   "obj.new",
   {
     metadata: {
@@ -18,16 +18,23 @@ const objNew = defineOpcode<[...ScriptValue<unknown>[]], any>(
       category: "data",
       description: "Create a new object",
       slots: [],
-      parameters: [{ name: "...args", type: "unknown[]" }],
-      returnType: "any",
+      genericParameters: [
+        "Kvs extends [] | readonly (readonly [key: '' | (string & {}), value: unknown])[]",
+      ],
+      parameters: [{ name: "...kvs", type: "Kvs" }],
+      returnType:
+        "{ [K in keyof Kvs & `${number}` as (Kvs[K] & [string, unknown])[0]]: (Kvs[K] & [string, unknown])[1] }",
     },
     handler: async (args, ctx) => {
-      // args: [key1, val1, key2, val2, ...]
+      // args: [[key1, val1], [key2, val2], ...] (variadic)
       const obj: Record<string, any> = {};
-      for (let i = 0; i < args.length; i += 2) {
-        const keyExpr = args[i];
-        const valExpr = args[i+1];
-        
+      for (let i = 0; i < args.length; i++) {
+        if (!Array.isArray(args[i]) || args[i].length !== 2) {
+          throw new ScriptError(
+            `obj.new: expected pair at index ${i}, got ${JSON.stringify(args[i])}`,
+          );
+        }
+        const [keyExpr, valueExpr] = args[i];
         const key = await evaluate(keyExpr, ctx);
         if (typeof key !== "string") {
           throw new ScriptError(
@@ -36,7 +43,7 @@ const objNew = defineOpcode<[...ScriptValue<unknown>[]], any>(
             )}`,
           );
         }
-        const val = await evaluate(valExpr, ctx);
+        const val = await evaluate(valueExpr, ctx);
         obj[key] = val;
       }
       return obj;

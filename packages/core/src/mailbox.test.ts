@@ -127,10 +127,8 @@ describe("Mailbox Verification", () => {
             ObjectLib["obj.merge"](
               Std["var"]("item"),
               ObjectLib["obj.new"](
-                "location",
-                ObjectLib["obj.get"](Std["var"]("dest"), "id"),
-                "owner",
-                Std["var"]("newOwner"),
+                ["location", ObjectLib["obj.get"](Std["var"]("dest"), "id")],
+                ["owner", Std["var"]("newOwner")],
               ),
             ),
           ),

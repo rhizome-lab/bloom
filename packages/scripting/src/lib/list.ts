@@ -16,8 +16,9 @@ const listNew = defineOpcode<[...ScriptValue<unknown>[]], any[]>(
       category: "list",
       description: "Create a list",
       slots: [],
-      parameters: [{ name: "...args", type: "unknown[]" }],
-      returnType: "any[]",
+      genericParameters: ["T"],
+      parameters: [{ name: "...args", type: "T[]" }],
+      returnType: "T[]",
     },
     handler: async (args, ctx) => {
       const result = [];

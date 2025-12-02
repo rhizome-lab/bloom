@@ -16,6 +16,7 @@ import {
   ListLib as List,
   StringLib as String,
   ObjectLib,
+  BooleanLib,
   StdLib,
 } from "@viwo/scripting";
 import * as Core from "./lib/core";
@@ -30,10 +31,12 @@ import { Entity } from "@viwo/shared/jsonrpc";
 import { seed } from "../seed";
 
 describe("Player Commands", () => {
+  registerLibrary(StdLib);
   registerLibrary(Core);
   registerLibrary(List);
   registerLibrary(String);
   registerLibrary(ObjectLib);
+  registerLibrary(BooleanLib);
 
   let player: Entity;
   let room: Entity;
