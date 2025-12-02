@@ -74,8 +74,16 @@ export function seedHotel(lobbyId: number, voidId: number) {
       ),
       // Destroy contents (furnishings)
       Core["let"](
+        "freshThis",
+        Core["entity"](Object["obj.get"](Core["this"](), "id")),
+      ),
+      Core["let"](
         "contents",
-        Object["obj.get"](Core["this"](), "contents", List["list.new"]()),
+        Object["obj.get"](
+          Core["var"]("freshThis"),
+          "contents",
+          List["list.new"](),
+        ),
       ),
       Core["for"](
         "itemId",

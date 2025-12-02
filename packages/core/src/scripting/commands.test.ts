@@ -13,7 +13,7 @@ import { evaluate, registerLibrary, createScriptContext } from "./interpreter";
 import * as Core from "./lib/core";
 import * as List from "./lib/list";
 import * as String from "./lib/string";
-import * as Object from "./lib/object";
+import * as ObjectLib from "./lib/object";
 import { seed } from "../seed";
 import {
   createEntity,
@@ -28,7 +28,7 @@ describe("Player Commands", () => {
   registerLibrary(Core);
   registerLibrary(List);
   registerLibrary(String);
-  registerLibrary(Object);
+  registerLibrary(ObjectLib);
 
   let player: Entity;
   let room: Entity;
@@ -217,7 +217,7 @@ describe("Recursive Move Check", () => {
   registerLibrary(Core);
   registerLibrary(List);
   registerLibrary(String);
-  registerLibrary(Object);
+  registerLibrary(ObjectLib);
 
   let caller: Entity;
   let messages: unknown[] = [];

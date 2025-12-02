@@ -21,7 +21,7 @@ import { evaluate, registerLibrary, createScriptContext } from "./interpreter";
 import * as Core from "./lib/core";
 import * as List from "./lib/list";
 import * as String from "./lib/string";
-import * as Object from "./lib/object";
+import * as ObjectLib from "./lib/object";
 import * as Time from "./lib/time";
 import { seedHotel } from "../seeds/hotel";
 import { seed } from "../seed";
@@ -32,7 +32,7 @@ describe("Hotel Scripting", () => {
   registerLibrary(Core);
   registerLibrary(List);
   registerLibrary(String);
-  registerLibrary(Object);
+  registerLibrary(ObjectLib);
 
   let hotelLobby: Entity;
   let caller: Entity;
@@ -253,7 +253,7 @@ describe("Hotel Scripting", () => {
 describe("Hotel Seed", () => {
   registerLibrary(Core);
   registerLibrary(String);
-  registerLibrary(Object);
+  registerLibrary(ObjectLib);
   registerLibrary(Time);
   registerLibrary(List);
 

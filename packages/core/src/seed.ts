@@ -352,6 +352,7 @@ export function seed() {
                       Object["obj.get"](
                         Core["entity"](Core["var"]("checkId")),
                         "location",
+                        null,
                       ),
                     ),
                   ),
