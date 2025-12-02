@@ -97,7 +97,7 @@ describe("Scripted Permissions", () => {
     sharedItem = getEntity(sharedItemId)!;
   });
 
-  const check = async (actor: Entity, target: Entity, type: string) => {
+  const check = (actor: Entity, target: Entity, type: string) => {
     // Construct a script to call sys.can_edit(actor, target, type)
     const callScript = CoreLib["call"](
       CoreLib["entity"](system.id),
@@ -112,34 +112,34 @@ describe("Scripted Permissions", () => {
       this: system,
       args: [],
     });
-    return await evaluate(callScript, ctx);
+    return evaluate(callScript, ctx);
   };
 
-  test("Admin Access", async () => {
-    expect(await check(admin, item, "edit")).toBe(true);
+  test("Admin Access", () => {
+    expect(check(admin, item, "edit")).toBe(true);
   });
 
-  test("Owner Access", async () => {
-    expect(await check(owner, item, "edit")).toBe(true);
-    expect(await check(other, item, "edit")).toBe(false);
+  test("Owner Access", () => {
+    expect(check(owner, item, "edit")).toBe(true);
+    expect(check(other, item, "edit")).toBe(false);
   });
 
-  test("Public Access", async () => {
-    expect(await check(other, publicItem, "edit")).toBe(true);
+  test("Public Access", () => {
+    expect(check(other, publicItem, "edit")).toBe(true);
   });
 
-  test("Shared Access", async () => {
-    expect(await check(other, sharedItem, "edit")).toBe(true);
-    expect(await check(admin, sharedItem, "edit")).toBe(true); // Admin still works
+  test("Shared Access", () => {
+    expect(check(other, sharedItem, "edit")).toBe(true);
+    expect(check(admin, sharedItem, "edit")).toBe(true); // Admin still works
     // Create a third user
     const thirdId = createEntity({ name: "Third" });
     const third = getEntity(thirdId)!;
-    expect(await check(third, sharedItem, "edit")).toBe(false);
+    expect(check(third, sharedItem, "edit")).toBe(false);
   });
 
-  test("Cascading Access", async () => {
+  test("Cascading Access", () => {
     // Unowned item in room owned by owner
-    expect(await check(owner, unownedItem, "edit")).toBe(true);
-    expect(await check(other, unownedItem, "edit")).toBe(false);
+    expect(check(owner, unownedItem, "edit")).toBe(true);
+    expect(check(other, unownedItem, "edit")).toBe(false);
   });
 });

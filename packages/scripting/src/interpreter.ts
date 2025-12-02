@@ -31,7 +31,7 @@ export type ScriptContext = {
 
 export type ScriptLibraryDefinition = Record<
   string,
-  (args: readonly unknown[], ctx: ScriptContext) => Promise<unknown>
+  (args: readonly unknown[], ctx: ScriptContext) => unknown
 >;
 
 /**
@@ -93,10 +93,7 @@ export interface OpcodeMetadata {
   returnType?: string;
 }
 
-export type OpcodeHandler<Ret> = (
-  args: any[],
-  ctx: ScriptContext,
-) => Promise<Ret>;
+export type OpcodeHandler<Ret> = (args: any[], ctx: ScriptContext) => Ret;
 
 export interface OpcodeDefinition {
   handler: OpcodeHandler<unknown>;
@@ -129,11 +126,11 @@ export function getOpcodeMetadata() {
   return Object.values(OPS).map((def) => def.metadata);
 }
 
-export async function executeLambda(
+export function executeLambda(
   lambda: any,
   args: unknown[],
   ctx: ScriptContext,
-): Promise<any> {
+): any {
   if (!lambda || lambda.type !== "lambda") return null;
 
   // Create new context
@@ -143,7 +140,7 @@ export async function executeLambda(
     newVars[lambda.args[i]] = args[i];
   }
 
-  return await evaluate(lambda.body, {
+  return evaluate(lambda.body, {
     ...ctx,
     vars: newVars,
   });
@@ -157,10 +154,7 @@ export async function executeLambda(
  * @returns The result of the evaluation.
  * @throws ScriptError if execution fails or gas runs out.
  */
-export async function evaluate<T>(
-  ast: ScriptValue<T>,
-  ctx: ScriptContext,
-): Promise<T> {
+export function evaluate<T>(ast: ScriptValue<T>, ctx: ScriptContext): T {
   if (ctx.gas !== undefined) {
     ctx.gas -= 1;
     if (ctx.gas < 0) {
@@ -171,7 +165,7 @@ export async function evaluate<T>(
     const [op, ...args] = ast;
     if (typeof op === "string" && OPS[op]) {
       try {
-        return (await OPS[op].handler(args, ctx)) as T;
+        return OPS[op].handler(args, ctx) as T;
       } catch (e: any) {
         let scriptError: ScriptError;
         if (e instanceof ScriptError) {

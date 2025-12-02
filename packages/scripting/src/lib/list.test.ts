@@ -26,180 +26,165 @@ createLibraryTester(List, "List Library", (test) => {
     });
   });
 
-  test("list.new", async () => {
-    expect(await evaluate(List["list.new"](1, 2, 3), ctx)).toEqual([1, 2, 3]);
+  test("list.new", () => {
+    expect(evaluate(List["list.new"](1, 2, 3), ctx)).toEqual([1, 2, 3]);
   });
 
-  test("list.len", async () => {
-    expect(
-      await evaluate(List["list.len"](List["list.new"](1, 2, 3)), ctx),
-    ).toBe(3);
-    expect(await evaluate(List["list.len"](List["list.new"]()), ctx)).toBe(0);
+  test("list.len", () => {
+    expect(evaluate(List["list.len"](List["list.new"](1, 2, 3)), ctx)).toBe(3);
+    expect(evaluate(List["list.len"](List["list.new"]()), ctx)).toBe(0);
   });
 
-  test("list.empty", async () => {
-    expect(await evaluate(List["list.empty"](List["list.new"]()), ctx)).toBe(
-      true,
+  test("list.empty", () => {
+    expect(evaluate(List["list.empty"](List["list.new"]()), ctx)).toBe(true);
+    expect(evaluate(List["list.empty"](List["list.new"](1)), ctx)).toBe(false);
+  });
+
+  test("list.get", () => {
+    expect(evaluate(List["list.get"](List["list.new"](10, 20), 1), ctx)).toBe(
+      20,
     );
-    expect(await evaluate(List["list.empty"](List["list.new"](1)), ctx)).toBe(
-      false,
+    expect(evaluate(List["list.get"](List["list.new"](10, 20), 5), ctx)).toBe(
+      undefined,
     );
   });
 
-  test("list.get", async () => {
-    expect(
-      await evaluate(List["list.get"](List["list.new"](10, 20), 1), ctx),
-    ).toBe(20);
-    expect(
-      await evaluate(List["list.get"](List["list.new"](10, 20), 5), ctx),
-    ).toBe(undefined);
+  test("list.set", () => {
+    const localCtx = { ...ctx, locals: {} };
+    evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
+    evaluate(List["list.set"](Core["var"]("l"), 1, 99), localCtx);
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual([1, 99, 3]);
   });
 
-  test("list.set", async () => {
+  test("list.push", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
-    await evaluate(List["list.set"](Core["var"]("l"), 1, 99), localCtx);
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual([1, 99, 3]);
+    evaluate(Core["let"]("l", List["list.new"](1, 2)), localCtx);
+
+    expect(evaluate(List["list.push"](Core["var"]("l"), 3), localCtx)).toBe(3); // Returns new length
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual([1, 2, 3]);
   });
 
-  test("list.push", async () => {
+  test("list.pop", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"](1, 2)), localCtx);
+    evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
 
-    expect(
-      await evaluate(List["list.push"](Core["var"]("l"), 3), localCtx),
-    ).toBe(3); // Returns new length
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual([1, 2, 3]);
+    expect(evaluate(List["list.pop"](Core["var"]("l")), localCtx)).toBe(3); // Returns popped value
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual([1, 2]);
   });
 
-  test("list.pop", async () => {
+  test("list.unshift", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
+    evaluate(Core["let"]("l", List["list.new"](2, 3)), localCtx);
 
-    expect(await evaluate(List["list.pop"](Core["var"]("l")), localCtx)).toBe(
+    expect(evaluate(List["list.unshift"](Core["var"]("l"), 1), localCtx)).toBe(
       3,
-    ); // Returns popped value
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual([1, 2]);
-  });
-
-  test("list.unshift", async () => {
-    const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"](2, 3)), localCtx);
-
-    expect(
-      await evaluate(List["list.unshift"](Core["var"]("l"), 1), localCtx),
-    ).toBe(3);
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual([1, 2, 3]);
-  });
-
-  test("list.shift", async () => {
-    const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
-
-    expect(await evaluate(List["list.shift"](Core["var"]("l")), localCtx)).toBe(
-      1,
     );
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual([2, 3]);
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual([1, 2, 3]);
   });
 
-  test("list.slice", async () => {
+  test("list.shift", () => {
+    const localCtx = { ...ctx, locals: {} };
+    evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
+
+    expect(evaluate(List["list.shift"](Core["var"]("l")), localCtx)).toBe(1);
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual([2, 3]);
+  });
+
+  test("list.slice", () => {
     const list = [1, 2, 3, 4, 5];
     // list.slice returns a new list
     expect(
-      await evaluate(List["list.slice"](List["list.new"](...list), 1, 3), ctx),
+      evaluate(List["list.slice"](List["list.new"](...list), 1, 3), ctx),
     ).toEqual([2, 3]);
   });
 
-  test("list.splice", async () => {
+  test("list.splice", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"](1, 2, 3, 4)), localCtx);
+    evaluate(Core["let"]("l", List["list.new"](1, 2, 3, 4)), localCtx);
 
     // Remove 2 elements starting at index 1, insert 99
-    const removed = await evaluate(
+    const removed = evaluate(
       List["list.splice"](Core["var"]("l"), 1, 2, 99),
       localCtx,
     );
     expect(removed).toEqual([2, 3]);
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual([1, 99, 4]);
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual([1, 99, 4]);
   });
 
-  test("list.concat", async () => {
+  test("list.concat", () => {
     expect(
-      await evaluate(
+      evaluate(
         List["list.concat"](List["list.new"](1), List["list.new"](2)),
         ctx,
       ),
     ).toEqual([1, 2]);
   });
 
-  test("list.includes", async () => {
+  test("list.includes", () => {
     expect(
-      await evaluate(List["list.includes"](List["list.new"](1, 2), 2), ctx),
+      evaluate(List["list.includes"](List["list.new"](1, 2), 2), ctx),
     ).toBe(true);
     expect(
-      await evaluate(List["list.includes"](List["list.new"](1, 2), 3), ctx),
+      evaluate(List["list.includes"](List["list.new"](1, 2), 3), ctx),
     ).toBe(false);
   });
 
-  test("list.reverse", async () => {
+  test("list.reverse", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
-    await evaluate(List["list.reverse"](Core["var"]("l")), localCtx);
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual([3, 2, 1]);
+    evaluate(Core["let"]("l", List["list.new"](1, 2, 3)), localCtx);
+    evaluate(List["list.reverse"](Core["var"]("l")), localCtx);
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual([3, 2, 1]);
   });
 
-  test("list.sort", async () => {
+  test("list.sort", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("l", List["list.new"]("b", "a", "c")), localCtx);
-    await evaluate(List["list.sort"](Core["var"]("l")), localCtx);
-    expect(await evaluate(Core["var"]("l"), localCtx)).toEqual(["a", "b", "c"]);
+    evaluate(Core["let"]("l", List["list.new"]("b", "a", "c")), localCtx);
+    evaluate(List["list.sort"](Core["var"]("l")), localCtx);
+    expect(evaluate(Core["var"]("l"), localCtx)).toEqual(["a", "b", "c"]);
   });
 
-  test("list.find", async () => {
+  test("list.find", () => {
     const gt1 = Core["lambda"](["x"], BooleanLib[">"](Core["var"]("x"), 1));
     expect(
-      await evaluate(List["list.find"](List["list.new"](1, 2, 3), gt1), ctx),
+      evaluate(List["list.find"](List["list.new"](1, 2, 3), gt1), ctx),
     ).toBe(2);
   });
 
   // HOF tests
-  test("list.map", async () => {
+  test("list.map", () => {
     const inc = Core["lambda"](["x"], MathLib["+"](Core["var"]("x"), 1));
     expect(
-      await evaluate(List["list.map"](List["list.new"](1, 2, 3), inc), ctx),
+      evaluate(List["list.map"](List["list.new"](1, 2, 3), inc), ctx),
     ).toEqual([2, 3, 4]);
   });
 
-  test("list.filter", async () => {
+  test("list.filter", () => {
     // (lambda (x) (> x 1))
     const gt1 = Core["lambda"](["x"], BooleanLib[">"](Core["var"]("x"), 1));
     expect(
-      await evaluate(List["list.filter"](List["list.new"](1, 2, 3), gt1), ctx),
+      evaluate(List["list.filter"](List["list.new"](1, 2, 3), gt1), ctx),
     ).toEqual([2, 3]);
   });
 
-  test("list.reduce", async () => {
+  test("list.reduce", () => {
     // (lambda (acc x) (+ acc x))
     const sum = Core["lambda"](
       ["acc", "x"],
       MathLib["+"](Core["var"]("acc"), Core["var"]("x")),
     );
     expect(
-      await evaluate(
-        List["list.reduce"](List["list.new"](1, 2, 3), sum, 0),
-        ctx,
-      ),
+      evaluate(List["list.reduce"](List["list.new"](1, 2, 3), sum, 0), ctx),
     ).toBe(6);
   });
 
-  test("list.flatMap", async () => {
+  test("list.flatMap", () => {
     // (lambda (x) (list x (+ x 1)))
     const dup = Core["lambda"](
       ["x"],
       List["list.new"](Core["var"]("x"), MathLib["+"](Core["var"]("x"), 1)),
     );
     expect(
-      await evaluate(List["list.flatMap"](List["list.new"](1, 3), dup), ctx),
+      evaluate(List["list.flatMap"](List["list.new"](1, 3), dup), ctx),
     ).toEqual([1, 2, 3, 4]);
   });
 });

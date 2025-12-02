@@ -7,14 +7,12 @@ import { ScriptContext, OPS, ScriptError } from "./interpreter";
  * @param script The script to compile.
  * @returns A function that takes a ScriptContext and returns a Promise resolving to the result.
  */
-export function compile(
-  script: ScriptValue<any>,
-): (ctx: ScriptContext) => Promise<any> {
+export function compile(script: ScriptValue<any>): (ctx: ScriptContext) => any {
   const code = compileNode(script);
-  // We wrap the code in an async function that takes 'ctx' and 'OPS' as arguments.
+  // We wrap the code in a function that takes 'ctx' and 'OPS' as arguments.
   // We also need 'ScriptError' available for throwing.
   const body = `
-    return async function(ctx) {
+    return function(ctx) {
       try {
         ${code.startsWith("return") ? code : "return " + code};
       } catch (e) {
@@ -104,25 +102,25 @@ function compileSeq(args: any[]): string {
   const statements = args.map(compileNode);
   const last = statements.pop();
 
-  return `(async () => {
-    ${statements.map((s) => "await " + s + ";").join("\n")}
-    return await ${last};
+  return `(() => {
+    ${statements.map((s) => s + ";").join("\n")}
+    return ${last};
   })()`;
 }
 
 function compileIf(args: any[]): string {
   const [cond, thenBranch, elseBranch] = args;
-  return `(await ${compileNode(cond)} ? await ${compileNode(thenBranch)} : ${
-    elseBranch ? "await " + compileNode(elseBranch) : "null"
+  return `(${compileNode(cond)} ? ${compileNode(thenBranch)} : ${
+    elseBranch ? compileNode(elseBranch) : "null"
   })`;
 }
 
 function compileWhile(args: any[]): string {
   const [cond, body] = args;
-  return `(async () => {
+  return `(() => {
     let result = null;
-    while (await ${compileNode(cond)}) {
-      result = await ${compileNode(body)};
+    while (${compileNode(cond)}) {
+      result = ${compileNode(body)};
     }
     return result;
   })()`;
@@ -130,14 +128,14 @@ function compileWhile(args: any[]): string {
 
 function compileFor(args: any[]): string {
   const [varName, listExpr, body] = args;
-  return `(async () => {
-    const list = await ${compileNode(listExpr)};
+  return `(() => {
+    const list = ${compileNode(listExpr)};
     let result = null;
     if (Array.isArray(list)) {
       for (const item of list) {
         ctx.vars = ctx.vars || {};
         ctx.vars[${JSON.stringify(varName)}] = item;
-        result = await ${compileNode(body)};
+        result = ${compileNode(body)};
       }
     }
     return result;
@@ -146,8 +144,8 @@ function compileFor(args: any[]): string {
 
 function compileLet(args: any[]): string {
   const [name, val] = args;
-  return `(async () => {
-    const val = await ${compileNode(val)};
+  return `(() => {
+    const val = ${compileNode(val)};
     ctx.vars = ctx.vars || {};
     ctx.vars[${JSON.stringify(name)}] = val;
     return val;
@@ -161,8 +159,8 @@ function compileVar(args: any[]): string {
 
 function compileSet(args: any[]): string {
   const [name, val] = args;
-  return `(async () => {
-    const val = await ${compileNode(val)};
+  return `(() => {
+    const val = ${compileNode(val)};
     if (ctx.vars && ${JSON.stringify(name)} in ctx.vars) {
       ctx.vars[${JSON.stringify(name)}] = val;
     }
@@ -195,11 +193,11 @@ function compileLambda(args: any[]): string {
 
 function compileApply(args: any[]): string {
   const [funcExpr, ...argExprs] = args;
-  return `(async () => {
-    const func = await ${compileNode(funcExpr)};
+  return `(() => {
+    const func = ${compileNode(funcExpr)};
     if (!func || func.type !== "lambda") throw new ScriptError("apply: func must be a lambda");
     
-    const args = await Promise.all([${argExprs.map(compileNode).join(", ")}]);
+    const args = [${argExprs.map(compileNode).join(", ")}];
     
     const newVars = { ...func.closure };
     for (let i = 0; i < func.args.length; i++) {
@@ -215,7 +213,6 @@ function compileApply(args: any[]): string {
       // We need to import evaluate? Or we can just throw for now as we want to move to compiler.
       // Or better, we can assume OPS.apply will handle it if we delegate?
       // But we are compiling 'apply' inline here.
-      // Let's use OPS.apply handler if we can, but OPS.apply expects raw args, not evaluated.
       
       // Actually, if we want to support mixed mode, we should probably just call OPS.apply.handler?
       // But OPS.apply.handler expects unevaluated args and calls evaluate().
@@ -231,30 +228,28 @@ function compileApply(args: any[]): string {
 
 function compileTry(args: any[]): string {
   const [tryBlock, errorVar, catchBlock] = args;
-  return `(async () => {
+  return `(() => {
     try {
-      return await ${compileNode(tryBlock)};
+      return ${compileNode(tryBlock)};
     } catch (e) {
       if (${JSON.stringify(errorVar)}) {
         ctx.vars = ctx.vars || {};
         ctx.vars[${JSON.stringify(errorVar)}] = e.message || String(e);
       }
-      return await ${compileNode(catchBlock)};
+      return ${compileNode(catchBlock)};
     }
   })()`;
 }
 
 function compileThrow(args: any[]): string {
   const [msg] = args;
-  return `(async () => { throw new ScriptError(await ${compileNode(
-    msg,
-  )}); })()`;
+  return `(() => { throw new ScriptError(${compileNode(msg)}); })()`;
 }
 
 function compileObjNew(args: any[]): string {
   const props = [];
   for (const arg of args) {
-    props.push(`[${compileNode(arg[0])}]: await ${compileNode(arg[1])}`);
+    props.push(`[${compileNode(arg[0])}]: ${compileNode(arg[1])}`);
   }
   return `({ ${props.join(", ")} })`;
 }
@@ -263,76 +258,66 @@ function compileOpcodeCall(op: string, args: any[]): string {
   // Optimization for common opcodes
   switch (op) {
     case "+":
-      return `(await ${compileNode(args[0])} + await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} + ${compileNode(args[1])})`;
     case "-":
-      return `(await ${compileNode(args[0])} - await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} - ${compileNode(args[1])})`;
     case "*":
-      return `(await ${compileNode(args[0])} * await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} * ${compileNode(args[1])})`;
     case "/":
-      return `(await ${compileNode(args[0])} / await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} / ${compileNode(args[1])})`;
     case "%":
-      return `(await ${compileNode(args[0])} % await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} % ${compileNode(args[1])})`;
     case "^":
-      return `Math.pow(await ${compileNode(args[0])}, await ${compileNode(
-        args[1],
-      )})`;
+      return `Math.pow(${compileNode(args[0])}, ${compileNode(args[1])})`;
     case "==":
-      return `(await ${compileNode(args[0])} === await ${compileNode(
-        args[1],
-      )})`;
+      return `(${compileNode(args[0])} === ${compileNode(args[1])})`;
     case "!=":
-      return `(await ${compileNode(args[0])} !== await ${compileNode(
-        args[1],
-      )})`;
+      return `(${compileNode(args[0])} !== ${compileNode(args[1])})`;
     case "<":
-      return `(await ${compileNode(args[0])} < await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} < ${compileNode(args[1])})`;
     case ">":
-      return `(await ${compileNode(args[0])} > await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} > ${compileNode(args[1])})`;
     case "<=":
-      return `(await ${compileNode(args[0])} <= await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} <= ${compileNode(args[1])})`;
     case ">=":
-      return `(await ${compileNode(args[0])} >= await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} >= ${compileNode(args[1])})`;
     case "and":
-      return `(await ${compileNode(args[0])} && await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} && ${compileNode(args[1])})`;
     case "or":
-      return `(await ${compileNode(args[0])} || await ${compileNode(args[1])})`;
+      return `(${compileNode(args[0])} || ${compileNode(args[1])})`;
     case "not":
-      return `(!await ${compileNode(args[0])})`;
+      return `(!${compileNode(args[0])})`;
 
     // Object
     case "obj.get":
-      return `(await ${compileNode(args[0])})[await ${compileNode(
-        args[1],
-      )}] ?? ${args[2] ? "await " + compileNode(args[2]) : "null"}`;
+      return `(${compileNode(args[0])})[${compileNode(args[1])}] ?? ${
+        args[2] ? compileNode(args[2]) : "null"
+      }`;
     case "obj.set":
-      return `((await ${compileNode(args[0])})[await ${compileNode(
+      return `((${compileNode(args[0])})[${compileNode(
         args[1],
-      )}] = await ${compileNode(args[2])})`;
+      )}] = ${compileNode(args[2])})`;
     case "obj.has":
-      return `(await ${compileNode(args[1])} in await ${compileNode(args[0])})`;
+      return `(${compileNode(args[1])} in ${compileNode(args[0])})`;
     case "obj.del":
-      return `(delete (await ${compileNode(args[0])})[await ${compileNode(
-        args[1],
-      )}])`;
+      return `(delete (${compileNode(args[0])})[${compileNode(args[1])}])`;
 
     // List
     // list.new is handled above
 
     // Std
     case "log":
-      return `console.log(${args
-        .map((a) => "await " + compileNode(a))
-        .join(", ")})`;
+      return `console.log(${args.map((a) => compileNode(a)).join(", ")})`;
   }
 
   // Generic fallback for other opcodes (including dynamically added ones)
   // We evaluate arguments, wrap arrays in "quote", and call the handler.
-  return `(async () => {
-    const args = await Promise.all([${args.map(compileNode).join(", ")}]);
+  return `(() => {
+    const args = [${args.map(compileNode).join(", ")}];
     const wrappedArgs = args.map(a => Array.isArray(a) ? ["quote", a] : a);
     if (!OPS[${JSON.stringify(
       op,
     )}]) throw new ScriptError("Unknown opcode: " + ${JSON.stringify(op)});
-    return await OPS[${JSON.stringify(op)}].handler(wrappedArgs, ctx);
+    return OPS[${JSON.stringify(op)}].handler(wrappedArgs, ctx);
   })()`;
 }

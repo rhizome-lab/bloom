@@ -278,7 +278,7 @@ export async function handleJsonRpcRequest(
       }
 
       // Call system.get_available_verbs(player)
-      const verbs = await evaluate(
+      const verbs = evaluate(
         {
           type: "call",
           args: [
@@ -306,7 +306,7 @@ export async function handleJsonRpcRequest(
 
       if (verb) {
         try {
-          await executeVerb(player, verb, args, ws);
+          executeVerb(player, verb, args, ws);
           return {
             jsonrpc: "2.0",
             id: req.id,
@@ -351,7 +351,7 @@ export async function handleJsonRpcRequest(
  * @param args - Arguments passed to the verb.
  * @param ws - The WebSocket connection for sending messages.
  */
-async function executeVerb(
+function executeVerb(
   player: Entity,
   verb: { name: string; code: any; source: number },
   args: string[],
@@ -364,7 +364,7 @@ async function executeVerb(
     send: createSendFunction(ws),
   });
 
-  await evaluate(verb.code, ctx);
+  evaluate(verb.code, ctx);
 }
 
 /**

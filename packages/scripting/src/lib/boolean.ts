@@ -25,13 +25,13 @@ const eq = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError("==: expected at least 2 arguments");
     }
-    let prev = await evaluate(args[0], ctx);
+    let prev = evaluate(args[0], ctx);
     for (let i = 1; i < args.length; i++) {
-      const next = await evaluate(args[i], ctx);
+      const next = evaluate(args[i], ctx);
       if (prev !== next) {
         return false;
       }
@@ -65,13 +65,13 @@ const neq = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError("!=: expected at least 2 arguments");
     }
-    let prev = await evaluate(args[0], ctx);
+    let prev = evaluate(args[0], ctx);
     for (let i = 1; i < args.length; i++) {
-      const next = await evaluate(args[i], ctx);
+      const next = evaluate(args[i], ctx);
       if (prev === next) {
         return false;
       }
@@ -105,13 +105,13 @@ const lt = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError("<: expected at least 2 arguments");
     }
-    let prev = await evaluate(args[0], ctx);
+    let prev = evaluate(args[0], ctx);
     for (let i = 1; i < args.length; i++) {
-      const next = await evaluate(args[i], ctx);
+      const next = evaluate(args[i], ctx);
       if (prev >= next) {
         return false;
       }
@@ -145,13 +145,13 @@ const gt = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError(">: expected at least 2 arguments");
     }
-    let prev = await evaluate(args[0], ctx);
+    let prev = evaluate(args[0], ctx);
     for (let i = 1; i < args.length; i++) {
-      const next = await evaluate(args[i], ctx);
+      const next = evaluate(args[i], ctx);
       if (prev <= next) {
         return false;
       }
@@ -185,13 +185,13 @@ const lte = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError("<=: expected at least 2 arguments");
     }
-    let prev = await evaluate(args[0], ctx);
+    let prev = evaluate(args[0], ctx);
     for (let i = 1; i < args.length; i++) {
-      const next = await evaluate(args[i], ctx);
+      const next = evaluate(args[i], ctx);
       if (prev > next) {
         return false;
       }
@@ -225,13 +225,13 @@ const gte = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError(">=: expected at least 2 arguments");
     }
-    let prev = await evaluate(args[0], ctx);
+    let prev = evaluate(args[0], ctx);
     for (let i = 1; i < args.length; i++) {
-      const next = await evaluate(args[i], ctx);
+      const next = evaluate(args[i], ctx);
       if (prev < next) {
         return false;
       }
@@ -266,12 +266,12 @@ export const and = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError("and: expected at least 2 arguments");
     }
     for (const arg of args) {
-      if (!(await evaluate(arg, ctx))) return false;
+      if (!evaluate(arg, ctx)) return false;
     }
     return true;
   },
@@ -300,12 +300,12 @@ export const or = defineOpcode<
     ],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2) {
       throw new ScriptError("or: expected at least 2 arguments");
     }
     for (const arg of args) {
-      if (await evaluate(arg, ctx)) return true;
+      if (evaluate(arg, ctx)) return true;
     }
     return false;
   },
@@ -323,10 +323,10 @@ export const not = defineOpcode<[ScriptValue<boolean>], boolean>("not", {
     parameters: [{ name: "val", type: "unknown" }],
     returnType: "boolean",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 1) {
       throw new ScriptError("not: expected 1 argument");
     }
-    return !(await evaluate(args[0], ctx));
+    return !evaluate(args[0], ctx);
   },
 });

@@ -33,51 +33,50 @@ describe("Compiler", () => {
     stack: [],
   } satisfies ScriptContext;
 
-  async function run(script: any, context: ScriptContext = ctx) {
-    const fn = compile(script);
-    return await fn(context);
+  function run(script: any, context: ScriptContext = ctx) {
+    return compile(script)(context);
   }
 
-  test("literals", async () => {
-    expect(await run(1)).toBe(1);
-    expect(await run("hello")).toBe("hello");
-    expect(await run(true)).toBe(true);
+  test("literals", () => {
+    expect(run(1)).toBe(1);
+    expect(run("hello")).toBe("hello");
+    expect(run(true)).toBe(true);
   });
 
-  test("math", async () => {
-    expect(await run(MathLib["+"](1, 2))).toBe(3);
-    expect(await run(MathLib["-"](5, 3))).toBe(2);
-    expect(await run(MathLib["*"](2, 3))).toBe(6);
-    expect(await run(MathLib["/"](6, 2))).toBe(3);
+  test("math", () => {
+    expect(run(MathLib["+"](1, 2))).toBe(3);
+    expect(run(MathLib["-"](5, 3))).toBe(2);
+    expect(run(MathLib["*"](2, 3))).toBe(6);
+    expect(run(MathLib["/"](6, 2))).toBe(3);
   });
 
-  test("math extended", async () => {
-    expect(await run(MathLib["%"](10, 3))).toBe(1);
-    expect(await run(MathLib["^"](2, 3))).toBe(8);
+  test("math extended", () => {
+    expect(run(MathLib["%"](10, 3))).toBe(1);
+    expect(run(MathLib["^"](2, 3))).toBe(8);
   });
 
-  test("logic", async () => {
-    expect(await run(BooleanLib["and"](true, true))).toBe(true);
-    expect(await run(BooleanLib["or"](true, false))).toBe(true);
-    expect(await run(BooleanLib["not"](true))).toBe(false);
-    expect(await run(BooleanLib["=="](1, 1))).toBe(true);
-    expect(await run(BooleanLib[">"](2, 1))).toBe(true);
+  test("logic", () => {
+    expect(run(BooleanLib["and"](true, true))).toBe(true);
+    expect(run(BooleanLib["or"](true, false))).toBe(true);
+    expect(run(BooleanLib["not"](true))).toBe(false);
+    expect(run(BooleanLib["=="](1, 1))).toBe(true);
+    expect(run(BooleanLib[">"](2, 1))).toBe(true);
   });
 
-  test("variables", async () => {
+  test("variables", () => {
     const localCtx = { ...ctx, vars: {} };
-    await run(Std["let"]("x", 10), localCtx);
-    expect(await run(Std["var"]("x"), localCtx)).toBe(10);
+    run(Std["let"]("x", 10), localCtx);
+    expect(run(Std["var"]("x"), localCtx)).toBe(10);
   });
 
-  test("control flow", async () => {
-    expect(await run(Std["if"](true, 1, 2))).toBe(1);
-    expect(await run(Std["if"](false, 1, 2))).toBe(2);
+  test("control flow", () => {
+    expect(run(Std["if"](true, 1, 2))).toBe(1);
+    expect(run(Std["if"](false, 1, 2))).toBe(2);
 
-    expect(await run(Std["seq"](1, 2, 3))).toBe(3);
+    expect(run(Std["seq"](1, 2, 3))).toBe(3);
   });
 
-  test("loops", async () => {
+  test("loops", () => {
     // sum = 0; for x in [1, 2, 3]: sum += x
     const script = Std["seq"](
       Std["let"]("sum", 0),
@@ -88,47 +87,47 @@ describe("Compiler", () => {
       ),
       Std["var"]("sum"),
     );
-    expect(await run(script)).toBe(6);
+    expect(run(script)).toBe(6);
   });
 
-  test("errors", async () => {
+  test("errors", () => {
     // Unknown opcode
     try {
-      await run(["unknown_op"]);
+      run(["unknown_op"]);
       expect(true).toBe(false);
     } catch (e: any) {
       expect(e.message).toContain("Unknown opcode: unknown_op");
     }
   });
 
-  test("comparisons", async () => {
-    expect(await run(BooleanLib["!="](1, 2))).toBe(true);
-    expect(await run(BooleanLib["<"](1, 2))).toBe(true);
-    expect(await run(BooleanLib[">="](2, 2))).toBe(true);
-    expect(await run(BooleanLib["<="](2, 2))).toBe(true);
+  test("comparisons", () => {
+    expect(run(BooleanLib["!="](1, 2))).toBe(true);
+    expect(run(BooleanLib["<"](1, 2))).toBe(true);
+    expect(run(BooleanLib[">="](2, 2))).toBe(true);
+    expect(run(BooleanLib["<="](2, 2))).toBe(true);
   });
 
-  test("if else", async () => {
-    expect(await run(Std["if"](false, "then", "else"))).toBe("else");
-    expect(await run(Std["if"](false, "then"))).toBe(null); // No else branch
+  test("if else", () => {
+    expect(run(Std["if"](false, "then", "else"))).toBe("else");
+    expect(run(Std["if"](false, "then"))).toBe(null); // No else branch
   });
 
-  test("var retrieval", async () => {
+  test("var retrieval", () => {
     const localCtx = { ...ctx, vars: { x: 10 } };
-    expect(await run(Std["var"]("x"), localCtx)).toBe(10);
-    expect(await run(Std["var"]("missing"), localCtx)).toBe(null); // Variable not found
+    expect(run(Std["var"]("x"), localCtx)).toBe(10);
+    expect(run(Std["var"]("missing"), localCtx)).toBe(null); // Variable not found
   });
 
-  test("lambda & apply", async () => {
+  test("lambda & apply", () => {
     // (lambda (x) (+ x 1))
     const inc = Std["lambda"](["x"], MathLib["+"](Std["var"]("x"), 1));
-    expect(await run(Std["apply"](inc, 1))).toBe(2);
+    expect(run(Std["apply"](inc, 1))).toBe(2);
   });
 
-  test("closure capture", async () => {
+  test("closure capture", () => {
     // (let x 10); (let addX (lambda (y) (+ x y))); (apply addX 5) -> 15
     expect(
-      await run(
+      run(
         Std["seq"](
           Std["let"]("x", 10),
           Std["let"](
@@ -144,24 +143,24 @@ describe("Compiler", () => {
     ).toBe(15);
   });
 
-  test("try/catch", async () => {
+  test("try/catch", () => {
     // try { throw "error" } catch { return "caught" }
     const script = Std["try"](
       Std["throw"]("oops"),
       "this should be unused", // No error var
       "caught",
     );
-    expect(await run(script)).toBe("caught");
+    expect(run(script)).toBe("caught");
   });
 
-  test("try/catch with error variable", async () => {
+  test("try/catch with error variable", () => {
     // try { throw "error" } catch(e) { return e }
     const localCtx = { ...ctx, vars: {} };
     const script = Std["try"](Std["throw"]("oops"), "err", Std["var"]("err"));
-    expect(await run(script, localCtx)).toBe("oops");
+    expect(run(script, localCtx)).toBe("oops");
   });
 
-  test("object operations", async () => {
+  test("object operations", () => {
     const script = Std["seq"](
       Std["let"]("o", ObjectLib["obj.new"](["a", 1], ["b", 2])),
       ObjectLib["obj.set"](Std["var"]("o"), "c", 3),
@@ -176,7 +175,7 @@ describe("Compiler", () => {
       ),
     );
 
-    const res = await run(script);
+    const res = run(script);
     expect(res[0]).toBe(3);
     expect(res[1]).toBe(true);
     expect(res[2]).toBe(false);

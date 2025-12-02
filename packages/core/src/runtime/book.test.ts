@@ -47,7 +47,7 @@ describe("Book Item Scripting", () => {
     addVerb(callerId, "tell", Std["send"]("message", Std["arg"](0)));
   });
 
-  it("should list chapters", async () => {
+  it("should list chapters", () => {
     const script = Std["seq"](
       Std["let"]("chapters", Object["obj.get"](Std["this"](), "chapters")),
       CoreLib["call"](
@@ -63,7 +63,7 @@ describe("Book Item Scripting", () => {
       ),
     );
 
-    await evaluate(
+    evaluate(
       script,
       createScriptContext({
         caller,
@@ -74,7 +74,7 @@ describe("Book Item Scripting", () => {
     expect(messages[0]).toBe("Chapter 1\nChapter 2");
   });
 
-  it("should read a chapter", async () => {
+  it("should read a chapter", () => {
     const script = Std["seq"](
       Std["let"]("index", Std["arg"](0)),
       Std["let"]("chapters", Object["obj.get"](Std["this"](), "chapters")),
@@ -99,7 +99,7 @@ describe("Book Item Scripting", () => {
     );
 
     // Read Chapter 1 (index 0)
-    await evaluate(
+    evaluate(
       script,
       createScriptContext({
         caller,
@@ -113,7 +113,7 @@ describe("Book Item Scripting", () => {
 
     // Read invalid chapter
     messages = [];
-    await evaluate(
+    evaluate(
       script,
       createScriptContext({
         caller,
@@ -125,7 +125,7 @@ describe("Book Item Scripting", () => {
     expect(messages[0]).toBe("Chapter not found.");
   });
 
-  it("should add a chapter", async () => {
+  it("should add a chapter", () => {
     const script = Std["seq"](
       Std["let"]("title", Std["arg"](0)),
       Std["let"]("content", Std["arg"](1)),
@@ -144,7 +144,7 @@ describe("Book Item Scripting", () => {
       CoreLib["call"](Std["caller"](), "tell", "Chapter added."),
     );
 
-    await evaluate(
+    evaluate(
       script,
       createScriptContext({
         caller,
@@ -158,7 +158,7 @@ describe("Book Item Scripting", () => {
     expect((book["chapters"] as any)[2].title).toBe("Chapter 3");
   });
 
-  it("should search chapters", async () => {
+  it("should search chapters", () => {
     const script = Std["seq"](
       Std["let"]("query", Std["arg"](0)),
       Std["let"]("chapters", Object["obj.get"](Std["this"](), "chapters")),
@@ -204,7 +204,7 @@ describe("Book Item Scripting", () => {
     );
 
     // Search for "Content" (should match all)
-    await evaluate(
+    evaluate(
       script,
       createScriptContext({
         caller,
@@ -217,7 +217,7 @@ describe("Book Item Scripting", () => {
 
     // Search for "2" (should match Chapter 2)
     messages = [];
-    await evaluate(
+    evaluate(
       script,
       createScriptContext({
         caller,

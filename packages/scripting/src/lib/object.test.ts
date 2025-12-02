@@ -31,114 +31,114 @@ createLibraryTester(ObjectLib, "Object Library", (test) => {
     });
   });
 
-  test("obj.new", async () => {
-    expect(
-      await evaluate(ObjectLib["obj.new"](["a", 1], ["b", 2]), ctx),
-    ).toEqual({
+  test("obj.new", () => {
+    expect(evaluate(ObjectLib["obj.new"](["a", 1], ["b", 2]), ctx)).toEqual({
       a: 1,
       b: 2,
     });
   });
 
-  test("obj.keys", async () => {
-    expect(await evaluate(ObjectLib["obj.keys"]({ a: 1, b: 2 }), ctx)).toEqual([
+  test("obj.keys", () => {
+    expect(evaluate(ObjectLib["obj.keys"]({ a: 1, b: 2 }), ctx)).toEqual([
       "a",
       "b",
     ]);
-    expect(await evaluate(ObjectLib["obj.keys"]({}), ctx)).toEqual([]);
+    expect(evaluate(ObjectLib["obj.keys"]({}), ctx)).toEqual([]);
   });
 
-  test("obj.values", async () => {
-    expect(
-      await evaluate(ObjectLib["obj.values"]({ a: 1, b: 2 }), ctx),
-    ).toEqual([1, 2]);
+  test("obj.values", () => {
+    expect(evaluate(ObjectLib["obj.values"]({ a: 1, b: 2 }), ctx)).toEqual([
+      1, 2,
+    ]);
   });
 
-  test("obj.entries", async () => {
-    expect(await evaluate(ObjectLib["obj.entries"]({ a: 1 }), ctx)).toEqual([
+  test("obj.entries", () => {
+    expect(evaluate(ObjectLib["obj.entries"]({ a: 1 }), ctx)).toEqual([
       ["a", 1],
     ]);
   });
 
-  test("obj.get", async () => {
-    expect(await evaluate(ObjectLib["obj.get"]({ a: 1 }, "a"), ctx)).toBe(1);
+  test("obj.get", () => {
+    expect(evaluate(ObjectLib["obj.get"]({ a: 1 }, "a"), ctx)).toBe(1);
     expect(
-      await evaluate(ObjectLib["obj.get"]({ a: 1 }, "b"), ctx).catch((e) => e),
+      (() => {
+        try {
+          return evaluate(ObjectLib["obj.get"]({ a: 1 }, "b"), ctx);
+        } catch (e) {
+          return e;
+        }
+      })(),
     ).toBeInstanceOf(ScriptError);
   });
 
-  test("obj.set", async () => {
+  test("obj.set", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("o", { a: 1 }), localCtx);
-    await evaluate(ObjectLib["obj.set"](Core["var"]("o"), "b", 2), localCtx);
-    expect(await evaluate(Core["var"]("o"), localCtx)).toEqual({ a: 1, b: 2 });
+    evaluate(Core["let"]("o", { a: 1 }), localCtx);
+    evaluate(ObjectLib["obj.set"](Core["var"]("o"), "b", 2), localCtx);
+    expect(evaluate(Core["var"]("o"), localCtx)).toEqual({ a: 1, b: 2 });
   });
 
-  test("obj.has", async () => {
-    expect(await evaluate(ObjectLib["obj.has"]({ a: 1 }, "a"), ctx)).toBe(true);
-    expect(await evaluate(ObjectLib["obj.has"]({ a: 1 }, "b"), ctx)).toBe(
-      false,
-    );
+  test("obj.has", () => {
+    expect(evaluate(ObjectLib["obj.has"]({ a: 1 }, "a"), ctx)).toBe(true);
+    expect(evaluate(ObjectLib["obj.has"]({ a: 1 }, "b"), ctx)).toBe(false);
   });
 
-  test("obj.del", async () => {
+  test("obj.del", () => {
     const localCtx = { ...ctx, locals: {} };
-    await evaluate(Core["let"]("o", { a: 1, b: 2 }), localCtx);
+    evaluate(Core["let"]("o", { a: 1, b: 2 }), localCtx);
     expect(
-      await evaluate(ObjectLib["obj.del"](Core["var"]("o"), "a"), localCtx),
+      evaluate(ObjectLib["obj.del"](Core["var"]("o"), "a"), localCtx),
     ).toBe(true);
-    expect(await evaluate(Core["var"]("o"), localCtx)).toEqual({ b: 2 });
+    expect(evaluate(Core["var"]("o"), localCtx)).toEqual({ b: 2 });
     expect(
-      await evaluate(ObjectLib["obj.del"](Core["var"]("o"), "c"), localCtx),
+      evaluate(ObjectLib["obj.del"](Core["var"]("o"), "c"), localCtx),
     ).toBe(false);
   });
 
-  test("obj.merge", async () => {
+  test("obj.merge", () => {
     expect(
-      await evaluate(ObjectLib["obj.merge"]({ a: 1 }, { b: 2, a: 3 }), ctx),
+      evaluate(ObjectLib["obj.merge"]({ a: 1 }, { b: 2, a: 3 }), ctx),
     ).toEqual({ a: 3, b: 2 });
   });
 
   // HOF tests
-  test("obj.map", async () => {
+  test("obj.map", () => {
     // (lambda (val key) (+ val 1))
     const inc = Core["lambda"](
       ["val", "key"],
       MathLib["+"](Core["var"]("val"), 1),
     );
-    expect(
-      await evaluate(ObjectLib["obj.map"]({ a: 1, b: 2 }, inc), ctx),
-    ).toEqual({
+    expect(evaluate(ObjectLib["obj.map"]({ a: 1, b: 2 }, inc), ctx)).toEqual({
       a: 2,
       b: 3,
     });
   });
 
-  test("obj.filter", async () => {
+  test("obj.filter", () => {
     // (lambda (val key) (> val 1))
     const gt1 = Core["lambda"](
       ["val", "key"],
       BooleanLib[">"](Core["var"]("val"), 1),
     );
-    expect(
-      await evaluate(ObjectLib["obj.filter"]({ a: 1, b: 2 }, gt1), ctx),
-    ).toEqual({
-      b: 2,
-    });
+    expect(evaluate(ObjectLib["obj.filter"]({ a: 1, b: 2 }, gt1), ctx)).toEqual(
+      {
+        b: 2,
+      },
+    );
   });
 
-  test("obj.reduce", async () => {
+  test("obj.reduce", () => {
     // (lambda (acc val key) (+ acc val))
     const sum = Core["lambda"](
       ["acc", "val", "key"],
       MathLib["+"](Core["var"]("acc"), Core["var"]("val")),
     );
-    expect(
-      await evaluate(ObjectLib["obj.reduce"]({ a: 1, b: 2 }, sum, 0), ctx),
-    ).toBe(3);
+    expect(evaluate(ObjectLib["obj.reduce"]({ a: 1, b: 2 }, sum, 0), ctx)).toBe(
+      3,
+    );
   });
 
-  test("obj.flatMap", async () => {
+  test("obj.flatMap", () => {
     // (lambda (val key) { [key]: val, [key + "_dup"]: val })
     const expand = Core["lambda"](
       ["val", "key"],
@@ -158,9 +158,7 @@ createLibraryTester(ObjectLib, "Object Library", (test) => {
       ),
     );
 
-    expect(
-      await evaluate(ObjectLib["obj.flatMap"]({ a: 1 }, expand), ctx),
-    ).toEqual({
+    expect(evaluate(ObjectLib["obj.flatMap"]({ a: 1 }, expand), ctx)).toEqual({
       a: 1,
       a_dup: 1,
     });

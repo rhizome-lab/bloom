@@ -24,53 +24,53 @@ createLibraryTester(BooleanOps, "Boolean Library", (test) => {
   });
 
   // Comparison
-  test("==", async () => {
-    expect(await evaluate(BooleanOps["=="](1, 1), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps["=="](1, 2), ctx)).toBe(false);
-    expect(await evaluate(BooleanOps["=="](1, 1, 1), ctx)).toBe(true);
+  test("==", () => {
+    expect(evaluate(BooleanOps["=="](1, 1), ctx)).toBe(true);
+    expect(evaluate(BooleanOps["=="](1, 2), ctx)).toBe(false);
+    expect(evaluate(BooleanOps["=="](1, 1, 1), ctx)).toBe(true);
   });
 
-  test("!=", async () => {
-    expect(await evaluate(BooleanOps["!="](1, 2), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps["!="](1, 1), ctx)).toBe(false);
+  test("!=", () => {
+    expect(evaluate(BooleanOps["!="](1, 2), ctx)).toBe(true);
+    expect(evaluate(BooleanOps["!="](1, 1), ctx)).toBe(false);
   });
 
-  test("<", async () => {
-    expect(await evaluate(BooleanOps["<"](1, 2), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps["<"](2, 1), ctx)).toBe(false);
-    expect(await evaluate(BooleanOps["<"](1, 2, 3), ctx)).toBe(true);
+  test("<", () => {
+    expect(evaluate(BooleanOps["<"](1, 2), ctx)).toBe(true);
+    expect(evaluate(BooleanOps["<"](2, 1), ctx)).toBe(false);
+    expect(evaluate(BooleanOps["<"](1, 2, 3), ctx)).toBe(true);
   });
 
-  test(">", async () => {
-    expect(await evaluate(BooleanOps[">"](2, 1), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps[">"](1, 2), ctx)).toBe(false);
+  test(">", () => {
+    expect(evaluate(BooleanOps[">"](2, 1), ctx)).toBe(true);
+    expect(evaluate(BooleanOps[">"](1, 2), ctx)).toBe(false);
   });
 
-  test("<=", async () => {
-    expect(await evaluate(BooleanOps["<="](1, 1), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps["<="](1, 2), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps["<="](2, 1), ctx)).toBe(false);
+  test("<=", () => {
+    expect(evaluate(BooleanOps["<="](1, 1), ctx)).toBe(true);
+    expect(evaluate(BooleanOps["<="](1, 2), ctx)).toBe(true);
+    expect(evaluate(BooleanOps["<="](2, 1), ctx)).toBe(false);
   });
 
-  test(">=", async () => {
-    expect(await evaluate(BooleanOps[">="](1, 1), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps[">="](2, 1), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps[">="](1, 2), ctx)).toBe(false);
+  test(">=", () => {
+    expect(evaluate(BooleanOps[">="](1, 1), ctx)).toBe(true);
+    expect(evaluate(BooleanOps[">="](2, 1), ctx)).toBe(true);
+    expect(evaluate(BooleanOps[">="](1, 2), ctx)).toBe(false);
   });
 
   // Logic
-  test("and", async () => {
-    expect(await evaluate(BooleanOps["and"](true, true), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps["and"](true, false), ctx)).toBe(false);
+  test("and", () => {
+    expect(evaluate(BooleanOps["and"](true, true), ctx)).toBe(true);
+    expect(evaluate(BooleanOps["and"](true, false), ctx)).toBe(false);
   });
 
-  test("or", async () => {
-    expect(await evaluate(BooleanOps["or"](false, true), ctx)).toBe(true);
-    expect(await evaluate(BooleanOps["or"](false, false), ctx)).toBe(false);
+  test("or", () => {
+    expect(evaluate(BooleanOps["or"](false, true), ctx)).toBe(true);
+    expect(evaluate(BooleanOps["or"](false, false), ctx)).toBe(false);
   });
 
-  test("not", async () => {
-    expect(await evaluate(BooleanOps["not"](true), ctx)).toBe(false);
-    expect(await evaluate(BooleanOps["not"](false), ctx)).toBe(true);
+  test("not", () => {
+    expect(evaluate(BooleanOps["not"](true), ctx)).toBe(false);
+    expect(evaluate(BooleanOps["not"](false), ctx)).toBe(true);
   });
 });

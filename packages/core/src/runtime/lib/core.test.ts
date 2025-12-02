@@ -73,7 +73,7 @@ createLibraryTester(Core, "Core Library", (test) => {
   const TestLib = {
     "test.send": {
       metadata: { label: "Test Send", category: "test" } as any,
-      handler: async (args: any[], ctx: ScriptContext) => {
+      handler: (args: any[], ctx: ScriptContext) => {
         if (ctx.send) {
           ctx.send(args[0], args[1]);
         }
@@ -96,22 +96,22 @@ createLibraryTester(Core, "Core Library", (test) => {
   });
 
   // Entity Interaction
-  test("create", async () => {
-    expect(await evaluate(Core["create"]({}), ctx)).toBe(100);
+  test("create", () => {
+    expect(evaluate(Core["create"]({}), ctx)).toBe(100);
   });
 
-  test("destroy", async () => {
-    await evaluate(Core["destroy"]({ id: 1 }), ctx);
+  test("destroy", () => {
+    evaluate(Core["destroy"]({ id: 1 }), ctx);
   });
 
-  test("call", async () => {
+  test("call", () => {
     // Mock getVerb to return something executable
-    expect(evaluate(Core["call"]({ id: 1 }, "missing"), ctx)).rejects.toThrow();
+    expect(() => evaluate(Core["call"]({ id: 1 }, "missing"), ctx)).toThrow();
   });
 
-  test("call stack trace", async () => {
+  test("call stack trace", () => {
     try {
-      await evaluate(Core["call"]({ id: 102 }, "fail"), ctx);
+      evaluate(Core["call"]({ id: 102 }, "fail"), ctx);
       expect(true).toBe(false);
     } catch (e: any) {
       expect(e).toBeInstanceOf(ScriptError);
@@ -121,59 +121,57 @@ createLibraryTester(Core, "Core Library", (test) => {
     }
   });
 
-  test("schedule", async () => {
-    await evaluate(Core["schedule"]("verb", List["list.new"](), 100), ctx);
+  test("schedule", () => {
+    evaluate(Core["schedule"]("verb", List["list.new"](), 100), ctx);
   });
 
   // Entity Introspection
-  test("verbs", async () => {
-    expect(await evaluate(Core["verbs"]({ id: 1 }), ctx)).toEqual([]);
+  test("verbs", () => {
+    expect(evaluate(Core["verbs"]({ id: 1 }), ctx)).toEqual([]);
   });
 
-  test("get_verb", async () => {
+  test("get_verb", () => {
     // Mock returns a verb for id 101
-    expect(
-      await evaluate(Core["get_verb"]({ id: 101 }, "get_dynamic"), ctx),
-    ).toEqual({
-      id: 1,
-      entity_id: 101,
-      name: "get_dynamic",
-      code: "resolved_value",
-      permissions: {},
-    });
-    // Mock returns null for id 1
-    expect(await evaluate(Core["get_verb"]({ id: 1 }, "missing"), ctx)).toBe(
-      null,
+    expect(evaluate(Core["get_verb"]({ id: 101 }, "get_dynamic"), ctx)).toEqual(
+      {
+        id: 1,
+        entity_id: 101,
+        name: "get_dynamic",
+        code: "resolved_value",
+        permissions: {},
+      },
     );
+    // Mock returns null for id 1
+    expect(evaluate(Core["get_verb"]({ id: 1 }, "missing"), ctx)).toBe(null);
   });
 
-  test("entity", async () => {
-    expect(await evaluate(Core["entity"](1), ctx)).toEqual({
+  test("entity", () => {
+    expect(evaluate(Core["entity"](1), ctx)).toEqual({
       id: 1,
       props: {},
     });
   });
 
-  test("set_entity", async () => {
-    await evaluate(Core["set_entity"]({ id: 1 }), ctx);
+  test("set_entity", () => {
+    evaluate(Core["set_entity"]({ id: 1 }), ctx);
   });
 
-  test("get_prototype", async () => {
-    expect(await evaluate(Core["get_prototype"]({ id: 1 }), ctx)).toBe(null);
+  test("get_prototype", () => {
+    expect(evaluate(Core["get_prototype"]({ id: 1 }), ctx)).toBe(null);
   });
 
-  test("set_prototype", async () => {
-    await evaluate(Core["set_prototype"]({ id: 1 }, 2), ctx);
+  test("set_prototype", () => {
+    evaluate(Core["set_prototype"]({ id: 1 }, 2), ctx);
   });
 
-  test("resolve_props", async () => {
-    expect(await evaluate(Core["resolve_props"]({ id: 101 }), ctx)).toEqual({
+  test("resolve_props", () => {
+    expect(evaluate(Core["resolve_props"]({ id: 101 }), ctx)).toEqual({
       id: 101,
       dynamic: "resolved_value",
     });
   });
 
-  test("sudo", async () => {
+  test("sudo", () => {
     // 1. Deny if not system/bot
     const userCtx = createScriptContext({
       caller: { id: 100 } as any,
@@ -181,12 +179,12 @@ createLibraryTester(Core, "Core Library", (test) => {
       args: [],
       send: () => {},
     });
-    expect(
+    expect(() =>
       evaluate(
         Core["sudo"]({ id: 101 }, "get_dynamic", List["list.new"]()),
         userCtx,
       ),
-    ).rejects.toThrow("permission denied");
+    ).toThrow("permission denied");
 
     // 2. Allow if System (ID 3)
     const systemCtx = createScriptContext({
@@ -196,7 +194,7 @@ createLibraryTester(Core, "Core Library", (test) => {
       send: () => {},
     });
     expect(
-      await evaluate(
+      evaluate(
         Core["sudo"]({ id: 101 }, "get_dynamic", List["list.new"]()),
         systemCtx,
       ),
@@ -210,7 +208,7 @@ createLibraryTester(Core, "Core Library", (test) => {
       send: () => {},
     });
     expect(
-      await evaluate(
+      evaluate(
         Core["sudo"]({ id: 101 }, "get_dynamic", List["list.new"]()),
         botCtx,
       ),
@@ -237,7 +235,7 @@ createLibraryTester(Core, "Core Library", (test) => {
     // This should trigger a 'send' call which we expect to be forwarded.
     // We use a simple lambda for the verb code in this mock scenario if needed,
     // but here we are testing the routing logic, so we assume the verb execution works.
-    await evaluate(
+    evaluate(
       Core["sudo"]({ id: 103 }, "say_hello", List["list.new"]()),
       botForwardCtx,
     );

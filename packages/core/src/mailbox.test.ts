@@ -78,7 +78,7 @@ describe("Mailbox Verification", () => {
     item = getEntity(itemId)!;
   });
 
-  const check = async (actor: Entity, target: Entity, type: string) => {
+  const check = (actor: Entity, target: Entity, type: string) => {
     const callScript = CoreLib["call"](
       CoreLib["entity"](system.id),
       "can_edit",
@@ -92,22 +92,22 @@ describe("Mailbox Verification", () => {
       this: system,
       args: [],
     });
-    return await evaluate(callScript, ctx);
+    return evaluate(callScript, ctx);
   };
 
-  test("should deny view permission to sender", async () => {
-    expect(await check(sender, mailbox, "view")).toBe(false);
+  test("should deny view permission to sender", () => {
+    expect(check(sender, mailbox, "view")).toBe(false);
   });
 
-  test("should allow view permission to receiver", async () => {
-    expect(await check(receiver, mailbox, "view")).toBe(true);
+  test("should allow view permission to receiver", () => {
+    expect(check(receiver, mailbox, "view")).toBe(true);
   });
 
-  test("should deny manual move (enter) to mailbox", async () => {
-    expect(await check(sender, mailbox, "enter")).toBe(false);
+  test("should deny manual move (enter) to mailbox", () => {
+    expect(check(sender, mailbox, "enter")).toBe(false);
   });
 
-  test("should allow deposit via give opcode", async () => {
+  test("should allow deposit via give opcode", () => {
     // Logic: Check owner, update location, update owner.
 
     const giveVerb = Std["seq"](
@@ -153,7 +153,7 @@ describe("Mailbox Verification", () => {
       args: [],
     });
 
-    const result = await evaluate(callGive, ctx);
+    const result = evaluate(callGive, ctx);
     expect(result).toBe(true);
 
     const updatedItem = getEntity(item.id)!;
@@ -161,7 +161,7 @@ describe("Mailbox Verification", () => {
     expect(updatedItem["owner"]).toBe(receiver.id);
   });
 
-  test("should hide contents from sender", async () => {
+  test("should hide contents from sender", () => {
     // Simulate a 'look' that respects permissions.
 
     const lookVerb = Std["seq"](
@@ -197,11 +197,11 @@ describe("Mailbox Verification", () => {
       args: [],
     });
 
-    const contents = await evaluate(callLook, ctx);
+    const contents = evaluate(callLook, ctx);
     expect(contents).toEqual([]);
   });
 
-  test("should show contents to receiver", async () => {
+  test("should show contents to receiver", () => {
     const lookVerb = Std["seq"](
       Std["let"]("target", Std["arg"](0)),
       Std["if"](
@@ -244,7 +244,7 @@ describe("Mailbox Verification", () => {
       contents: [...currentContents, item.id],
     });
 
-    const contents = await evaluate(callLook, ctx);
+    const contents = evaluate(callLook, ctx);
     expect(contents).toContain(item.id);
   });
 });

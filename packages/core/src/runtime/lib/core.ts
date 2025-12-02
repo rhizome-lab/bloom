@@ -29,12 +29,12 @@ export const create = defineOpcode<[ScriptValue<object>], number>("create", {
     parameters: [{ name: "data", type: "object" }],
     returnType: "number",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 1) {
       throw new ScriptError("create: expected `data``");
     }
     const [dataExpr] = args;
-    const data = await evaluate(dataExpr, ctx);
+    const data = evaluate(dataExpr, ctx);
     if (typeof data !== "object") {
       throw new ScriptError(
         `create: expected object, got ${JSON.stringify(data)}`,
@@ -56,9 +56,9 @@ export const destroy = defineOpcode<[ScriptValue<Entity>], null>("destroy", {
     parameters: [{ name: "target", type: "Entity" }],
     returnType: "null",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [targetExpr] = args;
-    const target = await evaluate(targetExpr, ctx);
+    const target = evaluate(targetExpr, ctx);
     if (
       typeof target !== "object" ||
       !target ||
@@ -97,15 +97,15 @@ export const call = defineOpcode<
     ],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [targetExpr, verbExpr, ...callArgs] = args;
-    const target = await evaluate(targetExpr, ctx);
-    const verb = await evaluate(verbExpr, ctx);
+    const target = evaluate(targetExpr, ctx);
+    const verb = evaluate(verbExpr, ctx);
 
     // Evaluate arguments
     const evaluatedArgs = [];
     for (const arg of callArgs) {
-      evaluatedArgs.push(await evaluate(arg, ctx));
+      evaluatedArgs.push(evaluate(arg, ctx));
     }
 
     if (typeof target !== "object") {
@@ -124,7 +124,7 @@ export const call = defineOpcode<
       throw new ScriptError(`call: verb '${verb}' not found on ${target.id}`);
     }
 
-    return await evaluate(
+    return evaluate(
       targetVerb.code,
       createScriptContext({
         caller: ctx.caller,
@@ -158,21 +158,21 @@ export const schedule = defineOpcode<
     ],
     returnType: "null",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [verbExpr, argsExpr, delayExpr] = args;
-    const verb = await evaluate(verbExpr, ctx);
+    const verb = evaluate(verbExpr, ctx);
     if (typeof verb !== "string") {
       throw new ScriptError(
         `schedule: verb must be a string, got ${JSON.stringify(verb)}`,
       );
     }
-    const callArgs = await evaluate(argsExpr, ctx);
+    const callArgs = evaluate(argsExpr, ctx);
     if (!Array.isArray(callArgs)) {
       throw new ScriptError(
         `schedule: args must be an array, got ${JSON.stringify(callArgs)}`,
       );
     }
-    const delay = await evaluate(delayExpr, ctx);
+    const delay = evaluate(delayExpr, ctx);
     if (typeof delay !== "number") {
       throw new ScriptError(
         `schedule: delay must be a number, got ${JSON.stringify(delay)}`,
@@ -198,9 +198,9 @@ export const verbs = defineOpcode<[ScriptValue<Entity>], readonly Verb[]>(
       parameters: [{ name: "target", type: "unknown" }],
       returnType: "Verb[]",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       const [entityExpr] = args;
-      const target = await evaluate(entityExpr, ctx);
+      const target = evaluate(entityExpr, ctx);
       if (!target || typeof target !== "object" || !("id" in target)) {
         return [];
       }
@@ -230,10 +230,10 @@ export const get_verb = defineOpcode<
     ],
     returnType: "Verb | null",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [entityExpr, nameExpr] = args;
-    const target = await evaluate(entityExpr, ctx);
-    const name = await evaluate(nameExpr, ctx);
+    const target = evaluate(entityExpr, ctx);
+    const name = evaluate(nameExpr, ctx);
 
     if (!target || typeof target !== "object" || !("id" in target)) {
       return null;
@@ -257,9 +257,9 @@ export const entity = defineOpcode<[ScriptValue<number>], Entity>("entity", {
     parameters: [{ name: "id", type: "number" }],
     returnType: "Entity",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [idExpr] = args;
-    const id = await evaluate(idExpr, ctx);
+    const id = evaluate(idExpr, ctx);
     if (typeof id !== "number") {
       throw new ScriptError(
         `entity: expected number, got ${JSON.stringify(id)}`,
@@ -287,13 +287,13 @@ export const set_entity = defineOpcode<ScriptValue<Entity>[], void>(
       parameters: [{ name: "...entities", type: "Entity[]" }],
       returnType: "void",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length < 1) {
         throw new ScriptError("set_entity: expected at least 1 argument");
       }
       const entities: Entity[] = [];
       for (const arg of args) {
-        const entity = await evaluate(arg, ctx);
+        const entity = evaluate(arg, ctx);
         if (
           !entity ||
           typeof entity !== "object" ||
@@ -326,12 +326,12 @@ export const get_prototype = defineOpcode<[ScriptValue<Entity>], number | null>(
       parameters: [{ name: "target", type: "Entity" }],
       returnType: "number | null",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length !== 1) {
         throw new ScriptError("get_prototype: expected 1 argument");
       }
       const [entityExpr] = args;
-      const entity = await evaluate(entityExpr, ctx);
+      const entity = evaluate(entityExpr, ctx);
       if (
         typeof entity !== "object" ||
         !entity ||
@@ -364,13 +364,13 @@ export const set_prototype = defineOpcode<
     ],
     returnType: "null",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 2) {
       throw new ScriptError("set_prototype: expected 2 arguments");
     }
     const [entityExpr, protoIdExpr] = args;
-    const entity = await evaluate(entityExpr, ctx);
-    const protoId = await evaluate(protoIdExpr, ctx);
+    const entity = evaluate(entityExpr, ctx);
+    const protoId = evaluate(protoIdExpr, ctx);
 
     if (
       typeof entity !== "object" ||
@@ -409,12 +409,12 @@ export const resolve_props = defineOpcode<[ScriptValue<Entity>], Entity>(
       parameters: [{ name: "target", type: "Entity" }],
       returnType: "Entity",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length !== 1) {
         throw new ScriptError("resolve_props: expected 1 argument");
       }
       const [entityId] = args;
-      const entity = await evaluate(entityId, ctx);
+      const entity = evaluate(entityId, ctx);
       if (typeof entity !== "object") {
         throw new ScriptError(
           `resolve_props: expected object, got ${JSON.stringify(entity)}`,
@@ -449,9 +449,9 @@ export const sudo = defineOpcode<
     ],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [targetExpr, verbExpr, argsExpr] = args;
-    const target = await evaluate(targetExpr, ctx);
+    const target = evaluate(targetExpr, ctx);
     if (
       !target ||
       typeof target !== "object" ||
@@ -462,7 +462,7 @@ export const sudo = defineOpcode<
         `sudo: target must be an entity, got ${JSON.stringify(target)}`,
       );
     }
-    const verb = await evaluate(verbExpr, ctx);
+    const verb = evaluate(verbExpr, ctx);
     if (typeof verb !== "string") {
       throw new ScriptError(
         `sudo: verb must be a string, got ${JSON.stringify(verb)}`,
@@ -477,7 +477,7 @@ export const sudo = defineOpcode<
     }
 
     // Evaluate arguments
-    const evaluatedArgs = await evaluate(argsExpr, ctx);
+    const evaluatedArgs = evaluate(argsExpr, ctx);
     if (!Array.isArray(evaluatedArgs)) {
       throw new ScriptError(
         `sudo: args must be an array, got ${JSON.stringify(evaluatedArgs)}`,
@@ -494,7 +494,7 @@ export const sudo = defineOpcode<
 
     // Execute with target as caller AND this
     // This effectively impersonates the user
-    return await evaluate(
+    return evaluate(
       targetVerb.code,
       createScriptContext({
         caller: target, // Impersonation

@@ -105,7 +105,7 @@ describe("Hotel Scripting", () => {
     caller = getEntity(callerId)!;
   });
 
-  it("should leave a room (move and destroy)", async () => {
+  it("should leave a room (move and destroy)", () => {
     // 1. Manually create a room (since visit is gone)
     const roomProto = db
       .query(
@@ -128,7 +128,7 @@ describe("Hotel Scripting", () => {
     const leaveVerb = getVerb(roomId, "leave");
     expect(leaveVerb).toBeDefined();
 
-    await evaluate(
+    evaluate(
       leaveVerb!.code,
       createScriptContext({ caller, this: getEntity(roomId)!, send }),
     );
@@ -142,7 +142,7 @@ describe("Hotel Scripting", () => {
     expect(getEntity(roomId)).toBeNull(); // Destroyed
   });
 
-  it("should navigate elevator -> floor lobby -> wing -> room and back", async () => {
+  it("should navigate elevator -> floor lobby -> wing -> room and back", () => {
     // Find Elevator (it's persistent)
     const elevatorData = db
       .query<{ id: number }, []>(
@@ -168,7 +168,7 @@ describe("Hotel Scripting", () => {
     const pushVerb = getVerb(elevator.id, "push");
     expect(pushVerb).toBeDefined();
     if (pushVerb) {
-      await evaluate(pushVerb.code, { ...ctx, this: elevator, args: [5] });
+      evaluate(pushVerb.code, { ...ctx, this: elevator, args: [5] });
     }
 
     // Verify state
@@ -179,7 +179,7 @@ describe("Hotel Scripting", () => {
     const outVerb = getVerb(elevator.id, "out");
     expect(outVerb).toBeDefined();
     if (outVerb) {
-      await evaluate(outVerb.code, { ...ctx, this: elevator, args: [] });
+      evaluate(outVerb.code, { ...ctx, this: elevator, args: [] });
     }
 
     caller = getEntity(caller.id)!;
@@ -192,7 +192,7 @@ describe("Hotel Scripting", () => {
     const westVerb = getVerb(floorLobby.id, "west");
     expect(westVerb).toBeDefined();
     if (westVerb) {
-      await evaluate(westVerb.code, { ...ctx, this: floorLobby, args: [] });
+      evaluate(westVerb.code, { ...ctx, this: floorLobby, args: [] });
     }
 
     caller = getEntity(caller.id)!;
@@ -204,7 +204,7 @@ describe("Hotel Scripting", () => {
     const enterVerb = getVerb(wing.id, "enter");
     expect(enterVerb).toBeDefined();
     if (enterVerb) {
-      await evaluate(enterVerb.code, { ...ctx, this: wing, args: ["5"] });
+      evaluate(enterVerb.code, { ...ctx, this: wing, args: ["5"] });
     }
 
     caller = getEntity(caller.id)!;
@@ -223,7 +223,7 @@ describe("Hotel Scripting", () => {
     const leaveVerb = getVerb(room.id, "leave");
     expect(leaveVerb).toBeDefined();
     if (leaveVerb) {
-      await evaluate(leaveVerb.code, { ...ctx, this: room, args: [] });
+      evaluate(leaveVerb.code, { ...ctx, this: room, args: [] });
     }
 
     caller = getEntity(caller.id)!;
@@ -238,7 +238,7 @@ describe("Hotel Scripting", () => {
     const backVerb = getVerb(wing.id, "back");
     expect(backVerb).toBeDefined();
     if (backVerb) {
-      await evaluate(backVerb.code, { ...ctx, this: wing, args: [] });
+      evaluate(backVerb.code, { ...ctx, this: wing, args: [] });
     }
 
     caller = getEntity(caller.id)!;
@@ -249,7 +249,7 @@ describe("Hotel Scripting", () => {
     const elevatorVerb = getVerb(floorLobby.id, "elevator");
     expect(elevatorVerb).toBeDefined();
     if (elevatorVerb) {
-      await evaluate(elevatorVerb.code, { ...ctx, this: floorLobby, args: [] });
+      evaluate(elevatorVerb.code, { ...ctx, this: floorLobby, args: [] });
     }
 
     caller = getEntity(caller.id)!;
@@ -269,7 +269,7 @@ describe("Hotel Seed", () => {
   let voidId: number;
   let player: any;
 
-  beforeAll(async () => {
+  beforeAll(() => {
     // Reset DB for this block
     db.query("DELETE FROM entities").run();
     db.query("DELETE FROM verbs").run();
@@ -310,7 +310,7 @@ describe("Hotel Seed", () => {
     player = getEntity(playerId);
   });
 
-  test("West Wing Room Validation", async () => {
+  test("West Wing Room Validation", () => {
     // 1. Find Floor Lobby Proto
     const floorLobbyProto = db
       .query<{ id: number }, []>(
@@ -329,12 +329,12 @@ describe("Hotel Seed", () => {
 
     // TODO: `move` does not support `id`
     let output = "";
-    await evaluate(
+    evaluate(
       CoreLib["call"](player, "move", floorLobbyId),
       createScriptContext({ caller: player, this: player }),
     );
 
-    await evaluate(
+    evaluate(
       westVerb.code,
       createScriptContext({
         caller: player,
@@ -354,7 +354,7 @@ describe("Hotel Seed", () => {
     // 4. Try to enter invalid room (e.g. 51)
     const enterVerb = getVerb(westWingId, "enter")!;
 
-    await evaluate(
+    evaluate(
       enterVerb.code,
       createScriptContext({
         caller: player,
@@ -373,7 +373,7 @@ describe("Hotel Seed", () => {
     expect(getEntity(player.id)!["location"]).toBe(westWingId);
 
     // 5. Try to enter valid room (e.g. 10)
-    await evaluate(
+    evaluate(
       enterVerb.code,
       createScriptContext({ caller: player, this: westWing, args: [10] }),
     );
@@ -384,7 +384,7 @@ describe("Hotel Seed", () => {
     expect(room["name"]).toBe("Room 10");
   });
 
-  test("East Wing Room Validation", async () => {
+  test("East Wing Room Validation", () => {
     // 1. Find Floor Lobby Proto
     const floorLobbyProto = db
       // TODO: name is in prop now; use sqlite json tools
@@ -404,7 +404,7 @@ describe("Hotel Seed", () => {
     let output = "";
 
     // TODO: `move` does not support `id`
-    await evaluate(
+    evaluate(
       CoreLib["call"](player, "move", floorLobbyId),
       createScriptContext({
         caller: player,
@@ -412,7 +412,7 @@ describe("Hotel Seed", () => {
       }),
     );
 
-    await evaluate(
+    evaluate(
       eastVerb.code,
       createScriptContext({
         caller: player,
@@ -431,7 +431,7 @@ describe("Hotel Seed", () => {
     // 4. Try to enter invalid room (e.g. 10)
     const enterVerb = getVerb(eastWingId, "enter")!;
 
-    await evaluate(
+    evaluate(
       enterVerb.code,
       createScriptContext({
         caller: player,
@@ -446,7 +446,7 @@ describe("Hotel Seed", () => {
     expect(output).toContain("Room numbers in the East Wing are 51-99");
 
     // 5. Try to enter valid room (e.g. 60)
-    await evaluate(
+    evaluate(
       enterVerb.code,
       createScriptContext({ caller: player, this: eastWing, args: [60] }),
     );

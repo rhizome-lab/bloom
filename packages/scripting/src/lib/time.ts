@@ -15,7 +15,7 @@ const timeNow = defineOpcode<[], string>(
       parameters: [],
       returnType: "string",
     },
-    handler: async (args, _ctx) => {
+    handler: (args, _ctx) => {
       if (args.length !== 0) {
         throw new ScriptError("time.now: expected 0 arguments");
       }
@@ -45,12 +45,12 @@ const timeFormat = defineOpcode<[ScriptValue<string>, ScriptValue<string>?], str
       ],
       returnType: "string",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length < 1 || args.length > 2) {
         throw new ScriptError("time.format: expected 1 or 2 arguments");
       }
       const [timestampExpr] = args;
-      const timestamp = await evaluate(timestampExpr, ctx);
+      const timestamp = evaluate(timestampExpr, ctx);
       if (typeof timestamp !== "string") {
         throw new ScriptError("time.format: expected string for timestamp");
       }
@@ -74,12 +74,12 @@ const timeParse = defineOpcode<[ScriptValue<string>], string>(
       parameters: [{ name: "time", type: "string" }],
       returnType: "string",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length !== 1) {
         throw new ScriptError("time.parse: expected 1 argument");
       }
       const [datetimeExpr] = args;
-      const datetime = await evaluate(datetimeExpr, ctx);
+      const datetime = evaluate(datetimeExpr, ctx);
       if (typeof datetime !== "string") {
         throw new ScriptError("time.parse: expected string for datetime");
       }
@@ -103,12 +103,12 @@ const timeFromTimestamp = defineOpcode<[ScriptValue<number>], string>(
       parameters: [{ name: "timestamp", type: "number" }],
       returnType: "string",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length !== 1) {
         throw new ScriptError("time.from_timestamp: expected 1 argument");
       }
       const [timestampExpr] = args;
-      const timestamp = await evaluate(timestampExpr, ctx);
+      const timestamp = evaluate(timestampExpr, ctx);
       if (typeof timestamp !== "number") {
         throw new ScriptError(
           "time.from_timestamp: expected number for timestamp",
@@ -134,12 +134,12 @@ const timeToTimestamp = defineOpcode<[ScriptValue<string>], number>(
       parameters: [{ name: "time", type: "string" }],
       returnType: "number",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length !== 1) {
         throw new ScriptError("time.to_timestamp: expected 1 argument");
       }
       const [datetimeExpr] = args;
-      const datetime = await evaluate(datetimeExpr, ctx);
+      const datetime = evaluate(datetimeExpr, ctx);
       if (typeof datetime !== "string") {
         throw new ScriptError(
           "time.to_timestamp: expected string for datetime",
@@ -173,21 +173,21 @@ const timeOffset = defineOpcode<[ScriptValue<number>, ScriptValue<"day" | "days"
       ],
       returnType: "string",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length < 2 || args.length > 3) {
         throw new ScriptError("time.offset: expected 2 or 3 arguments");
       }
       const [amountExpr, unitExpr, baseExpr] = args;
-      const amount = await evaluate(amountExpr, ctx);
+      const amount = evaluate(amountExpr, ctx);
       if (typeof amount !== "number") {
         throw new ScriptError("time.offset: expected number for amount");
       }
-      const unit = await evaluate(unitExpr, ctx);
+      const unit = evaluate(unitExpr, ctx);
       if (typeof unit !== "string") {
         throw new ScriptError("time.offset: expected string for unit");
       }
       const base = baseExpr
-        ? await evaluate(baseExpr, ctx)
+        ? evaluate(baseExpr, ctx)
         : new Date().toISOString();
       if (typeof base !== "string") {
         throw new ScriptError("time.offset: expected string for base");

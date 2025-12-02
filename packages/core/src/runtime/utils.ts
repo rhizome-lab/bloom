@@ -9,10 +9,7 @@ import { evaluate, ScriptContext } from "@viwo/scripting";
  * @param ctx - The script context.
  * @returns A new entity object with resolved properties.
  */
-export async function resolveProps(
-  entity: Entity,
-  ctx: ScriptContext,
-): Promise<Entity> {
+export function resolveProps(entity: Entity, ctx: ScriptContext): Entity {
   if (!ctx.send) {
     return entity;
   }
@@ -27,7 +24,7 @@ export async function resolveProps(
     if (!match?.[1]) continue;
     const propName = match[1];
     try {
-      const result = await evaluate(verb.code, {
+      const result = evaluate(verb.code, {
         caller: entity, // The entity itself is the caller for its own getter?
         this: entity,
         args: [],

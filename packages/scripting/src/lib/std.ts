@@ -15,7 +15,7 @@ const this_ = defineOpcode<[], Entity>("this", {
     parameters: [],
     returnType: "Entity",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 0) {
       throw new ScriptError("this: expected 0 arguments");
     }
@@ -37,7 +37,7 @@ export const caller = defineOpcode<[], Entity>("caller", {
     parameters: [],
     returnType: "Entity",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 0) {
       throw new ScriptError("caller: expected 0 arguments");
     }
@@ -59,13 +59,13 @@ export const seq = defineOpcode<ScriptValue<unknown>[], any>("seq", {
     parameters: [{ name: "...args", type: "unknown[]" }],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length === 0) {
       throw new ScriptError("seq: expected at least one argument");
     }
     let lastResult = null;
     for (const step of args) {
-      lastResult = await evaluate(step, ctx);
+      lastResult = evaluate(step, ctx);
     }
     return lastResult;
   },
@@ -96,15 +96,15 @@ const ifOp = defineOpcode<
     ],
     returnType: "T",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 2 || args.length > 3) {
       throw new ScriptError("if: expected `condition` `then` [`else`]");
     }
     const [cond, thenBranch, elseBranch] = args;
-    if (await evaluate(cond, ctx)) {
-      return await evaluate(thenBranch, ctx);
+    if (evaluate(cond, ctx)) {
+      return evaluate(thenBranch, ctx);
     } else if (elseBranch) {
-      return await evaluate(elseBranch, ctx);
+      return evaluate(elseBranch, ctx);
     }
     return null;
   },
@@ -127,14 +127,14 @@ const whileOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<unknown>], any>(
         { name: "Body", type: "block" },
       ],
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length !== 2) {
         throw new ScriptError("while: expected `condition` `do`");
       }
       const [cond, body] = args;
       let result = null;
-      while (await evaluate(cond, ctx)) {
-        result = await evaluate(body, ctx);
+      while (evaluate(cond, ctx)) {
+        result = evaluate(body, ctx);
       }
       return result;
     },
@@ -166,12 +166,12 @@ const forOp = defineOpcode<
     ],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 3) {
       throw new ScriptError("for: expected `var` `list` `do`");
     }
     const [varName, listExpr, body] = args;
-    const list = await evaluate(listExpr, ctx);
+    const list = evaluate(listExpr, ctx);
     if (!Array.isArray(list)) return null;
 
     let lastResult = null;
@@ -179,7 +179,7 @@ const forOp = defineOpcode<
       // Set loop variable
       ctx.vars = ctx.vars || {};
       ctx.vars[varName] = item;
-      lastResult = await evaluate(body, ctx);
+      lastResult = evaluate(body, ctx);
     }
     return lastResult;
   },
@@ -201,12 +201,12 @@ const jsonStringify = defineOpcode<[ScriptValue<unknown>], string>(
       parameters: [{ name: "value", type: "unknown" }],
       returnType: "string",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       if (args.length !== 1) {
         throw new ScriptError("json.stringify: expected `value`");
       }
       const [valExpr] = args;
-      const val = await evaluate(valExpr, ctx);
+      const val = evaluate(valExpr, ctx);
       return JSON.stringify(val);
     },
   },
@@ -225,9 +225,9 @@ const jsonParse = defineOpcode<[ScriptValue<string>], unknown>("json.parse", {
     parameters: [{ name: "string", type: "string" }],
     returnType: "unknown",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [strExpr] = args;
-    const str = await evaluate(strExpr, ctx);
+    const str = evaluate(strExpr, ctx);
     if (typeof str !== "string") return null;
     try {
       return JSON.parse(str);
@@ -250,12 +250,12 @@ export const typeof_ = defineOpcode<[ScriptValue<unknown>], "string" | "number" 
     parameters: [{ name: "value", type: "unknown" }],
     returnType: "string",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 1) {
       throw new ScriptError("typeof: expected 1 argument");
     }
     const [valExpr] = args;
-    const val = await evaluate(valExpr, ctx);
+    const val = evaluate(valExpr, ctx);
     if (Array.isArray(val)) return "array";
     if (val === null) return "null";
     return typeof val as "string" | "number" | "boolean" | "object"| "null" | "array";
@@ -282,12 +282,12 @@ const letOp = defineOpcode<[string, ScriptValue<unknown>], any>("let", {
     ],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 2) {
       throw new ScriptError("let requires 2 arguments");
     }
     const [name, val] = args;
-    const value = await evaluate(val, ctx);
+    const value = evaluate(val, ctx);
     ctx.vars = ctx.vars || {};
     ctx.vars[name] = value;
     return value;
@@ -308,7 +308,7 @@ const var_ = defineOpcode<[string], any>("var", {
     parameters: [{ name: "name", type: "string" }],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 1) {
       throw new ScriptError("var: expected 1 argument");
     }
@@ -336,12 +336,12 @@ const set_ = defineOpcode<[string, ScriptValue<unknown>], any>("set", {
     ],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 2) {
       throw new ScriptError("set: expected 2 arguments");
     }
     const [name, val] = args;
-    const value = await evaluate(val, ctx);
+    const value = evaluate(val, ctx);
     if (ctx.vars && name in ctx.vars) {
       ctx.vars[name] = value;
     }
@@ -369,13 +369,13 @@ export const log = defineOpcode<
     ],
     returnType: "null",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length < 1) {
       throw new ScriptError("log: expected at least 1 argument");
     }
     const messages = [];
     for (const arg of args) {
-      messages.push(await evaluate(arg, ctx));
+      messages.push(evaluate(arg, ctx));
     }
     console.log(...messages);
     return null;
@@ -395,7 +395,7 @@ export const arg = defineOpcode<[ScriptValue<number>], any>("arg", {
     parameters: [{ name: "index", type: "number" }],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [index] = args;
     return ctx.args?.[index] ?? null;
   },
@@ -413,7 +413,7 @@ export const args = defineOpcode<[], readonly any[]>("args", {
     parameters: [],
     returnType: "readonly any[]",
   },
-  handler: async (_args, ctx) => {
+  handler: (_args, ctx) => {
     return ctx.args ?? [];
   },
 });
@@ -431,9 +431,9 @@ export const warn = defineOpcode<[ScriptValue<unknown>], void>("warn", {
     parameters: [{ name: "message", type: "unknown" }],
     returnType: "void",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [msg] = args;
-    const text = await evaluate(msg, ctx);
+    const text = evaluate(msg, ctx);
     ctx.warnings.push(String(text));
   },
 });
@@ -450,9 +450,9 @@ const throwOp = defineOpcode<[ScriptValue<unknown>], never>("throw", {
     parameters: [{ name: "message", type: "unknown" }],
     returnType: "never",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [msg] = args;
-    throw new ScriptError(await evaluate(msg, ctx));
+    throw new ScriptError(evaluate(msg, ctx));
   },
 });
 export { throwOp as throw };
@@ -478,17 +478,17 @@ const tryOp = defineOpcode<
     ],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [tryBlock, errorVar, catchBlock] = args;
     try {
-      return await evaluate(tryBlock, ctx);
+      return evaluate(tryBlock, ctx);
     } catch (e: any) {
       if (catchBlock) {
       if (errorVar && typeof errorVar === "string") {
           if (!ctx.vars) ctx.vars = {};
           ctx.vars[errorVar] = e.message || String(e);
         }
-        return await evaluate(catchBlock, ctx);
+        return evaluate(catchBlock, ctx);
       }
     }
   },
@@ -515,7 +515,7 @@ export const lambda = defineOpcode<[readonly string[], ScriptValue<unknown>], an
       ],
       returnType: "any",
     },
-    handler: async (args, ctx) => {
+    handler: (args, ctx) => {
       const [argNames, body] = args;
       return {
         type: "lambda",
@@ -548,9 +548,9 @@ export const apply = defineOpcode<
     ],
     returnType: "any",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     const [funcExpr, ...argExprs] = args;
-    const func = await evaluate(funcExpr, ctx);
+    const func = evaluate(funcExpr, ctx);
 
     if (!func) {
       throw new ScriptError("apply: func not found");
@@ -563,7 +563,7 @@ export const apply = defineOpcode<
 
     const evaluatedArgs = [];
     for (const arg of argExprs) {
-      evaluatedArgs.push(await evaluate(arg, ctx));
+      evaluatedArgs.push(evaluate(arg, ctx));
     }
 
     // Create new context
@@ -583,7 +583,7 @@ export const apply = defineOpcode<
       return func.execute(newCtx);
     }
 
-    return await evaluate(func.body, newCtx);
+    return evaluate(func.body, newCtx);
   },
 });
 
@@ -605,16 +605,16 @@ export const send = defineOpcode<[ScriptValue<string>, ScriptValue<unknown>], nu
     ],
     returnType: "null",
   },
-  handler: async (args, ctx) => {
+  handler: (args, ctx) => {
     if (args.length !== 2) {
       throw new ScriptError("send: expected `type` `payload`");
     }
     const [typeExpr, payloadExpr] = args;
-    const type = await evaluate(typeExpr, ctx);
+    const type = evaluate(typeExpr, ctx);
     if (typeof type !== "string") {
       throw new ScriptError(`send: type must be a string, got ${JSON.stringify(type)}`);
     }
-    const payload = await evaluate(payloadExpr, ctx);
+    const payload = evaluate(payloadExpr, ctx);
     ctx.send?.(type, payload);
     return null;
   },
@@ -633,7 +633,7 @@ export const quote = defineOpcode<[any], any>("quote", {
     parameters: [{ name: "value", type: "unknown" }],
     returnType: "any",
   },
-  handler: async (args, _ctx) => {
+  handler: (args, _ctx) => {
     return args[0];
   },
 });
