@@ -169,7 +169,39 @@ const App = () => {
     setEditingScript(null);
   };
 
-  const handleCompletion = async (
+  const handleLocalCompletion = async (
+    code: string,
+    position: { lineNumber: number; column: number },
+  ) => {
+    // Use local opcodes if available
+    if (clientState.opcodes) {
+      const lines = code.split("\n");
+      const line = lines[position.lineNumber - 1] || "";
+      const textBeforeCursor = line.slice(0, position.column - 1);
+
+      // Find the word being typed.
+      // We look for the last sequence of non-whitespace characters.
+      const match = textBeforeCursor.match(/[\S]+$/);
+      if (match) {
+        const prefix = match[0];
+        // Filter opcodes
+        // We cast opcodes to any[] because we don't have the type imported,
+        // but we know it has an 'opcode' field.
+        const matches = clientState.opcodes.filter((op: any) =>
+          op.opcode.startsWith(prefix),
+        );
+        if (matches.length > 0) {
+          // Return the suffix of the first match
+          // In a real TUI, we'd show a list. Here we just complete the first one.
+          const bestMatch = matches[0].opcode;
+          return bestMatch.slice(prefix.length);
+        }
+      }
+    }
+    return null;
+  };
+
+  const handleAiCompletion = async (
     code: string,
     position: { lineNumber: number; column: number },
   ) => {
@@ -205,7 +237,8 @@ const App = () => {
           initialContent={editingScript.content}
           onSave={handleSaveScript}
           onExit={handleExitEditor}
-          onCompletion={handleCompletion}
+          onAiCompletion={handleAiCompletion}
+          onLocalCompletion={handleLocalCompletion}
         />
       ) : (
         <>

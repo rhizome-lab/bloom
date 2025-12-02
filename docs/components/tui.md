@@ -70,6 +70,7 @@ The TUI includes a powerful script editor that allows you to modify entity scrip
 1.  **Open Editor**: Type `edit <script_id>` to open the editor for a specific script.
 2.  **Navigation**: Use Arrow keys to move the cursor.
 3.  **Editing**: Type to insert text. Use Backspace/Delete to remove text. Enter creates a new line.
-4.  **AI Completion**: Press `Tab` to request AI code completion based on the current context.
-5.  **Save**: Press `Ctrl+S` to save changes to the server.
-6.  **Exit**: Press `Esc` or `Ctrl+C` to close the editor without saving (unless already saved).
+4.  **AI Completion**: Press `Tab` to request AI code completion (smart generation).
+5.  **Local Completion**: Press `Ctrl+Space` for fast, local opcode completion (standard library).
+6.  **Save**: Press `Ctrl+S` to save changes to the server.
+7.  **Exit**: Press `Esc` or `Ctrl+C` to close the editor without saving (unless already saved).

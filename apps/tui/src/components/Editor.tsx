@@ -5,7 +5,11 @@ interface EditorProps {
   initialContent: string;
   onSave: (content: string) => void;
   onExit: () => void;
-  onCompletion: (
+  onAiCompletion: (
+    code: string,
+    position: { lineNumber: number; column: number },
+  ) => Promise<string | null>;
+  onLocalCompletion: (
     code: string,
     position: { lineNumber: number; column: number },
   ) => Promise<string | null>;
@@ -15,7 +19,8 @@ const Editor: React.FC<EditorProps> = ({
   initialContent,
   onSave,
   onExit,
-  onCompletion,
+  onAiCompletion,
+  onLocalCompletion,
 }) => {
   const [lines, setLines] = useState<string[]>(initialContent.split("\n"));
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
@@ -104,8 +109,8 @@ const Editor: React.FC<EditorProps> = ({
     } else if (key.tab) {
       if (isLoading) return;
       setIsLoading(true);
-      // 1-based line number for API, 0-based for internal state
-      onCompletion(lines.join("\n"), {
+      // AI Completion
+      onAiCompletion(lines.join("\n"), {
         lineNumber: cursor.y + 1,
         column: cursor.x + 1,
       })
@@ -123,6 +128,26 @@ const Editor: React.FC<EditorProps> = ({
           }
         })
         .finally(() => setIsLoading(false));
+    } else if (key.ctrl && input === " ") {
+      // Local/LSP Completion
+      if (isLoading) return;
+      // We don't necessarily need a loading state for local, but good practice
+      onLocalCompletion(lines.join("\n"), {
+        lineNumber: cursor.y + 1,
+        column: cursor.x + 1,
+      }).then((completion) => {
+        if (completion) {
+          setLines((prev) => {
+            const line = prev[cursor.y] || "";
+            const newLine =
+              line.slice(0, cursor.x) + completion + line.slice(cursor.x);
+            const newLines = [...prev];
+            newLines[cursor.y] = newLine;
+            return newLines;
+          });
+          setCursor((prev) => ({ ...prev, x: prev.x + completion.length }));
+        }
+      });
     } else {
       // Regular typing
       setLines((prev) => {
@@ -186,7 +211,7 @@ const Editor: React.FC<EditorProps> = ({
       </Box>
       <Box marginTop={1}>
         <Text dimColor>
-          Ctrl+S: Save | Esc: Exit | Arrows: Move | Enter: New Line | Tab: AI
+          Ctrl+S: Save | Esc: Exit | Tab: AI | Ctrl+Space: Local
         </Text>
       </Box>
     </Box>
