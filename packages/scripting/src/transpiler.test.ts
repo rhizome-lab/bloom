@@ -1,6 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { transpile } from "./transpiler";
 import { decompile } from "./decompiler";
+import * as Std from "./lib/std";
+import * as MathLib from "./lib/math";
+import * as List from "./lib/list";
+import * as ObjectLib from "./lib/object";
+import * as BooleanLib from "./lib/boolean";
 
 describe("transpiler", () => {
   test("literals", () => {
@@ -12,108 +17,112 @@ describe("transpiler", () => {
   });
 
   test("variables", () => {
-    expect(transpile("x")).toEqual(["var", "x"]);
-    expect(transpile("let x = 1")).toEqual(["let", "x", 1]);
-    expect(transpile("x = 2")).toEqual(["set", "x", 2]);
+    expect(transpile("x")).toEqual(Std.var("x"));
+    expect(transpile("let x = 1")).toEqual(Std.let("x", 1));
+    expect(transpile("x = 2")).toEqual(Std.set("x", 2));
   });
 
   test("binary ops", () => {
-    expect(transpile("1 + 2")).toEqual(["+", 1, 2]);
-    expect(transpile("1 - 2")).toEqual(["-", 1, 2]);
-    expect(transpile("1 * 2")).toEqual(["*", 1, 2]);
-    expect(transpile("1 / 2")).toEqual(["/", 1, 2]);
-    expect(transpile("1 % 2")).toEqual(["%", 1, 2]);
-    expect(transpile("1 == 2")).toEqual(["==", 1, 2]);
-    expect(transpile("1 != 2")).toEqual(["!=", 1, 2]);
-    expect(transpile("1 < 2")).toEqual(["<", 1, 2]);
-    expect(transpile("1 > 2")).toEqual([">", 1, 2]);
-    expect(transpile("1 <= 2")).toEqual(["<=", 1, 2]);
-    expect(transpile("1 >= 2")).toEqual([">=", 1, 2]);
-    expect(transpile("true && false")).toEqual(["and", true, false]);
-    expect(transpile("true || false")).toEqual(["or", true, false]);
-    expect(transpile("'a' in obj")).toEqual(["obj.has", ["var", "obj"], "a"]);
-    expect(transpile("2 ** 3")).toEqual(["^", 2, 3]);
+    expect(transpile("1 + 2")).toEqual(MathLib["+"](1, 2));
+    expect(transpile("1 - 2")).toEqual(MathLib["-"](1, 2));
+    expect(transpile("1 * 2")).toEqual(MathLib["*"](1, 2));
+    expect(transpile("1 / 2")).toEqual(MathLib["/"](1, 2));
+    expect(transpile("1 % 2")).toEqual(MathLib["%"](1, 2));
+    expect(transpile("1 == 2")).toEqual(BooleanLib["=="](1, 2));
+    expect(transpile("1 != 2")).toEqual(BooleanLib["!="](1, 2));
+    expect(transpile("1 < 2")).toEqual(BooleanLib["<"](1, 2));
+    expect(transpile("1 > 2")).toEqual(BooleanLib[">"](1, 2));
+    expect(transpile("1 <= 2")).toEqual(BooleanLib["<="](1, 2));
+    expect(transpile("1 >= 2")).toEqual(BooleanLib[">="](1, 2));
+    expect(transpile("true && false")).toEqual(BooleanLib.and(true, false));
+    expect(transpile("true || false")).toEqual(BooleanLib.or(true, false));
+    expect(transpile("'a' in obj")).toEqual(
+      ObjectLib["obj.has"](Std.var("obj"), "a"),
+    );
+    expect(transpile("2 ** 3")).toEqual(MathLib["^"](2, 3));
+  });
+
+  test("nested binary ops", () => {
+    expect(transpile("1 + 2 * 3")).toEqual(MathLib["+"](1, MathLib["*"](2, 3)));
+    expect(transpile("(1 + 2) * 3")).toEqual(
+      MathLib["*"](MathLib["+"](1, 2), 3),
+    );
+    expect(transpile("1 * 2 + 3")).toEqual(MathLib["+"](MathLib["*"](1, 2), 3));
+    expect(transpile("1 + 2 + 3")).toEqual(MathLib["+"](MathLib["+"](1, 2), 3));
   });
 
   test("unary ops", () => {
-    expect(transpile("!true")).toEqual(["not", true]);
+    expect(transpile("!true")).toEqual(BooleanLib.not(true));
   });
 
   test("arrays", () => {
-    expect(transpile("[1, 2]")).toEqual(["list.new", 1, 2]);
+    expect(transpile("[1, 2]")).toEqual(List["list.new"](1, 2));
   });
 
   test("objects", () => {
-    expect(transpile("{ a: 1, b: 2 }")).toEqual(["obj.new", "a", 1, "b", 2]);
-    expect(transpile("{ 'a': 1 }")).toEqual(["obj.new", "a", 1]);
-    expect(transpile("delete obj.x")).toEqual(["obj.del", ["var", "obj"], "x"]);
-    expect(transpile("delete obj['x']")).toEqual([
-      "obj.del",
-      ["var", "obj"],
-      "x",
-    ]);
+    expect(transpile("{ a: 1, b: 2 }")).toEqual(
+      ObjectLib["obj.new"]("a", 1, "b", 2),
+    );
+    expect(transpile("{ 'a': 1 }")).toEqual(ObjectLib["obj.new"]("a", 1));
+    expect(transpile("delete obj.x")).toEqual(
+      ObjectLib["obj.del"](Std.var("obj"), "x"),
+    );
+    expect(transpile("delete obj['x']")).toEqual(
+      ObjectLib["obj.del"](Std.var("obj"), "x"),
+    );
   });
 
   test("property access", () => {
-    expect(transpile("obj.x")).toEqual(["obj.get", ["var", "obj"], "x"]);
-    expect(transpile("obj['x']")).toEqual(["obj.get", ["var", "obj"], "x"]);
+    expect(transpile("obj.x")).toEqual(
+      ObjectLib["obj.get"](Std.var("obj"), "x"),
+    );
+    expect(transpile("obj['x']")).toEqual(
+      ObjectLib["obj.get"](Std.var("obj"), "x"),
+    );
   });
 
   test("property assignment", () => {
-    expect(transpile("obj.x = 1")).toEqual(["obj.set", ["var", "obj"], "x", 1]);
+    expect(transpile("obj.x = 1")).toEqual(
+      ObjectLib["obj.set"](Std.var("obj"), "x", 1),
+    );
   });
 
   test("function calls", () => {
-    expect(transpile("f(x)")).toEqual(["apply", ["var", "f"], ["var", "x"]]);
-    expect(transpile("log('msg')")).toEqual(["log", "msg"]);
-    expect(transpile("throw('err')")).toEqual(["throw", "err"]);
+    expect(transpile("f(x)")).toEqual(Std.apply(Std.var("f"), Std.var("x")));
+    expect(transpile("log('msg')")).toEqual(Std.log("msg"));
+    expect(transpile("throw('err')")).toEqual(Std.throw("err"));
   });
 
   test("lambdas", () => {
-    expect(transpile("(x) => x + 1")).toEqual([
-      "lambda",
-      ["x"],
-      ["+", ["var", "x"], 1],
-    ]);
-    expect(transpile("(x) => { return x + 1; }")).toEqual([
-      "lambda",
-      ["x"],
-      ["seq", ["+", ["var", "x"], 1]],
-    ]);
+    expect(transpile("(x) => x + 1")).toEqual(
+      Std.lambda(["x"], MathLib["+"](Std.var("x"), 1)),
+    );
+    expect(transpile("(x) => { return x + 1; }")).toEqual(
+      Std.lambda(["x"], Std.seq(MathLib["+"](Std.var("x"), 1))),
+    );
   });
 
   test("control flow", () => {
-    expect(transpile("if (true) 1 else 2")).toEqual(["if", true, 1, 2]);
-    expect(transpile("if (true) { 1; }")).toEqual(["if", true, ["seq", 1]]);
-    expect(transpile("while (true) { 1; }")).toEqual([
-      "while",
-      true,
-      ["seq", 1],
-    ]);
-    expect(transpile("for (const x of list) { x; }")).toEqual([
-      "for",
-      "x",
-      ["var", "list"],
-      ["seq", ["var", "x"]],
-    ]);
-    expect(transpile("try { 1; } catch (e) { 2; }")).toEqual([
-      "try",
-      ["seq", 1],
-      "e",
-      ["seq", 2],
-    ]);
+    expect(transpile("if (true) 1 else 2")).toEqual(Std.if(true, 1, 2));
+    expect(transpile("if (true) { 1; }")).toEqual(Std.if(true, Std.seq(1)));
+    expect(transpile("while (true) { 1; }")).toEqual(
+      Std.while(true, Std.seq(1)),
+    );
+    expect(transpile("for (const x of list) { x; }")).toEqual(
+      Std.for("x", Std.var("list"), Std.seq(Std.var("x"))),
+    );
+    expect(transpile("try { 1; } catch (e) { 2; }")).toEqual(
+      Std.try(Std.seq(1), "e", Std.seq(2)),
+    );
   });
 
   test("sequence", () => {
-    expect(transpile("1; 2;")).toEqual(["seq", 1, 2]);
+    expect(transpile("1; 2;")).toEqual(Std.seq(1, 2));
   });
 
   test("round trip", () => {
-    const script = ["seq", ["let", "x", 1], ["var", "x"]];
+    const script = Std.seq(Std.let("x", 1), Std.var("x"));
     const code = decompile(script);
-    // decompile produces:
-    // let x = 1;
-    // x;
     const transpiled = transpile(code);
     expect(transpiled).toEqual(script);
   });
