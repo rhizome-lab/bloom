@@ -44,7 +44,7 @@ export interface OpcodeBuilder<
 /**
  * Defines a new opcode.
  *
- * @param name - The opcode name (e.g., "log", "+").
+ * @param opcode - The opcode name (e.g., "log", "+").
  * @param def - The opcode definition (metadata and handler).
  * @returns A builder function that can be used to construct S-expressions for this opcode in TypeScript.
  */
@@ -52,17 +52,20 @@ export function defineOpcode<
   Args extends (string | ScriptValue_<unknown>)[] = never,
   Ret = never,
 >(
-  name: string,
-  def: { metadata: OpcodeMetadata; handler: OpcodeHandler<Ret> },
+  opcode: string,
+  def: {
+    metadata: Omit<OpcodeMetadata, "opcode">;
+    handler: OpcodeHandler<Ret>;
+  },
 ): OpcodeBuilder<Args, Ret> {
   const builder = ((...args: Args) => {
-    const expr = [name, ...args] as unknown as ScriptExpression<Args, Ret>;
+    const expr = [opcode, ...args] as unknown as ScriptExpression<Args, Ret>;
     return expr;
   }) as OpcodeBuilder<Args, Ret>;
 
-  builder.opcode = name;
+  builder.opcode = opcode;
   builder.handler = def.handler;
-  builder.metadata = def.metadata;
+  builder.metadata = { ...def.metadata, opcode };
 
   return builder;
 }

@@ -74,6 +74,8 @@ export class ScriptError extends Error {
 export interface OpcodeMetadata {
   /** Human-readable label. */
   label: string;
+  /** The opcode name. */
+  opcode: string;
   /** Category for grouping. */
   category: string;
   /** Description of what the opcode does. */
@@ -123,10 +125,7 @@ export function getOpcode(name: string) {
  * @returns An array of opcode metadata objects.
  */
 export function getOpcodeMetadata() {
-  return Object.entries(OPS).map(([opcode, def]) => ({
-    opcode,
-    ...def.metadata,
-  }));
+  return Object.values(OPS).map((def) => def.metadata);
 }
 
 export async function executeLambda(
