@@ -20,6 +20,7 @@ import { GameSocket, SocketManager } from "./socket";
 describe("GameSocket", () => {
   let connectSpy: any;
   let executeSpy: any;
+  let sendRequestSpy: any;
   let disconnectSpy: any;
   let onMessageSpy: any;
 
@@ -33,6 +34,10 @@ describe("GameSocket", () => {
     executeSpy = spyOn(ViwoClient.prototype, "execute").mockResolvedValue(
       undefined,
     );
+    sendRequestSpy = spyOn(
+      ViwoClient.prototype,
+      "sendRequest",
+    ).mockResolvedValue(undefined);
     disconnectSpy = spyOn(
       ViwoClient.prototype,
       "disconnect",
@@ -65,8 +70,8 @@ describe("GameSocket", () => {
     socket.connect();
 
     expect(connectSpy).toHaveBeenCalled();
-    // Login is sent via execute inside subscribe callback
-    expect(executeSpy).toHaveBeenCalledWith("login", ["123"]);
+    // Login is sent via sendRequest inside subscribe callback
+    expect(sendRequestSpy).toHaveBeenCalledWith("login", { entityId: 123 });
   });
 
   test("Queue messages when disconnected", async () => {

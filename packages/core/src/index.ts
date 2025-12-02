@@ -163,21 +163,77 @@ if (import.meta.main) {
  * @param ws - The WebSocket connection.
  * @returns A promise that resolves to the JSON-RPC response.
  */
-async function handleJsonRpcRequest(
+export async function handleJsonRpcRequest(
   req: JsonRpcRequest,
   playerId: number,
   ws: any,
 ): Promise<JsonRpcResponse> {
-  const player = getEntity(playerId);
-  if (!player) {
-    return {
-      jsonrpc: "2.0",
-      id: req.id,
-      error: { code: -32000, message: "Player not found" },
-    };
+  // Allow login without a valid player ID (since that's how we get one)
+  if (req.method !== "login") {
+    const player = getEntity(playerId);
+    if (!player) {
+      return {
+        jsonrpc: "2.0",
+        id: req.id,
+        error: { code: -32000, message: "Player not found" },
+      };
+    }
   }
 
   switch (req.method) {
+    case "login": {
+      const params = req.params as { entityId: number };
+      if (!params || typeof params.entityId !== "number") {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32602, message: "Invalid params: entityId required" },
+        };
+      }
+
+      const targetId = params.entityId;
+      const target = getEntity(targetId);
+
+      if (!target) {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32000, message: "Entity not found" },
+        };
+      }
+
+      // In a real system, we would check authentication here.
+      // For now, we trust the entityId (as per TODO context).
+
+      // Update session
+      // Remove old mapping if exists
+      if (ws.data.userId) {
+        clients.delete(ws.data.userId);
+      }
+      ws.data.userId = targetId;
+      clients.set(targetId, ws);
+
+      console.log(`Client logged in as Entity ${targetId}`);
+
+      // Send player_id notification
+      const msg: JsonRpcNotification = {
+        jsonrpc: "2.0",
+        method: "player_id",
+        params: { playerId: targetId },
+      };
+      ws.send(JSON.stringify(msg));
+
+      // Send initial state
+      // We can trigger 'look' and 'inventory' or just let the client do it.
+      // The client usually does it on connect, but if we switch users, we might want to refresh.
+      // For now, let's just confirm success.
+
+      return {
+        jsonrpc: "2.0",
+        id: req.id,
+        result: { status: "ok", playerId: targetId },
+      };
+    }
     case "execute": {
       const params = req.params as string[];
       if (!Array.isArray(params) || params.length === 0) {
@@ -190,6 +246,7 @@ async function handleJsonRpcRequest(
       const [command, ...args] = params;
       console.log(`Command: ${command} args: ${args}`);
 
+      const player = getEntity(playerId)!; // We checked this above
       const system = getEntity(3); // System ID is 3
       if (!system) {
         return {
