@@ -60,10 +60,10 @@ describe("transpiler", () => {
   });
 
   test("objects", () => {
-    expect(transpile("{ a: 1, b: 2 }")).toEqual(
+    expect(transpile("({ a: 1, b: 2 })")).toEqual(
       ObjectLib["obj.new"]("a", 1, "b", 2),
     );
-    expect(transpile("{ 'a': 1 }")).toEqual(ObjectLib["obj.new"]("a", 1));
+    expect(transpile("({ 'a': 1 })")).toEqual(ObjectLib["obj.new"]("a", 1));
     expect(transpile("delete obj.x")).toEqual(
       ObjectLib["obj.del"](Std.var("obj"), "x"),
     );
@@ -122,7 +122,7 @@ describe("transpiler", () => {
 
   test("round trip", () => {
     const script = Std.seq(Std.let("x", 1), Std.var("x"));
-    const code = decompile(script);
+    const code = decompile(script, 0, true);
     const transpiled = transpile(code);
     expect(transpiled).toEqual(script);
   });
