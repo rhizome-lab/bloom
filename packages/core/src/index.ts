@@ -8,9 +8,11 @@ import {
 } from "./scripting/interpreter";
 import * as Core from "./scripting/lib/core";
 import * as List from "./scripting/lib/list";
-import * as Object from "./scripting/lib/object";
-import * as String from "./scripting/lib/string";
+import * as ObjectLib from "./scripting/lib/object";
+import * as StringLib from "./scripting/lib/string";
 import * as Time from "./scripting/lib/time";
+import * as MathOps from "./scripting/lib/math";
+import * as BooleanOps from "./scripting/lib/boolean";
 import { seed } from "./seed";
 import { PluginManager, CommandContext } from "./plugin";
 import { scheduler } from "./scheduler";
@@ -32,9 +34,11 @@ const clients = new Map<number, Bun.ServerWebSocket<{ userId: number }>>();
 
 registerLibrary(Core);
 registerLibrary(List);
-registerLibrary(Object);
-registerLibrary(String);
+registerLibrary(ObjectLib);
+registerLibrary(StringLib);
 registerLibrary(Time);
+registerLibrary(MathOps);
+registerLibrary(BooleanOps);
 
 // Initialize scheduler
 // Initialize scheduler

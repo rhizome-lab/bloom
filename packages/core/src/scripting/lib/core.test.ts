@@ -44,7 +44,30 @@ mock.module("../../scheduler", () => ({
   },
 }));
 
-createLibraryTester(Core, "Core Library", (test) => {
+const CoreToTest = { ...Core };
+const excludedOpcodes = [
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+  "^",
+  "random",
+  "==",
+  "!=",
+  "<",
+  ">",
+  "<=",
+  ">=",
+  "and",
+  "or",
+  "not",
+];
+for (const op of excludedOpcodes) {
+  delete (CoreToTest as any)[op];
+}
+
+createLibraryTester(CoreToTest, "Core Library", (test) => {
   registerLibrary(Core);
   registerLibrary(List);
 
@@ -140,46 +163,7 @@ createLibraryTester(Core, "Core Library", (test) => {
     expect(localCtx.vars?.x).toBe(20);
   });
 
-  // Comparison
-  test("==", async () => {
-    expect(await evaluate(Core["=="](1, 1), ctx)).toBe(true);
-    expect(await evaluate(Core["=="](1, 2), ctx)).toBe(false);
-    expect(await evaluate(Core["=="](1, 1, 1), ctx)).toBe(true);
-  });
-
-  test("!=", async () => {
-    expect(await evaluate(Core["!="](1, 2), ctx)).toBe(true);
-    expect(await evaluate(Core["!="](1, 1), ctx)).toBe(false);
-  });
-
-  test("<", async () => {
-    expect(await evaluate(Core["<"](1, 2), ctx)).toBe(true);
-    expect(await evaluate(Core["<"](2, 1), ctx)).toBe(false);
-    expect(await evaluate(Core["<"](1, 2, 3), ctx)).toBe(true);
-  });
-
-  test(">", async () => {
-    expect(await evaluate(Core[">"](2, 1), ctx)).toBe(true);
-    expect(await evaluate(Core[">"](1, 2), ctx)).toBe(false);
-  });
-
-  test("<=", async () => {
-    expect(await evaluate(Core["<="](1, 1), ctx)).toBe(true);
-    expect(await evaluate(Core["<="](1, 2), ctx)).toBe(true);
-    expect(await evaluate(Core["<="](2, 1), ctx)).toBe(false);
-  });
-
-  test(">=", async () => {
-    expect(await evaluate(Core[">="](1, 1), ctx)).toBe(true);
-    expect(await evaluate(Core[">="](2, 1), ctx)).toBe(true);
-    expect(await evaluate(Core[">="](1, 2), ctx)).toBe(false);
-  });
-
   // Arithmetic
-  test("+", async () => {
-    expect(await evaluate(Core["+"](1, 2), ctx)).toBe(3);
-    expect(await evaluate(Core["+"](1, 2, 3), ctx)).toBe(6);
-  });
 
   test("typeof", async () => {
     expect(await evaluate(Core["typeof"](1), ctx)).toBe("number");
@@ -190,46 +174,6 @@ createLibraryTester(Core, "Core Library", (test) => {
       "array",
     );
     expect(await evaluate(Core["typeof"](null), ctx)).toBe("null");
-  });
-
-  test("-", async () => {
-    expect(await evaluate(Core["-"](3, 1), ctx)).toBe(2);
-    expect(await evaluate(Core["-"](10, 2, 3), ctx)).toBe(5);
-  });
-
-  test("*", async () => {
-    expect(await evaluate(Core["*"](2, 3), ctx)).toBe(6);
-    expect(await evaluate(Core["*"](2, 3, 4), ctx)).toBe(24);
-  });
-
-  test("/", async () => {
-    expect(await evaluate(Core["/"](6, 2), ctx)).toBe(3);
-    expect(await evaluate(Core["/"](12, 2, 3), ctx)).toBe(2);
-  });
-
-  test("%", async () => {
-    expect(await evaluate(Core["%"](5, 2), ctx)).toBe(1);
-  });
-
-  test("^", async () => {
-    expect(await evaluate(Core["^"](2, 3), ctx)).toBe(8);
-    expect(await evaluate(Core["^"](2, 3, 2), ctx)).toBe(512); // 2^(3^2) = 2^9 = 512
-  });
-
-  // Logic
-  test("and", async () => {
-    expect(await evaluate(Core["and"](true, true), ctx)).toBe(true);
-    expect(await evaluate(Core["and"](true, false), ctx)).toBe(false);
-  });
-
-  test("or", async () => {
-    expect(await evaluate(Core["or"](false, true), ctx)).toBe(true);
-    expect(await evaluate(Core["or"](false, false), ctx)).toBe(false);
-  });
-
-  test("not", async () => {
-    expect(await evaluate(Core["not"](true), ctx)).toBe(false);
-    expect(await evaluate(Core["not"](false), ctx)).toBe(true);
   });
 
   // System
@@ -246,20 +190,6 @@ createLibraryTester(Core, "Core Library", (test) => {
 
   test("args", async () => {
     expect(await evaluate(Core["args"](), ctx)).toEqual([10, 20]);
-  });
-
-  test("random", async () => {
-    const r1 = await evaluate(Core["random"](), ctx);
-    expect(r1).toBeGreaterThanOrEqual(0);
-    expect(r1).toBeLessThan(1);
-
-    const r2 = await evaluate(Core["random"](10), ctx);
-    expect(r2).toBeGreaterThanOrEqual(0);
-    expect(r2).toBeLessThanOrEqual(10);
-
-    const r3 = await evaluate(Core["random"](5, 10), ctx);
-    expect(r3).toBeGreaterThanOrEqual(5);
-    expect(r3).toBeLessThanOrEqual(10);
   });
 
   test("warn", async () => {

@@ -2,8 +2,6 @@
 
 ## Refactoring & Technical Debt
 
-- **Core/Scripting**: Consider splitting math and boolean operations out from `packages/core/src/scripting/lib/core.ts` (and extract tests as appropriate).
-
 ## Features & Enhancements
 
 - **Scripting**: Better script errors (stack traces, line numbers (optional), diagnostic showing the code that errored, etc.)
