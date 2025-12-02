@@ -49,7 +49,7 @@ export const MonacoEditor: Component<MonacoEditorProps> = (props) => {
 
           try {
             // Call AI plugin via RPC
-            const suggestions = await gameStore.client.callPluginMethod(
+            const completion = await gameStore.client.callPluginMethod(
               "ai_completion",
               {
                 code,
@@ -57,20 +57,23 @@ export const MonacoEditor: Component<MonacoEditorProps> = (props) => {
               },
             );
 
-            if (!suggestions || !Array.isArray(suggestions)) {
+            if (!completion || typeof completion !== "string") {
               return { suggestions: [] };
             }
 
             return {
-              suggestions: suggestions.map((s: any) => ({
-                label: s.label,
-                kind: s.kind || monaco.languages.CompletionItemKind.Function,
-                insertText: s.insertText,
-                detail: s.detail,
-                documentation: s.detail,
-                insertTextRules:
-                  monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              })),
+              suggestions: [
+                {
+                  label: "AI Completion",
+                  kind: monaco.languages.CompletionItemKind.Snippet,
+                  insertText: completion,
+                  detail: "AI Generated Code",
+                  documentation: "AI Generated Code",
+                  insertTextRules:
+                    monaco.languages.CompletionItemInsertTextRule
+                      .InsertAsSnippet,
+                },
+              ],
             };
           } catch (e) {
             console.error("AI Completion Failed:", e);

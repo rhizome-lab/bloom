@@ -25,7 +25,7 @@ export interface CommandContext {
     updateEntity: (entity: Entity) => void;
     deleteEntity: (id: number) => void;
     canEdit: (playerId: number, entityId: number) => boolean;
-    resolveProps: (entity: Entity) => Promise<Entity>;
+    resolveProps: (entity: Entity) => Entity;
   };
 }
 

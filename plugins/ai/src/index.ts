@@ -159,7 +159,7 @@ export class AiPlugin implements Plugin {
 
       // Construct a prompt that asks for completion
       const prompt = `
-        You are an expert ViwoScript developer. ViwoScript is a Lisp-like language using JSON arrays.
+        You are an expert ViwoScript developer. ViwoScript is a TypeScript-like scripting language.
         Provide code completion suggestions for the following code at the cursor position.
         
         Code:
@@ -167,37 +167,24 @@ export class AiPlugin implements Plugin {
         
         Cursor Position: Line ${position.lineNumber}, Column ${position.column}
         
-        Return a list of suggestions. Each suggestion should have a label (display text), insertText (what to insert), and detail (description).
-        Focus on valid opcodes and common patterns.
-        
-        Example structure:
-        {
-          "suggestions": [
-            { "label": "seq", "insertText": "[\\"seq\\", \\n\\t$0\\n]", "detail": "Sequence of commands", "kind": 14 },
-            { "label": "print", "insertText": "[\\"print\\", \\"$1\\"]", "detail": "Print a message", "kind": 2 }
-          ]
-        }
+        Return a single string containing the code to complete at the cursor.
+        Do NOT use placeholders like $0 or $1.
+        Do NOT include markdown formatting or backticks.
+        Just return the raw code to insert.
       `;
 
       const { object: data } = await generateObject({
         model,
         schema: z.object({
-          suggestions: z.array(
-            z.object({
-              label: z.string(),
-              insertText: z.string(),
-              detail: z.string().optional(),
-              kind: z.number().optional(), // Monaco completion item kind
-            }),
-          ),
+          completion: z.string(),
         }),
         prompt: prompt,
       });
 
-      return data.suggestions;
+      return (data as any).completion;
     } catch (error: any) {
       console.error("AI Completion Error:", error);
-      return [];
+      return null;
     }
   }
 
@@ -217,8 +204,11 @@ export class AiPlugin implements Plugin {
       return;
     }
 
-    const roomItems = ctx.core.getContents(playerEntity["location"] as number);
-    const target = roomItems.find(
+    const roomItems = this.getResolvedRoom(
+      ctx,
+      playerEntity["location"] as number,
+    )?.contents;
+    const target = roomItems?.find(
       (e: any) => e.name.toLowerCase() === targetName.toLowerCase(),
     );
 
@@ -292,8 +282,7 @@ Keep your response short and in character.`,
           adjectives: data.adjectives,
           custom_css: data.custom_css,
         });
-        ctx.core.moveEntity(ctx.player.id, newRoomId);
-        const room = await this.getResolvedRoom(ctx, newRoomId);
+        const room = this.getResolvedRoom(ctx, newRoomId);
         if (room) {
           ctx.send("room_id", { roomId: room.id });
           ctx.send("message", `You are transported to ${data.name}.`);
@@ -307,7 +296,7 @@ Keep your response short and in character.`,
           adjectives: data.adjectives,
           custom_css: data.custom_css,
         });
-        const room = await this.getResolvedRoom(
+        const room = this.getResolvedRoom(
           ctx,
           playerEntity["location"] as number,
         );
@@ -373,14 +362,17 @@ Keep your response short and in character.`,
         targetId = playerEntity["location"] as number;
       } else {
         // Find item
-        const roomItems = ctx.core.getContents(
+        const roomItems = this.getResolvedRoom(
+          ctx,
           playerEntity["location"] as number,
+        )?.contents;
+        const item = roomItems?.find(
+          (item) =>
+            (item["name"] as string).toLowerCase() === targetName.toLowerCase(),
         );
-        const item = roomItems.find(
-          (i) =>
-            (i["name"] as string).toLowerCase() === targetName.toLowerCase(),
-        );
-        if (item) targetId = item.id;
+        if (item) {
+          targetId = item.id;
+        }
       }
 
       if (targetId) {
@@ -405,18 +397,16 @@ Keep your response short and in character.`,
     }
   }
 
-  async getResolvedRoom(ctx: CommandContext, roomId: number) {
+  getResolvedRoom(ctx: CommandContext, roomId: number) {
     const room = ctx.core.getEntity(roomId);
     if (!room) {
       return;
     }
-    const resolved = await ctx.core.resolveProps(room);
+    const resolved = ctx.core.resolveProps(room);
     const withContents = {
       ...resolved,
-      contents: await Promise.all(
-        ctx.core
-          .getContents(room.id)
-          .map((item) => ctx.core.resolveProps(item)),
+      contents: ((room["contents"] as number[]) ?? []).map((id) =>
+        ctx.core.resolveProps(ctx.core.getEntity(id)!),
       ),
     };
     return withContents;
