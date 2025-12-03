@@ -15,9 +15,19 @@ hero:
 
 features:
   - title: Multiplayer
-    details: Real-time interaction with other users.
+    details: Real-time interaction with other users in a persistent world.
   - title: Scriptable
-    details: Custom scripting language for dynamic content.
+    details: Custom scripting language (ViwoScript) for dynamic content and object behaviors.
   - title: Multi-frontend
-    details: Web, Discord, CLI, and TUI interfaces.
+    details: Access the world via Web, Discord, or Terminal (TUI).
+  - title: Capability Security
+    details: Fine-grained permission system based on object capabilities.
+---
+
+## Quick Links
+
+- **Core Concepts**: [Architecture](/core/architecture) | [Security](/core/security)
+- **Scripting**: [Language Spec](/scripting/spec) | [Interpreter](/scripting/interpreter)
+- **Applications**: [Discord Bot](/apps/discord-bot) | [TUI](/apps/tui)
+
 ---

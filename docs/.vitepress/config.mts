@@ -54,6 +54,10 @@ export default withMermaid(
           items: getSidebarItems("reference"),
         },
         {
+          text: "Applications",
+          items: getSidebarItems("apps"),
+        },
+        {
           text: "Plugins",
           items: getSidebarItems("plugins"),
         },

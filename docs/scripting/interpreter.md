@@ -20,6 +20,25 @@ The execution stack is composed of several parallel arrays, indexed by a stack p
 - **`stackAst: any[][]`**: Stores the raw AST (S-expression) being evaluated.
 - **`stackIdx: number[]`**: Stores the current index within the AST, tracking which argument is currently being processed.
 
+### Stack Visualization
+
+```mermaid
+classDiagram
+    class Interpreter {
+        +sp: number
+        +executeLoop()
+    }
+    class StackArrays {
+        +stackOp: string[]
+        +stackArgs: unknown[][]
+        +stackAst: any[][]
+        +stackIdx: number[]
+    }
+    Interpreter --> StackArrays : manages
+
+    note for StackArrays "Parallel Arrays (SOA)\nIndex 'i' represents one stack frame"
+```
+
 ## Usage
 
 The primary entry point for the interpreter is the `evaluate` function.
