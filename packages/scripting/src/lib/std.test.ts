@@ -49,6 +49,8 @@ mock.module("../../scheduler", () => ({
 createLibraryTester(Std, "Core Library", (test) => {
   registerLibrary(Std);
   registerLibrary(List);
+  registerLibrary(Math);
+  registerLibrary(Boolean);
 
   let ctx: ScriptContext;
 

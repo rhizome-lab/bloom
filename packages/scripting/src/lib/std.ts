@@ -15,10 +15,7 @@ const this_ = defineOpcode<[], Entity>("this", {
     parameters: [],
     returnType: "Entity",
   },
-  handler: (args, ctx) => {
-    if (args.length !== 0) {
-      throw new ScriptError("this: expected 0 arguments");
-    }
+  handler: (_args, ctx) => {
     return ctx.this;
   },
 });
@@ -37,10 +34,7 @@ export const caller = defineOpcode<[], Entity>("caller", {
     parameters: [],
     returnType: "Entity",
   },
-  handler: (args, ctx) => {
-    if (args.length !== 0) {
-      throw new ScriptError("caller: expected 0 arguments");
-    }
+  handler: (_args, ctx) => {
     return ctx.caller;
   },
 });
@@ -56,7 +50,7 @@ export const seq = defineOpcode<ScriptValue<unknown>[], any>("seq", {
     description: "Execute a sequence of steps",
     layout: "control-flow",
     slots: [],
-    parameters: [{ name: "...args", type: "unknown[]" }],
+    parameters: [{ name: "...args", type: "any[]" }],
     returnType: "any",
     lazy: true,
   },
@@ -108,17 +102,14 @@ const ifOp = defineOpcode<
       { name: "Else", type: "block" },
     ],
     parameters: [
-      { name: "condition", type: "boolean" },
-      { name: "then", type: "T" },
-      { name: "else", type: "T" },
+      { name: "condition", type: "any" },
+      { name: "then", type: "any" },
+      { name: "else", type: "any", optional: true },
     ],
     returnType: "T",
     lazy: true,
   },
   handler: (args, ctx) => {
-    if (args.length < 2 || args.length > 3) {
-      throw new ScriptError("if: expected `condition` `then` [`else`]");
-    }
     const [cond, thenBranch, elseBranch] = args;
     
     const runBranch = (conditionResult: boolean) => {
@@ -154,12 +145,14 @@ const whileOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<unknown>], any>(
         { name: "Condition", type: "block" },
         { name: "Body", type: "block" },
       ],
+      parameters: [
+        { name: "condition", type: "any" },
+        { name: "body", type: "any" },
+      ],
+      returnType: "any",
       lazy: true,
     },
     handler: (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("while: expected `condition` `do`");
-      }
       const [cond, body] = args;
       let lastResult: any = null;
 
@@ -192,20 +185,11 @@ const whileOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<unknown>], any>(
             });
           }
           lastResult = bodyResult;
-          return loop(); // Recursion? Should be fine if evaluate is iterative or we use trampoline
-          // But wait, if it's sync, this will stack overflow.
-          // We need a way to loop synchronously without recursion if possible.
-          // But since we are inside a handler, we can't easily yield back to the main loop 
-          // unless we return a special continuation or throw.
-          // For now, let's assume the stack depth is sufficient or users won't write infinite sync loops.
-          // Actually, `evaluate` is iterative, but `while` calling `evaluate` recursively is the issue.
+          return loop();
         }
         return lastResult;
       };
 
-      // To avoid stack overflow in sync loops, we might need a trampoline or 
-      // rely on the fact that `evaluate` is now iterative, but `while` is still recursive here.
-      // Ideally `while` should return instructions to the main loop, but we are keeping it simple for now.
       return loop();
     },
   },
@@ -231,16 +215,13 @@ const forOp = defineOpcode<
     ],
     parameters: [
       { name: "variableName", type: "string" },
-      { name: "list", type: "readonly unknown[]" },
-      { name: "body", type: "unknown" },
+      { name: "list", type: "any" },
+      { name: "body", type: "any" },
     ],
     returnType: "any",
     lazy: true,
   },
   handler: (args, ctx) => {
-    if (args.length !== 3) {
-      throw new ScriptError("for: expected `var` `list` `do`");
-    }
     const [varName, listExpr, body] = args;
     
     const runLoop = (list: any[]) => {
@@ -295,11 +276,7 @@ const jsonStringify = defineOpcode<[ScriptValue<unknown>], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("json.stringify: expected `value`");
-      }
-      const [valExpr] = args;
-      const val = valExpr;
+      const [val] = args;
       return JSON.stringify(val);
     },
   },
@@ -319,9 +296,7 @@ const jsonParse = defineOpcode<[ScriptValue<string>], unknown>("json.parse", {
     returnType: "unknown",
   },
   handler: (args, _ctx) => {
-    const [strExpr] = args;
-    const str = strExpr;
-    if (typeof str !== "string") return null;
+    const [str] = args;
     try {
       return JSON.parse(str);
     } catch {
@@ -344,11 +319,7 @@ export const typeof_ = defineOpcode<[ScriptValue<unknown>], "string" | "number" 
     returnType: "string",
   },
   handler: (args, _ctx) => {
-    if (args.length !== 1) {
-      throw new ScriptError("typeof: expected 1 argument");
-    }
-    const [valExpr] = args;
-    const val = valExpr;
+    const [val] = args;
     if (Array.isArray(val)) return "array";
     if (val === null) return "null";
     return typeof val as "string" | "number" | "boolean" | "object"| "null" | "array";
@@ -376,11 +347,7 @@ const letOp = defineOpcode<[string, ScriptValue<unknown>], any>("let", {
     returnType: "any",
   },
   handler: (args, ctx) => {
-    if (args.length !== 2) {
-      throw new ScriptError("let requires 2 arguments");
-    }
-    const [name, val] = args;
-    const value = val;
+    const [name, value] = args;
     ctx.vars = ctx.vars || {};
     ctx.vars[name] = value;
     return value;
@@ -402,9 +369,6 @@ const var_ = defineOpcode<[string], any>("var", {
     returnType: "any",
   },
   handler: (args, ctx) => {
-    if (args.length !== 1) {
-      throw new ScriptError("var: expected 1 argument");
-    }
     const [name] = args;
     return ctx.vars?.[name] ?? null;
   },
@@ -430,11 +394,7 @@ const set_ = defineOpcode<[string, ScriptValue<unknown>], any>("set", {
     returnType: "any",
   },
   handler: (args, ctx) => {
-    if (args.length !== 2) {
-      throw new ScriptError("set: expected 2 arguments");
-    }
-    const [name, val] = args;
-    const value = val;
+    const [name, value] = args;
     if (ctx.vars && name in ctx.vars) {
       ctx.vars[name] = value;
     }
@@ -463,14 +423,7 @@ export const log = defineOpcode<
     returnType: "null",
   },
   handler: (args, _ctx) => {
-    if (args.length < 1) {
-      throw new ScriptError("log: expected at least 1 argument");
-    }
-    const messages = [];
-    for (const arg of args) {
-      messages.push(arg);
-    }
-    console.log(...messages);
+    console.log(...args);
     return null;
   },
 });
@@ -526,8 +479,7 @@ export const warn = defineOpcode<[ScriptValue<unknown>], void>("warn", {
   },
   handler: (args, ctx) => {
     const [msg] = args;
-    const text = msg;
-    ctx.warnings.push(String(text));
+    ctx.warnings.push(String(msg));
   },
 });
 
@@ -565,9 +517,9 @@ const tryOp = defineOpcode<
       { name: "Catch", type: "block" },
     ],
     parameters: [
-      { name: "try", type: "unknown" },
+      { name: "try", type: "any" },
       { name: "errorVar", type: "string" },
-      { name: "catch", type: "unknown" },
+      { name: "catch", type: "any" },
     ],
     returnType: "any",
     lazy: true,
@@ -605,7 +557,7 @@ export const lambda = defineOpcode<[readonly string[], ScriptValue<unknown>], an
       ],
       parameters: [
         { name: "args", type: "string[]" },
-        { name: "body", type: "unknown" },
+        { name: "body", type: "any" },
       ],
     returnType: "any",
       lazy: true,
@@ -639,33 +591,29 @@ export const apply = defineOpcode<
     ],
     parameters: [
       { name: "func", type: "unknown" },
-      { name: "...args", type: "unknown[]" },
+      { name: "...args", type: "any[]" },
     ],
     returnType: "any",
   },
   handler: (args, ctx) => {
-    const [funcExpr, ...argExprs] = args;
-    const func = evaluate(funcExpr, ctx);
+    const [func, ...evaluatedArgs] = args;
 
     if (!func) {
       throw new ScriptError("apply: func not found");
     }
-    if (func.type !== "lambda") {
+    if ((func as any).type !== "lambda") {
       throw new ScriptError(
         `apply: func must be a lambda, got ${JSON.stringify(func)}`,
       );
     }
 
-    const evaluatedArgs = [];
-    for (const arg of argExprs) {
-      evaluatedArgs.push(evaluate(arg, ctx));
-    }
+    const lambdaFunc = func as any;
 
     // Create new context
-    const newVars = { ...func.closure };
+    const newVars = { ...lambdaFunc.closure };
     // Bind arguments
-    for (let i = 0; i < func.args.length; i++) {
-      newVars[func.args[i]] = evaluatedArgs[i];
+    for (let i = 0; i < lambdaFunc.args.length; i++) {
+      newVars[lambdaFunc.args[i]] = evaluatedArgs[i];
     }
 
     const newCtx = {
@@ -674,11 +622,11 @@ export const apply = defineOpcode<
       stack: [...ctx.stack, { name: "<lambda>", args: evaluatedArgs }],
     };
 
-    if (func.execute) {
-      return func.execute(newCtx);
+    if (lambdaFunc.execute) {
+      return lambdaFunc.execute(newCtx);
     }
 
-    return evaluate(func.body, newCtx);
+    return evaluate(lambdaFunc.body, newCtx);
   },
 });
 
@@ -701,15 +649,7 @@ export const send = defineOpcode<[ScriptValue<string>, ScriptValue<unknown>], nu
     returnType: "null",
   },
   handler: (args, ctx) => {
-    if (args.length !== 2) {
-      throw new ScriptError("send: expected `type` `payload`");
-    }
-    const [typeExpr, payloadExpr] = args;
-    const type = evaluate(typeExpr, ctx);
-    if (typeof type !== "string") {
-      throw new ScriptError(`send: type must be a string, got ${JSON.stringify(type)}`);
-    }
-    const payload = evaluate(payloadExpr, ctx);
+    const [type, payload] = args;
     ctx.send?.(type, payload);
     return null;
   },
@@ -725,7 +665,7 @@ export const quote = defineOpcode<[any], any>("quote", {
     category: "data",
     description: "Return value unevaluated",
     slots: [{ name: "Value", type: "block" }],
-    parameters: [{ name: "value", type: "unknown" }],
+    parameters: [{ name: "value", type: "any" }],
     returnType: "any",
     lazy: true,
   },
@@ -733,4 +673,3 @@ export const quote = defineOpcode<[any], any>("quote", {
     return args[0];
   },
 });
-

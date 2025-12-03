@@ -1,4 +1,3 @@
-import { ScriptError } from "../interpreter";
 import { defineOpcode } from "../def";
 
 // Arithmetic
@@ -26,23 +25,9 @@ const add = defineOpcode<
     returnType: "number",
   },
   handler: (args, _ctx) => {
-    if (args.length < 2) {
-      throw new ScriptError("+: expected at least 2 arguments");
-    }
     let sum = args[0];
-    if (typeof sum !== "number") {
-      throw new ScriptError(
-        `+: expected a number at index 0, got ${JSON.stringify(sum)}`,
-      );
-    }
     for (let i = 1; i < args.length; i++) {
-      const next = args[i];
-      if (typeof next !== "number") {
-        throw new ScriptError(
-          `+: expected a number at index ${i}, got ${JSON.stringify(next)}`,
-        );
-      }
-      sum += next;
+      sum += args[i];
     }
     return sum;
   },
@@ -73,23 +58,9 @@ const sub = defineOpcode<
     returnType: "number",
   },
   handler: (args, _ctx) => {
-    if (args.length < 2) {
-      throw new ScriptError("-: expected at least 2 arguments");
-    }
     let diff = args[0];
-    if (typeof diff !== "number") {
-      throw new ScriptError(
-        `-: expected a number at index 0, got ${JSON.stringify(diff)}`,
-      );
-    }
     for (let i = 1; i < args.length; i++) {
-      const next = args[i];
-      if (typeof next !== "number") {
-        throw new ScriptError(
-          `-: expected a number at index ${i}, got ${JSON.stringify(next)}`,
-        );
-      }
-      diff -= next;
+      diff -= args[i];
     }
     return diff;
   },
@@ -120,23 +91,9 @@ const mul = defineOpcode<
     returnType: "number",
   },
   handler: (args, _ctx) => {
-    if (args.length < 2) {
-      throw new ScriptError("*: expected at least 2 arguments");
-    }
     let prod = args[0];
-    if (typeof prod !== "number") {
-      throw new ScriptError(
-        `*: expected a number at index 0, got ${JSON.stringify(prod)}`,
-      );
-    }
     for (let i = 1; i < args.length; i++) {
-      const next = args[i];
-      if (typeof next !== "number") {
-        throw new ScriptError(
-          `*: expected a number at index ${i}, got ${JSON.stringify(next)}`,
-        );
-      }
-      prod *= next;
+      prod *= args[i];
     }
     return prod;
   },
@@ -167,23 +124,9 @@ const div = defineOpcode<
     returnType: "number",
   },
   handler: (args, _ctx) => {
-    if (args.length < 2) {
-      throw new ScriptError("/: expected at least 2 arguments");
-    }
     let quot = args[0];
-    if (typeof quot !== "number") {
-      throw new ScriptError(
-        `/: expected a number at index 0, got ${JSON.stringify(quot)}`,
-      );
-    }
     for (let i = 1; i < args.length; i++) {
-      const next = args[i];
-      if (typeof next !== "number") {
-        throw new ScriptError(
-          `/: expected a number at index ${i}, got ${JSON.stringify(next)}`,
-        );
-      }
-      quot /= next;
+      quot /= args[i];
     }
     return quot;
   },
@@ -212,21 +155,8 @@ const mod = defineOpcode<[number, number], number>(
       returnType: "number",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("%: expected 2 arguments");
-      }
       const aEval = args[0];
-      if (typeof aEval !== "number") {
-        throw new ScriptError(
-          `%: expected a number at index 0, got ${JSON.stringify(aEval)}`,
-        );
-      }
       const bEval = args[1];
-      if (typeof bEval !== "number") {
-        throw new ScriptError(
-          `%: expected a number at index 1, got ${JSON.stringify(bEval)}`,
-        );
-      }
       return aEval % bEval;
     },
   },
@@ -258,24 +188,9 @@ const pow = defineOpcode<
   },
   handler: (args, _ctx) => {
     // Power tower
-    if (args.length < 2) {
-      throw new ScriptError("^: expected at least 2 arguments");
-    }
     let pow = args[args.length - 1];
-    if (typeof pow !== "number") {
-      throw new ScriptError(
-        `^: expected a number at index ${args.length - 1}, got ${JSON.stringify(
-          pow,
-        )}`,
-      );
-    }
     for (let i = args.length - 2; i >= 0; i--) {
       const next = args[i];
-      if (typeof next !== "number") {
-        throw new ScriptError(
-          `^: expected a number at index ${i}, got ${JSON.stringify(next)}`,
-        );
-      }
       pow = next ** pow;
     }
     return pow;
@@ -302,28 +217,26 @@ export const random = defineOpcode<
       { name: "Max", type: "number", default: 1 },
     ],
     parameters: [
-      { name: "min", type: "number" },
-      { name: "max", type: "number" },
+      { name: "min", type: "number", optional: true },
+      { name: "max", type: "number", optional: true },
     ],
     returnType: "number",
   },
   handler: (args, _ctx) => {
     // random(max), random(min, max) or random() -> 0..1
-    if (args.length > 2) {
-      throw new ScriptError("random: expected 0, 1, or 2 arguments");
-    }
     if (args.length === 0) return Math.random();
     const min = args.length === 2 ? args[0] : 0;
     const max = args[args.length === 2 ? 1 : 0];
     const shouldFloor = min % 1 === 0 && max % 1 === 0;
-    if (typeof min !== "number") {
-      throw new ScriptError("random: min must be a number");
-    }
-    if (typeof max !== "number") {
-      throw new ScriptError("random: max must be a number");
-    }
+    
+    // Manual check for min > max because it's a logic error, not type/count error
     if (min > max) {
-      throw new ScriptError("random: min must be less than or equal to max");
+      // We can keep this or remove it. Let's keep it for now as it's specific logic.
+      // But wait, if we remove ScriptError import, we need to import it or use Error.
+      // The original code used ScriptError.
+      // I removed ScriptError import in this file content.
+      // So I should throw Error or re-add ScriptError import.
+      throw new Error("random: min must be less than or equal to max");
     }
     const roll = Math.random() * (max - min + 1) + min;
     return shouldFloor ? Math.floor(roll) : roll;

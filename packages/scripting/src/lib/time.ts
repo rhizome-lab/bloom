@@ -1,4 +1,3 @@
-import { ScriptError } from "../interpreter";
 import { defineOpcode, ScriptValue } from "../def";
 
 /**
@@ -16,9 +15,6 @@ const timeNow = defineOpcode<[], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 0) {
-        throw new ScriptError("time.now: expected 0 arguments");
-      }
       return new Date().toISOString();
     },
   }
@@ -41,18 +37,12 @@ const timeFormat = defineOpcode<[ScriptValue<string>, ScriptValue<string>?], str
       ],
       parameters: [
         { name: "time", type: "string" },
-        { name: "format", type: "string" },
+        { name: "format", type: "string", optional: true },
       ],
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length < 1 || args.length > 2) {
-        throw new ScriptError("time.format: expected 1 or 2 arguments");
-      }
       const [timestamp] = args;
-      if (typeof timestamp !== "string") {
-        throw new ScriptError("time.format: expected string for timestamp");
-      }
       return new Date(timestamp).toISOString();
     },
   }
@@ -74,13 +64,7 @@ const timeParse = defineOpcode<[ScriptValue<string>], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("time.parse: expected 1 argument");
-      }
       const [datetime] = args;
-      if (typeof datetime !== "string") {
-        throw new ScriptError("time.parse: expected string for datetime");
-      }
       return new Date(datetime).toISOString();
     },
   }
@@ -102,15 +86,7 @@ const timeFromTimestamp = defineOpcode<[ScriptValue<number>], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("time.from_timestamp: expected 1 argument");
-      }
       const [timestamp] = args;
-      if (typeof timestamp !== "number") {
-        throw new ScriptError(
-          "time.from_timestamp: expected number for timestamp",
-        );
-      }
       return new Date(timestamp).toISOString();
     },
   }
@@ -132,15 +108,7 @@ const timeToTimestamp = defineOpcode<[ScriptValue<string>], number>(
       returnType: "number",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("time.to_timestamp: expected 1 argument");
-      }
       const [datetime] = args;
-      if (typeof datetime !== "string") {
-        throw new ScriptError(
-          "time.to_timestamp: expected string for datetime",
-        );
-      }
       return new Date(datetime).getTime();
     },
   }
@@ -165,27 +133,15 @@ const timeOffset = defineOpcode<[ScriptValue<number>, ScriptValue<"day" | "days"
       parameters: [
         { name: "amount", type: "number" },
         { name: "unit", type: "string" },
-        { name: "base", type: "string" },
+        { name: "base", type: "string", optional: true },
       ],
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length < 2 || args.length > 3) {
-        throw new ScriptError("time.offset: expected 2 or 3 arguments");
-      }
       const [amount, unit, baseExpr] = args;
-      if (typeof amount !== "number") {
-        throw new ScriptError("time.offset: expected number for amount");
-      }
-      if (typeof unit !== "string") {
-        throw new ScriptError("time.offset: expected string for unit");
-      }
       const base = baseExpr !== undefined
         ? baseExpr
         : new Date().toISOString();
-      if (typeof base !== "string") {
-        throw new ScriptError("time.offset: expected string for base");
-      }
 
       const date = new Date(base);
       switch (unit) {
@@ -220,7 +176,8 @@ const timeOffset = defineOpcode<[ScriptValue<number>, ScriptValue<"day" | "days"
           break;
         }
         default: {
-          throw new ScriptError("time.offset: unknown unit");
+          // This might still be needed if the type check is only "string" and not the specific enum
+          throw new Error("time.offset: unknown unit");
         }
       }
       return date.toISOString();

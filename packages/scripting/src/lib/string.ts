@@ -1,4 +1,3 @@
-import { ScriptError } from "../interpreter";
 import { defineOpcode, ScriptValue } from "../def";
 
 /**
@@ -16,13 +15,7 @@ const strLen = defineOpcode<[ScriptValue<string>], number>(
       returnType: "number",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("str.len: expected 1 argument");
-      }
       const [str] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.len: expected string for str");
-      }
       return str.length;
     },
   }
@@ -46,9 +39,6 @@ const strConcat = defineOpcode<[...ScriptValue<string | number | boolean | null>
     handler: (args, _ctx) => {
       const strings: string[] = [];
       for (const arg of args) {
-        if (typeof arg === "object" || typeof arg === "function") {
-          throw new ScriptError("str.concat: expected primitive for arg");
-        }
         strings.push(String(arg));
       }
       return strings.join("");
@@ -78,16 +68,7 @@ const strSplit = defineOpcode<[ScriptValue<string>, ScriptValue<string>], string
       returnType: "string[]",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("str.split: expected 2 arguments");
-      }
       const [str, sep] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.split: expected string for str");
-      }
-      if (typeof sep !== "string") {
-        throw new ScriptError("str.split: expected string for sep");
-      }
       return str.split(sep);
     },
   }
@@ -112,25 +93,13 @@ const strSlice = defineOpcode<[ScriptValue<string>, ScriptValue<number>, ScriptV
       parameters: [
         { name: "string", type: "string" },
         { name: "start", type: "number" },
-        { name: "end", type: "number" },
+        { name: "end", type: "number", optional: true },
       ],
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length < 2 || args.length > 3) {
-        throw new ScriptError("str.slice: expected 2 or 3 arguments");
-      }
       const [str, start, endExpr] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.slice: expected string for str");
-      }
-      if (typeof start !== "number") {
-        throw new ScriptError("str.slice: expected number for start");
-      }
       const end = endExpr !== undefined ? endExpr : str.length;
-      if (typeof end !== "number") {
-        throw new ScriptError("str.slice: expected number for end");
-      }
       return str.slice(start, end);
     },
   }
@@ -152,13 +121,7 @@ const strUpper = defineOpcode<[ScriptValue<string>], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("str.upper: expected 1 argument");
-      }
       const [str] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.upper: expected string for str");
-      }
       return str.toUpperCase();
     },
   }
@@ -180,13 +143,7 @@ const strLower = defineOpcode<[ScriptValue<string>], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("str.lower: expected 1 argument");
-      }
       const [str] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.lower: expected string for str");
-      }
       return str.toLowerCase();
     },
   }
@@ -208,13 +165,7 @@ const strTrim = defineOpcode<[ScriptValue<string>], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("str.trim: expected 1 argument");
-      }
       const [str] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.trim: expected string for str");
-      }
       return str.trim();
     },
   }
@@ -244,19 +195,7 @@ const strReplace = defineOpcode<[ScriptValue<string>, ScriptValue<string>, Scrip
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 3) {
-        throw new ScriptError("str.replace: expected 3 arguments");
-      }
       const [str, search, replace] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.replace: expected string for str");
-      }
-      if (typeof search !== "string") {
-        throw new ScriptError("str.replace: expected string for search");
-      }
-      if (typeof replace !== "string") {
-        throw new ScriptError("str.replace: expected string for replace");
-      }
       return str.replace(search, replace);
     },
   }
@@ -284,16 +223,7 @@ const strIncludes = defineOpcode<[ScriptValue<string>, ScriptValue<string>], boo
       returnType: "boolean",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("str.includes: expected 2 arguments");
-      }
       const [str, search] = args;
-      if (typeof str !== "string") {
-        throw new ScriptError("str.includes: expected string for str");
-      }
-      if (typeof search !== "string") {
-        throw new ScriptError("str.includes: expected string for search");
-      }
       return str.includes(search);
     },
   }
@@ -321,23 +251,7 @@ const strJoin = defineOpcode<[ScriptValue<any[]>, ScriptValue<string>], string>(
       returnType: "string",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("str.join: expected 2 arguments");
-      }
       const [list, separator] = args;
-      if (!Array.isArray(list)) {
-        throw new ScriptError("str.join: expected array for list");
-      }
-      for (let i = 0; i < list.length; i++) {
-        if (typeof list[i] === "object" || typeof list[i] === "function") {
-          throw new ScriptError(
-            `str.join: expected primitive for list element ${i}`,
-          );
-        }
-      }
-      if (typeof separator !== "string") {
-        throw new ScriptError("str.join: expected string for separator");
-      }
       return list.join(separator);
     },
   }

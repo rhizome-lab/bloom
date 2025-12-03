@@ -88,7 +88,7 @@ export interface OpcodeMetadata {
     default?: any;
   }[];
   // For Monaco/TS
-  parameters?: { name: string; type: string }[];
+  parameters?: { name: string; type: string; optional?: boolean }[];
   genericParameters?: string[];
   returnType?: string;
   /** If true, arguments are NOT evaluated before being passed to the handler. Default: false (Strict). */
@@ -242,6 +242,129 @@ export function evaluate<T>(
 
       let result: unknown;
       try {
+        // Validate arguments
+        if (def.metadata.parameters) {
+          const params = def.metadata.parameters;
+          const hasRest = params.some((p) => p.name.startsWith("..."));
+          const minArgs = params.filter(
+            (p) => !p.optional && !p.name.startsWith("..."),
+          ).length;
+
+          if (frame.args.length < minArgs) {
+            throw new ScriptError(
+              `${frame.op}: expected at least ${minArgs} arguments, got ${frame.args.length}`,
+            );
+          }
+
+          if (!hasRest && frame.args.length > params.length) {
+            throw new ScriptError(
+              `${frame.op}: expected at most ${params.length} arguments, got ${frame.args.length}`,
+            );
+          }
+
+          // Type checking
+          for (let i = 0; i < frame.args.length; i++) {
+            const param =
+              i < params.length ? params[i] : params[params.length - 1];
+            // Handle rest param logic: if we are past the defined params, use the last one (which should be rest)
+            // If the current param is rest, use it for all subsequent args
+            const currentParam =
+              param.name.startsWith("...") || i >= params.length
+                ? params[params.length - 1]
+                : param;
+
+            const arg = frame.args[i];
+            const type = currentParam.type.replace("[]", ""); // Simple array check handling
+
+            if (type === "any" || type === "unknown") continue;
+
+            if (currentParam.type.endsWith("[]")) {
+              // If it's a rest param like ...strings: string[], the individual arg should be string
+              // But wait, frame.args are the individual arguments passed to the function
+              // So if param is string[], does it mean the arg is an array or the rest args are strings?
+              // In defineOpcode, ...strings: string[] means variadic args of type string.
+              // But if it's a list argument like list: any[], then arg should be array.
+
+              if (currentParam.name.startsWith("...")) {
+                // Variadic: arg should be of type 'type' (stripped of [])
+                if (
+                  type !== "any" &&
+                  type !== "unknown" &&
+                  typeof arg !== type &&
+                  arg !== null
+                ) {
+                  // Special case for primitives vs objects?
+                  // For now simple typeof check
+                  if (
+                    type === "object" &&
+                    (typeof arg !== "object" || arg === null)
+                  ) {
+                    throw new ScriptError(
+                      `${frame.op}: expected ${type} for ${currentParam.name} at index ${i}`,
+                    );
+                  }
+                  if (type !== "object" && typeof arg !== type) {
+                    throw new ScriptError(
+                      `${frame.op}: expected ${type} for ${currentParam.name} at index ${i}`,
+                    );
+                  }
+                }
+              } else {
+                // Array argument: arg should be an array
+                if (!Array.isArray(arg)) {
+                  throw new ScriptError(
+                    `${frame.op}: expected array for ${currentParam.name}`,
+                  );
+                }
+              }
+            } else {
+              if (type === "object") {
+                if (typeof arg !== "object" || arg === null) {
+                  throw new ScriptError(
+                    `${frame.op}: expected object for ${currentParam.name}`,
+                  );
+                }
+              } else if (typeof arg !== type) {
+                // Allow null for optional? No, optional means undefined/missing.
+                // But some args might be nullable. Metadata doesn't specify nullable yet.
+                // Assume strict for now unless we add nullable support.
+                // But wait, Capability | null is a common type.
+                if (type.includes("|")) {
+                  // Simple union check
+                  const types = type.split("|").map((t) => t.trim());
+                  const argType = arg === null ? "null" : typeof arg;
+                  // Check for Capability brand
+                  if (
+                    types.includes("Capability") &&
+                    arg &&
+                    typeof arg === "object" &&
+                    (arg as any).__brand === "Capability"
+                  ) {
+                    continue;
+                  }
+                  if (
+                    types.includes("Entity") &&
+                    arg &&
+                    typeof arg === "object" &&
+                    typeof (arg as any).id === "number"
+                  ) {
+                    continue;
+                  }
+                  if (!types.includes(argType)) {
+                    throw new ScriptError(
+                      `${frame.op}: expected ${type} for ${currentParam.name}`,
+                    );
+                  }
+                } else {
+                  throw new ScriptError(
+                    `${frame.op}: expected ${type} for ${currentParam.name}`,
+                  );
+                }
+              }
+            }
+          }
+        }
+
         result = def.handler(frame.args, ctx);
       } catch (e: any) {
         let scriptError: ScriptError;
@@ -342,6 +465,129 @@ async function handleAsyncResult(
       stack.pop();
 
       try {
+        // Validate arguments
+        if (def.metadata.parameters) {
+          const params = def.metadata.parameters;
+          const hasRest = params.some((p) => p.name.startsWith("..."));
+          const minArgs = params.filter(
+            (p) => !p.optional && !p.name.startsWith("..."),
+          ).length;
+
+          if (frame.args.length < minArgs) {
+            throw new ScriptError(
+              `${frame.op}: expected at least ${minArgs} arguments, got ${frame.args.length}`,
+            );
+          }
+
+          if (!hasRest && frame.args.length > params.length) {
+            throw new ScriptError(
+              `${frame.op}: expected at most ${params.length} arguments, got ${frame.args.length}`,
+            );
+          }
+
+          // Type checking
+          for (let i = 0; i < frame.args.length; i++) {
+            const param =
+              i < params.length ? params[i] : params[params.length - 1];
+            // Handle rest param logic: if we are past the defined params, use the last one (which should be rest)
+            // If the current param is rest, use it for all subsequent args
+            const currentParam =
+              param.name.startsWith("...") || i >= params.length
+                ? params[params.length - 1]
+                : param;
+
+            const arg = frame.args[i];
+            const type = currentParam.type.replace("[]", ""); // Simple array check handling
+
+            if (type === "any" || type === "unknown") continue;
+
+            if (currentParam.type.endsWith("[]")) {
+              // If it's a rest param like ...strings: string[], the individual arg should be string
+              // But wait, frame.args are the individual arguments passed to the function
+              // So if param is string[], does it mean the arg is an array or the rest args are strings?
+              // In defineOpcode, ...strings: string[] means variadic args of type string.
+              // But if it's a list argument like list: any[], then arg should be array.
+
+              if (currentParam.name.startsWith("...")) {
+                // Variadic: arg should be of type 'type' (stripped of [])
+                if (
+                  type !== "any" &&
+                  type !== "unknown" &&
+                  typeof arg !== type &&
+                  arg !== null
+                ) {
+                  // Special case for primitives vs objects?
+                  // For now simple typeof check
+                  if (
+                    type === "object" &&
+                    (typeof arg !== "object" || arg === null)
+                  ) {
+                    throw new ScriptError(
+                      `${frame.op}: expected ${type} for ${currentParam.name} at index ${i}`,
+                    );
+                  }
+                  if (type !== "object" && typeof arg !== type) {
+                    throw new ScriptError(
+                      `${frame.op}: expected ${type} for ${currentParam.name} at index ${i}`,
+                    );
+                  }
+                }
+              } else {
+                // Array argument: arg should be an array
+                if (!Array.isArray(arg)) {
+                  throw new ScriptError(
+                    `${frame.op}: expected array for ${currentParam.name}`,
+                  );
+                }
+              }
+            } else {
+              if (type === "object") {
+                if (typeof arg !== "object" || arg === null) {
+                  throw new ScriptError(
+                    `${frame.op}: expected object for ${currentParam.name}`,
+                  );
+                }
+              } else if (typeof arg !== type) {
+                // Allow null for optional? No, optional means undefined/missing.
+                // But some args might be nullable. Metadata doesn't specify nullable yet.
+                // Assume strict for now unless we add nullable support.
+                // But wait, Capability | null is a common type.
+                if (type.includes("|")) {
+                  // Simple union check
+                  const types = type.split("|").map((t) => t.trim());
+                  const argType = arg === null ? "null" : typeof arg;
+                  // Check for Capability brand
+                  if (
+                    types.includes("Capability") &&
+                    arg &&
+                    typeof arg === "object" &&
+                    (arg as any).__brand === "Capability"
+                  ) {
+                    continue;
+                  }
+                  if (
+                    types.includes("Entity") &&
+                    arg &&
+                    typeof arg === "object" &&
+                    typeof (arg as any).id === "number"
+                  ) {
+                    continue;
+                  }
+                  if (!types.includes(argType)) {
+                    throw new ScriptError(
+                      `${frame.op}: expected ${type} for ${currentParam.name}`,
+                    );
+                  }
+                } else {
+                  throw new ScriptError(
+                    `${frame.op}: expected ${type} for ${currentParam.name}`,
+                  );
+                }
+              }
+            }
+          }
+        }
+
         currentResult = def.handler(frame.args, ctx);
       } catch (e: any) {
         let scriptError: ScriptError;

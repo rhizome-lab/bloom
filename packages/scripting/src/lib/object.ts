@@ -21,7 +21,7 @@ const objNew = defineOpcode<[...[key: ScriptValue<string>, value: ScriptValue<un
       genericParameters: [
         "Kvs extends [] | readonly (readonly [key: '' | (string & {}), value: unknown])[]",
       ],
-      parameters: [{ name: "...kvs", type: "Kvs" }],
+      parameters: [{ name: "...kvs", type: "any[]" }],
       returnType:
         "{ [K in keyof Kvs & `${number}` as (Kvs[K] & [string, unknown])[0]]: (Kvs[K] & [string, unknown])[1] }",
       lazy: true,
@@ -70,15 +70,7 @@ const objKeys = defineOpcode<[ScriptValue<object>], string[]>(
       returnType: "string[]",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("obj.keys: expected 1 argument");
-      }
       const [obj] = args;
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.keys: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
       return Object.getOwnPropertyNames(obj);
     },
   }
@@ -100,15 +92,7 @@ const objValues = defineOpcode<[ScriptValue<object>], any[]>(
       returnType: "any[]",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("obj.values: expected 1 argument");
-      }
       const [obj] = args;
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.values: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
       return Object.getOwnPropertyNames(obj).map((key) => (obj as any)[key]);
     },
   }
@@ -130,15 +114,7 @@ const objEntries = defineOpcode<[ScriptValue<object>], [string, any][]>(
       returnType: "[string, any][]",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 1) {
-        throw new ScriptError("obj.entries: expected 1 argument");
-      }
       const [obj] = args;
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.entries: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
       return Object.getOwnPropertyNames(obj).map((key) => [key, (obj as any)[key]]);
     },
   }
@@ -163,25 +139,12 @@ const objGet = defineOpcode<[ScriptValue<object>, ScriptValue<string>, ScriptVal
       parameters: [
         { name: "object", type: "object" },
         { name: "key", type: "string" },
-        { name: "default", type: "unknown" },
+        { name: "default", type: "any", optional: true },
       ],
       returnType: "any",
     },
     handler: (args, _ctx) => {
-      if (args.length < 2 || args.length > 3) {
-        throw new ScriptError("obj.get: expected 2 or 3 arguments");
-      }
       const [obj, key, defVal] = args;
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.get: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
-      if (typeof key !== "string") {
-        throw new ScriptError(
-          `obj.get: expected string, got ${JSON.stringify(key)}`,
-        );
-      }
       if (!Object.hasOwnProperty.call(obj, key)) {
         if (args.length === 3) {
           return defVal;
@@ -212,25 +175,12 @@ const objSet = defineOpcode<[ScriptValue<object>, ScriptValue<string>, ScriptVal
       parameters: [
         { name: "object", type: "object" },
         { name: "key", type: "string" },
-        { name: "value", type: "unknown" },
+        { name: "value", type: "any" },
       ],
       returnType: "any",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 3) {
-        throw new ScriptError("obj.set: expected 3 arguments");
-      }
       const [obj, key, val] = args;
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.set: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
-      if (typeof key !== "string") {
-        throw new ScriptError(
-          `obj.set: expected string, got ${JSON.stringify(key)}`,
-        );
-      }
       if (DISALLOWED_KEYS.has(key)) {
         throw new ScriptError(`obj.set: disallowed key '${key}'`);
       }
@@ -262,20 +212,7 @@ const objHas = defineOpcode<[ScriptValue<object>, ScriptValue<string>], boolean>
       returnType: "boolean",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("obj.has: expected 2 arguments");
-      }
       const [obj, key] = args;
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.has: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
-      if (typeof key !== "string") {
-        throw new ScriptError(
-          `obj.has: expected string, got ${JSON.stringify(key)}`,
-        );
-      }
       return Object.hasOwnProperty.call(obj, key);
     },
   }
@@ -303,20 +240,7 @@ const objDel = defineOpcode<[ScriptValue<object>, ScriptValue<string>], boolean>
       returnType: "boolean",
     },
     handler: (args, _ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("obj.del: expected 2 arguments");
-      }
       const [obj, key] = args;
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.del: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
-      if (typeof key !== "string") {
-        throw new ScriptError(
-          `obj.del: expected string, got ${JSON.stringify(key)}`,
-        );
-      }
       if (Object.hasOwnProperty.call(obj, key)) {
         delete (obj as any)[key];
         return true;
@@ -342,19 +266,7 @@ const objMerge = defineOpcode<[ScriptValue<object>, ScriptValue<object>, ...Scri
       returnType: "any",
     },
     handler: (args, _ctx) => {
-      if (args.length < 2) {
-        throw new ScriptError("obj.merge: expected at least 2 arguments");
-      }
-      const objs = [];
-      for (let i = 0; i < args.length; i++) {
-        const obj = args[i];
-        if (!obj || typeof obj !== "object") {
-          throw new ScriptError(
-            `obj.merge: expected object at ${i}, got ${JSON.stringify(obj)}`,
-          );
-        }
-        objs.push(obj);
-      }
+      const objs = args;
       return Object.assign({}, ...objs);
     },
   }
@@ -377,21 +289,12 @@ const objMap = defineOpcode<[ScriptValue<object>, ScriptValue<unknown>], any>(
       ],
       parameters: [
         { name: "object", type: "object" },
-        { name: "lambda", type: "unknown" },
+        { name: "lambda", type: "object" },
       ],
       returnType: "any",
     },
     handler: async (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("obj.map: expected 2 arguments");
-      }
       const [obj, func] = args;
-
-      if (!obj || typeof obj !== "object") {
-        throw new ScriptError(
-          `obj.map: expected object, got ${JSON.stringify(obj)}`,
-        );
-      }
       if (!func || (func as any).type !== "lambda") {
         throw new ScriptError(
           `obj.map: expected lambda, got ${JSON.stringify(func)}`,
@@ -425,17 +328,13 @@ const objFilter = defineOpcode<[ScriptValue<object>, ScriptValue<unknown>], any>
       ],
       parameters: [
         { name: "object", type: "object" },
-        { name: "lambda", type: "unknown" },
+        { name: "lambda", type: "object" },
       ],
       returnType: "any",
     },
     handler: async (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("obj.filter: expected 2 arguments");
-      }
       const [obj, func] = args;
-
-      if (!obj || typeof obj !== "object" || !func || (func as any).type !== "lambda") {
+      if (!func || (func as any).type !== "lambda") {
         return {};
       }
 
@@ -469,19 +368,16 @@ const objReduce = defineOpcode<[ScriptValue<object>, ScriptValue<unknown>, Scrip
       ],
       parameters: [
         { name: "object", type: "object" },
-        { name: "lambda", type: "unknown" },
-        { name: "init", type: "unknown" },
+        { name: "lambda", type: "object" },
+        { name: "init", type: "any" },
       ],
       returnType: "any",
     },
     handler: async (args, ctx) => {
-      if (args.length !== 3) {
-        throw new ScriptError("obj.reduce: expected 3 arguments");
-      }
       const [obj, func, init] = args;
       let acc = init;
 
-      if (!obj || typeof obj !== "object" || !func || (func as any).type !== "lambda") {
+      if (!func || (func as any).type !== "lambda") {
         return acc;
       }
 
@@ -511,16 +407,13 @@ const objFlatMap = defineOpcode<[ScriptValue<object>, ScriptValue<unknown>], any
       ],
       parameters: [
         { name: "object", type: "object" },
-        { name: "lambda", type: "unknown" },
+        { name: "lambda", type: "object" },
       ],
       returnType: "any",
     },
     handler: async (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("obj.flatMap: expected 2 arguments");
-      }
       const [obj, func] = args;
-      if (!obj || typeof obj !== "object" || !func || (func as any).type !== "lambda") {
+      if (!func || (func as any).type !== "lambda") {
         return {};
       }
 

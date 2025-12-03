@@ -34,15 +34,12 @@ export const create = defineOpcode<[Capability | null, object], number>(
         { name: "Data", type: "block" },
       ],
       parameters: [
-        { name: "cap", type: "Capability | null" },
+        { name: "cap", type: "object" },
         { name: "data", type: "object" },
       ],
       returnType: "number",
     },
     handler: (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("create: expected capability and data");
-      }
       const [cap, data] = args as [Capability | null, object];
       if (!cap) {
         throw new ScriptError("create: expected capability");
@@ -50,11 +47,6 @@ export const create = defineOpcode<[Capability | null, object], number>(
 
       checkCapability(cap, ctx.this.id, "sys.create");
 
-      if (typeof data !== "object") {
-        throw new ScriptError(
-          `create: expected object, got ${JSON.stringify(data)}`,
-        );
-      }
       const newId = createEntity(data as never);
 
       // Mint entity.control for the new entity and give to creator
@@ -80,25 +72,18 @@ export const destroy = defineOpcode<[Capability | null, Entity], null>(
         { name: "Target", type: "block" },
       ],
       parameters: [
-        { name: "cap", type: "Capability | null" },
-        { name: "target", type: "Entity" },
+        { name: "cap", type: "object" },
+        { name: "target", type: "object" },
       ],
       returnType: "null",
     },
     handler: (args, ctx) => {
-      if (args.length !== 2) {
-        throw new ScriptError("destroy: expected capability and target");
-      }
       const [cap, target] = args as [Capability | null, Entity];
       if (!cap) {
         throw new ScriptError("destroy: expected capability");
       }
 
-      if (
-        typeof target !== "object" ||
-        !target ||
-        typeof target.id !== "number"
-      ) {
+      if (!target || typeof target.id !== "number") {
         throw new ScriptError(
           `destroy: target must be an entity, got ${JSON.stringify(target)}`,
         );
@@ -129,25 +114,14 @@ export const call = defineOpcode<[Entity, string, ...unknown[]], any>("call", {
       { name: "Args...", type: "block" },
     ],
     parameters: [
-      { name: "target", type: "Entity" },
+      { name: "target", type: "object" },
       { name: "verb", type: "string" },
-      { name: "...args", type: "unknown[]" },
+      { name: "...args", type: "any[]" },
     ],
     returnType: "any",
   },
   handler: (args, ctx) => {
     const [target, verb, ...callArgs] = args as [Entity, string, ...unknown[]];
-
-    if (typeof target !== "object") {
-      throw new ScriptError(
-        `call: target must be an object, got ${JSON.stringify(target)}`,
-      );
-    }
-    if (typeof verb !== "string") {
-      throw new ScriptError(
-        `call: verb must be a string, got ${JSON.stringify(verb)}`,
-      );
-    }
 
     const targetVerb = getVerb(target.id, verb);
     if (!targetVerb) {
@@ -182,28 +156,13 @@ export const schedule = defineOpcode<[string, unknown[], number], null>(
       ],
       parameters: [
         { name: "verb", type: "string" },
-        { name: "args", type: "unknown[]" },
+        { name: "args", type: "any[]" },
         { name: "delay", type: "number" },
       ],
       returnType: "null",
     },
     handler: (args, ctx) => {
       const [verb, callArgs, delay] = args as [string, unknown[], number];
-      if (typeof verb !== "string") {
-        throw new ScriptError(
-          `schedule: verb must be a string, got ${JSON.stringify(verb)}`,
-        );
-      }
-      if (!Array.isArray(callArgs)) {
-        throw new ScriptError(
-          `schedule: args must be an array, got ${JSON.stringify(callArgs)}`,
-        );
-      }
-      if (typeof delay !== "number") {
-        throw new ScriptError(
-          `schedule: delay must be a number, got ${JSON.stringify(delay)}`,
-        );
-      }
       scheduler.schedule(ctx.this.id, verb, callArgs, delay);
       return null;
     },
@@ -220,12 +179,12 @@ export const verbs = defineOpcode<[Entity], readonly Verb[]>("verbs", {
     category: "world",
     description: "Get available verbs",
     slots: [{ name: "Target", type: "block" }],
-    parameters: [{ name: "target", type: "unknown" }],
+    parameters: [{ name: "target", type: "object" }],
     returnType: "Verb[]",
   },
-  handler: (args) => {
+  handler: (args, _ctx) => {
     const [target] = args as [Entity];
-    if (!target || typeof target !== "object" || !("id" in target)) {
+    if (!target || !("id" in target)) {
       return [];
     }
     return getVerbs(target.id);
@@ -247,18 +206,15 @@ export const get_verb = defineOpcode<[Entity, string], Verb | null>(
         { name: "Name", type: "string" },
       ],
       parameters: [
-        { name: "target", type: "unknown" },
+        { name: "target", type: "object" },
         { name: "name", type: "string" },
       ],
       returnType: "Verb | null",
     },
-    handler: (args) => {
+    handler: (args, _ctx) => {
       const [target, name] = args as [Entity, string];
 
-      if (!target || typeof target !== "object" || !("id" in target)) {
-        return null;
-      }
-      if (typeof name !== "string") {
+      if (!target || !("id" in target)) {
         return null;
       }
       return getVerb(target.id, name);
@@ -278,13 +234,8 @@ export const entity = defineOpcode<[number], Entity>("entity", {
     parameters: [{ name: "id", type: "number" }],
     returnType: "Entity",
   },
-  handler: (args) => {
+  handler: (args, _ctx) => {
     const [id] = args as [number];
-    if (typeof id !== "number") {
-      throw new ScriptError(
-        `entity: expected number, got ${JSON.stringify(id)}`,
-      );
-    }
     const entity = getEntity(id);
     if (!entity) {
       throw new ScriptError(`entity: entity ${id} not found`);
@@ -308,26 +259,19 @@ export const set_entity = defineOpcode<[Capability | null, ...Entity[]], void>(
         { name: "Entities", type: "block" },
       ],
       parameters: [
-        { name: "cap", type: "Capability | null" },
-        { name: "...entities", type: "Entity[]" },
+        { name: "cap", type: "object" },
+        { name: "...entities", type: "object[]" },
       ],
       returnType: "void",
     },
     handler: (args, ctx) => {
-      if (args.length < 2) {
-        throw new ScriptError("set_entity: expected capability and entities");
-      }
       const [cap, ...entities] = args as [Capability | null, ...Entity[]];
       if (!cap) {
         throw new ScriptError("set_entity: expected capability");
       }
 
       for (const entity of entities) {
-        if (
-          !entity ||
-          typeof entity !== "object" ||
-          typeof entity.id !== "number"
-        ) {
+        if (!entity || typeof entity.id !== "number") {
           throw new ScriptError(
             `set_entity: expected entity object, got ${JSON.stringify(entity)}`,
           );
@@ -357,19 +301,12 @@ export const get_prototype = defineOpcode<[Entity], number | null>(
       category: "world",
       description: "Get entity prototype ID",
       slots: [{ name: "Entity", type: "block" }],
-      parameters: [{ name: "target", type: "Entity" }],
+      parameters: [{ name: "target", type: "object" }],
       returnType: "number | null",
     },
-    handler: (args) => {
-      if (args.length !== 1) {
-        throw new ScriptError("get_prototype: expected 1 argument");
-      }
+    handler: (args, _ctx) => {
       const [entity] = args as [Entity];
-      if (
-        typeof entity !== "object" ||
-        !entity ||
-        typeof entity.id !== "number"
-      ) {
+      if (!entity || typeof entity.id !== "number") {
         throw new ScriptError(
           `get_prototype: expected entity, got ${JSON.stringify(entity)}`,
         );
@@ -393,18 +330,13 @@ export const set_prototype = defineOpcode<
       { name: "PrototypeID", type: "number" },
     ],
     parameters: [
-      { name: "cap", type: "Capability | null" },
-      { name: "target", type: "Entity" },
-      { name: "prototype", type: "number | null" },
+      { name: "cap", type: "object" },
+      { name: "target", type: "object" },
+      { name: "prototype", type: "any" },
     ],
     returnType: "null",
   },
   handler: (args, ctx) => {
-    if (args.length !== 3) {
-      throw new ScriptError(
-        "set_prototype: expected capability, entity, and prototype ID",
-      );
-    }
     const [cap, entity, protoId] = args as [
       Capability | null,
       Entity,
@@ -414,11 +346,7 @@ export const set_prototype = defineOpcode<
       throw new ScriptError("set_prototype: expected capability");
     }
 
-    if (
-      typeof entity !== "object" ||
-      !entity ||
-      typeof entity.id !== "number"
-    ) {
+    if (!entity || typeof entity.id !== "number") {
       throw new ScriptError(
         `set_prototype: expected entity, got ${JSON.stringify(entity)}`,
       );
@@ -450,19 +378,11 @@ export const resolve_props = defineOpcode<[Entity], Entity>("resolve_props", {
     category: "data",
     description: "Resolve entity properties",
     slots: [{ name: "Entity", type: "block" }],
-    parameters: [{ name: "target", type: "Entity" }],
+    parameters: [{ name: "target", type: "object" }],
     returnType: "Entity",
   },
   handler: (args, ctx) => {
-    if (args.length !== 1) {
-      throw new ScriptError("resolve_props: expected target");
-    }
     const [entity] = args as [Entity];
-    if (typeof entity !== "object") {
-      throw new ScriptError(
-        `resolve_props: expected object, got ${JSON.stringify(entity)}`,
-      );
-    }
     return resolveProps(entity, ctx);
   },
 });
@@ -486,19 +406,14 @@ export const sudo = defineOpcode<
       { name: "Args", type: "block" },
     ],
     parameters: [
-      { name: "cap", type: "Capability | null" },
-      { name: "target", type: "Entity" },
+      { name: "cap", type: "object" },
+      { name: "target", type: "object" },
       { name: "verb", type: "string" },
-      { name: "args", type: "unknown[]" },
+      { name: "args", type: "any[]" },
     ],
     returnType: "any",
   },
   handler: (args, ctx) => {
-    if (args.length !== 4) {
-      throw new ScriptError(
-        "sudo: expected capability, target, verb, and args",
-      );
-    }
     const [cap, target, verb, evaluatedArgs] = args as [
       Capability | null,
       Entity,
@@ -511,25 +426,9 @@ export const sudo = defineOpcode<
 
     checkCapability(cap, ctx.this.id, "sys.sudo");
 
-    if (
-      !target ||
-      typeof target !== "object" ||
-      !("id" in target) ||
-      typeof target.id !== "number"
-    ) {
+    if (!target || !("id" in target) || typeof target.id !== "number") {
       throw new ScriptError(
         `sudo: target must be an entity, got ${JSON.stringify(target)}`,
-      );
-    }
-    if (typeof verb !== "string") {
-      throw new ScriptError(
-        `sudo: verb must be a string, got ${JSON.stringify(verb)}`,
-      );
-    }
-
-    if (!Array.isArray(evaluatedArgs)) {
-      throw new ScriptError(
-        `sudo: args must be an array, got ${JSON.stringify(evaluatedArgs)}`,
       );
     }
 

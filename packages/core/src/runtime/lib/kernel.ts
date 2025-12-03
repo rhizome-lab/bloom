@@ -26,21 +26,12 @@ export const get_capability = defineOpcode<
     ],
     parameters: [
       { name: "type", type: "string" },
-      { name: "filter", type: "object" },
+      { name: "filter", type: "object", optional: true },
     ],
     returnType: "Capability | null",
   },
   handler: (args, ctx) => {
-    if (args.length !== 1 && args.length !== 2) {
-      throw new ScriptError(
-        "get_capability: expected type and optionally filter",
-      );
-    }
     const [type, filter = {}] = args as [string, object?];
-
-    if (typeof type !== "string") {
-      throw new ScriptError("get_capability: type must be string");
-    }
 
     const caps = getCapabilities(ctx.this.id);
     const match = caps.find((c) => {
@@ -75,32 +66,17 @@ export const mint = defineOpcode<
       { name: "Params", type: "block" },
     ],
     parameters: [
-      { name: "authority", type: "Capability | null" },
+      { name: "authority", type: "object" },
       { name: "type", type: "string" },
       { name: "params", type: "object" },
     ],
     returnType: "Capability",
   },
   handler: (args, ctx) => {
-    if (args.length !== 3) {
-      throw new ScriptError("mint: expected authority, type, and params");
-    }
     const [auth, type, params] = args as [Capability | null, string, object];
 
-    if (
-      !auth ||
-      typeof auth !== "object" ||
-      (auth as any).__brand !== "Capability"
-    ) {
+    if (!auth || (auth as any).__brand !== "Capability") {
       throw new ScriptError("mint: expected capability for authority");
-    }
-
-    if (typeof type !== "string") {
-      throw new ScriptError("mint: expected string for type");
-    }
-
-    if (typeof params !== "object") {
-      throw new ScriptError("mint: expected object for params");
     }
 
     // Verify authority
@@ -126,7 +102,7 @@ export const mint = defineOpcode<
         `mint: authority namespace '${allowedNs}' does not cover '${type}'`,
       );
     }
-    const newId = createCapability(ctx.this.id, type, params);
+    const newId = createCapability(ctx.this.id, type, params as never);
     return { __brand: "Capability", id: newId };
   },
 });
@@ -144,22 +120,15 @@ export const delegate = defineOpcode<
       { name: "Restrictions", type: "block" },
     ],
     parameters: [
-      { name: "parent", type: "Capability | null" },
+      { name: "parent", type: "object" },
       { name: "restrictions", type: "object" },
     ],
     returnType: "Capability",
   },
   handler: (args, ctx) => {
-    if (args.length !== 2) {
-      throw new ScriptError("delegate: expected parent and restrictions");
-    }
     const [parent, restrictions] = args as [Capability | null, object];
 
-    if (
-      !parent ||
-      typeof parent !== "object" ||
-      (parent as any).__brand !== "Capability"
-    ) {
+    if (!parent || (parent as any).__brand !== "Capability") {
       throw new ScriptError("delegate: expected capability");
     }
 
@@ -195,30 +164,19 @@ export const give_capability = defineOpcode<
       { name: "Target", type: "block" },
     ],
     parameters: [
-      { name: "cap", type: "Capability | null" },
-      { name: "target", type: "Entity" },
+      { name: "cap", type: "object" },
+      { name: "target", type: "object" },
     ],
     returnType: "null",
   },
   handler: (args, ctx) => {
-    if (args.length !== 2) {
-      throw new ScriptError("give_capability: expected capability and target");
-    }
     const [cap, target] = args as [Capability | null, Entity];
 
-    if (
-      !cap ||
-      typeof cap !== "object" ||
-      (cap as any).__brand !== "Capability"
-    ) {
+    if (!cap || (cap as any).__brand !== "Capability") {
       throw new ScriptError("give_capability: expected capability");
     }
 
-    if (
-      !target ||
-      typeof target !== "object" ||
-      typeof target.id !== "number"
-    ) {
+    if (!target || typeof target.id !== "number") {
       throw new ScriptError("give_capability: expected target entity");
     }
 
