@@ -170,7 +170,7 @@ export function seedHotel(
   );
 
   createCapability(elevatorId, "sys.create", {});
-  createCapability(elevatorId, "entity.control", { "*": true });
+  createCapability(elevatorId, "entity.control", { target_id: elevatorId });
 
   // Link Lobby -> Elevator
   createEntity(
@@ -650,6 +650,13 @@ export function seedHotel(
             CoreLib["entity"](Std["var"]("bedId")),
             bedProtoId,
           ),
+          KernelLib["give_capability"](
+            KernelLib["get_capability"](
+              "entity.control",
+              Std["var"]("bedFilter"),
+            ),
+            CoreLib["entity"](Std["var"]("roomId")),
+          ),
           Std["let"]("lampData", Object["obj.new"]()),
           Object["obj.set"](Std["var"]("lampData"), "name", "Lamp"),
           Object["obj.set"](Std["var"]("lampData"), "kind", "ITEM"),
@@ -676,6 +683,13 @@ export function seedHotel(
             CoreLib["entity"](Std["var"]("lampId")),
             lampProtoId,
           ),
+          KernelLib["give_capability"](
+            KernelLib["get_capability"](
+              "entity.control",
+              Std["var"]("lampFilter"),
+            ),
+            CoreLib["entity"](Std["var"]("roomId")),
+          ),
           Std["let"]("chairData", Object["obj.new"]()),
           Object["obj.set"](Std["var"]("chairData"), "name", "Chair"),
           Object["obj.set"](Std["var"]("chairData"), "kind", "ITEM"),
@@ -701,6 +715,13 @@ export function seedHotel(
             ),
             CoreLib["entity"](Std["var"]("chairId")),
             chairProtoId,
+          ),
+          KernelLib["give_capability"](
+            KernelLib["get_capability"](
+              "entity.control",
+              Std["var"]("chairFilter"),
+            ),
+            CoreLib["entity"](Std["var"]("roomId")),
           ),
 
           // Update Room Contents
