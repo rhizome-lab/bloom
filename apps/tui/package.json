@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bun run src/index.tsx",
     "start": "bun run src/index.tsx",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "test": "bun test"
   },
   "dependencies": {

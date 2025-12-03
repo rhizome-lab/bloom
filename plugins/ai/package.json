@@ -7,8 +7,7 @@
   },
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "latest",

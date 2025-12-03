@@ -3,10 +3,9 @@
   "version": "0.0.0",
   "module": "src/index.ts",
   "type": "module",
-  "scripts": {
     "dev": "bun run --watch src/index.ts",
     "start": "bun run src/index.ts",
-    "build": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "test": "bun test"
   },
   "dependencies": {

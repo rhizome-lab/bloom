@@ -7,11 +7,7 @@
     "strict": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "declaration": true,
-    "baseUrl": ".",
-    "paths": {
-      "@viwo/shared/*": ["../shared/src/*"]
-    }
+    "declaration": true
   },
   "include": ["src/**/*"]
 }

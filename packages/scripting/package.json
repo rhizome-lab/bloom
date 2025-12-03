@@ -7,17 +7,14 @@
   },
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "test": "bun test"
   },
   "dependencies": {
-    "@viwo/shared": "workspace:*"
+    "@viwo/shared": "workspace:*",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.0.0"
   }
 }

@@ -21,6 +21,8 @@
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.8",
-    "@types/bun": "^1.3.3"
+    "@types/bun": "^1.3.3",
+    "@typescript/native-preview": "^7.0.0-dev.20251202.1",
+    "typescript": "^6.0.0-dev.20251202"
   }
 }
