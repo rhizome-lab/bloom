@@ -29,10 +29,8 @@ export const get_capability = defineOpcode<
     const caps = getCapabilities(ctx.this.id);
     const match = caps.find((c) => {
       if (c.type !== type) return false;
-
       // Check for wildcard
       if (c.params["*"] === true) return true;
-
       // Check filter params
       for (const [k, v] of Object.entries(filter as Record<string, unknown>)) {
         if (JSON.stringify(c.params[k]) !== JSON.stringify(v)) {
@@ -41,15 +39,10 @@ export const get_capability = defineOpcode<
       }
       return true;
     });
-
     if (!match) {
       return null;
     }
-
-    return {
-      __brand: "Capability",
-      id: match.id,
-    };
+    return { __brand: "Capability", id: match.id };
   },
 });
 
@@ -139,10 +132,7 @@ export const delegate = defineOpcode<[Capability | null, object], Capability>(
       const newParams = { ...parentCap.params, ...(restrictions as object) };
       const newId = createCapability(ctx.this.id, parentCap.type, newParams);
 
-      return {
-        __brand: "Capability",
-        id: newId,
-      };
+      return { __brand: "Capability", id: newId };
     },
   },
 );

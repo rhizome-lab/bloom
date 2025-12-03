@@ -35,6 +35,26 @@ const ctx = createScriptContext({
 const result = await evaluate(script, ctx);
 ```
 
+### Async Behavior
+
+The `evaluate` function exhibits **inconsistent async behavior** for performance reasons. It does not wrap everything in a Promise.
+
+- **Synchronous Execution**: If all opcodes in the script are synchronous, `evaluate` returns the result **synchronously**.
+- **Asynchronous Execution**: If any opcode returns a Promise, `evaluate` returns a Promise that resolves to the result.
+- **Error Handling**:
+  - If a synchronous opcode throws an error, `evaluate` **throws synchronously**.
+  - If an asynchronous opcode rejects, `evaluate` returns a **rejected Promise**.
+
+> [!IMPORTANT]
+> When testing or calling `evaluate` from an async context, you should wrap it to handle both cases safely, or ensure you `await` the result if you expect async operations.
+>
+> ```typescript
+> // Safe handling for tests
+> await expect(
+>   Promise.resolve().then(() => evaluate(script, ctx)),
+> ).rejects.toThrow();
+> ```
+
 ### ScriptContext
 
 The `ScriptContext` holds the environment for the script execution, including:

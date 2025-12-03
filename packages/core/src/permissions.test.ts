@@ -108,7 +108,7 @@ describe("Capability Permissions", () => {
   });
 
   test("Other Access (Denied)", async () => {
-    expect(tryRename(other, item, "Hacked")).rejects.toThrow();
+    await expect(tryRename(other, item, "Hacked")).rejects.toThrow();
   });
 
   test("Delegation (Sharing Access)", async () => {
@@ -146,5 +146,84 @@ describe("Capability Permissions", () => {
     await tryRename(other, item, "Shared Renamed");
     const updated = getEntity(item.id)!;
     expect(updated["name"]).toBe("Shared Renamed");
+  });
+
+  describe("Adversarial Tests", () => {
+    test("Capability Forgery", async () => {
+      // Attacker tries to use a fake capability object
+      const fakeCap = {
+        __brand: "Capability" as const,
+        id: crypto.randomUUID(),
+      };
+
+      const script = Kernel["give_capability"](
+        fakeCap,
+        CoreLib["entity"](other.id),
+      );
+
+      const ctx = createScriptContext({
+        caller: owner,
+        this: owner,
+        args: [],
+      });
+
+      // Should fail because ID doesn't exist in DB
+      expect(
+        Promise.resolve().then(() => evaluate(script, ctx)),
+      ).rejects.toThrow("give_capability: invalid capability");
+    });
+
+    test("Capability Theft", async () => {
+      // Owner has a valid capability
+      const ownerCapId = createCapability(owner.id, "test.cap", {});
+
+      // Attacker tries to use Owner's capability ID
+      // We have to manually construct the capability object because get_capability
+      // only returns caps owned by the caller.
+      const stolenCap = { __brand: "Capability" as const, id: ownerCapId };
+
+      const script = Kernel["give_capability"](
+        stolenCap,
+        CoreLib["entity"](other.id),
+      );
+
+      const ctx = createScriptContext({
+        caller: other, // Attacker is the caller
+        this: other,
+        args: [],
+      });
+
+      // Should fail because owner_id check fails
+      expect(
+        Promise.resolve().then(() => evaluate(script, ctx)),
+      ).rejects.toThrow("give_capability: invalid capability");
+    });
+
+    test("Minting Namespace Violation", async () => {
+      // User has mint authority for "user.1"
+      const mintAuthId = createCapability(owner.id, "sys.mint", {
+        namespace: "user.1",
+      });
+      const mintAuth = { __brand: "Capability" as const, id: mintAuthId };
+      // Try to mint outside namespace
+      const script = Kernel["mint"](mintAuth, "sys.sudo", Object["obj.new"]());
+      const ctx = createScriptContext({ caller: owner, this: owner, args: [] });
+      expect(
+        Promise.resolve().then(() => evaluate(script, ctx)),
+      ).rejects.toThrow(
+        "mint: authority namespace 'user.1' does not cover 'sys.sudo'",
+      );
+    });
+
+    test("Invalid Authority for Minting", async () => {
+      // Try to use a non-sys.mint capability as authority
+      const badAuthId = createCapability(owner.id, "entity.control", {});
+      const badAuth = { __brand: "Capability" as const, id: badAuthId };
+      const script = Kernel["mint"](badAuth, "some.cap", Object["obj.new"]());
+      const ctx = createScriptContext({ caller: owner, this: owner, args: [] });
+      expect(
+        Promise.resolve().then(() => evaluate(script, ctx)),
+      ).rejects.toThrow("mint: authority must be sys.mint");
+    });
   });
 });

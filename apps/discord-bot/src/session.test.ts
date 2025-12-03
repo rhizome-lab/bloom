@@ -126,7 +126,7 @@ describe("Session Manager", () => {
 
     // Mock setTimeout to trigger immediately
     const originalSetTimeout = global.setTimeout;
-    // @ts-ignore
+    // @ts-expect-error
     global.setTimeout = (cb: Function, ms: number) => {
       if (ms > 1000) {
         cb();
