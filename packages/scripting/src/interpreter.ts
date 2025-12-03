@@ -91,6 +91,8 @@ export interface OpcodeMetadata {
   parameters?: { name: string; type: string }[];
   genericParameters?: string[];
   returnType?: string;
+  /** If true, arguments are NOT evaluated before being passed to the handler. Default: false (Strict). */
+  lazy?: boolean;
 }
 
 export type OpcodeHandler<Ret> = (args: any[], ctx: ScriptContext) => Ret;
@@ -198,9 +200,19 @@ export function evaluate<T>(
     }
 
     const frame = stack[stack.length - 1];
+    if (!frame) throw new ScriptError("Stack underflow");
+
+    const def = OPS[frame.op];
+    if (!def) throw new ScriptError(`Unknown opcode: ${frame.op}`);
+
+    // If Lazy, pass all remaining args as is and execute immediately
+    if (def.metadata.lazy && frame.remaining.length > 0) {
+      frame.args.push(...frame.remaining);
+      frame.remaining = [];
+    }
 
     if (frame.remaining.length > 0) {
-      // Process next argument
+      // Process next argument (Strict mode)
       const nextArg = frame.remaining.shift()!;
 
       if (Array.isArray(nextArg)) {
@@ -227,7 +239,7 @@ export function evaluate<T>(
 
       let result: unknown;
       try {
-        result = OPS[frame.op].handler(frame.args, ctx);
+        result = def.handler(frame.args, ctx);
       } catch (e: any) {
         let scriptError: ScriptError;
         if (e instanceof ScriptError) {
@@ -248,12 +260,6 @@ export function evaluate<T>(
 
       // Handle Async Result
       if (result instanceof Promise) {
-        // If we are deep in the stack, we need to bubble up the promise?
-        // Or we can await it here if we are in an async context?
-        // But we want to avoid async/await in this loop if possible.
-        // Actually, if we hit a Promise, we MUST return a Promise that resolves to the final result.
-        // This means the entire `evaluate` becomes async from this point on.
-
         return handleAsyncResult(result, stack, ctx) as any;
       }
 
@@ -264,6 +270,7 @@ export function evaluate<T>(
 
       // Otherwise, push result to parent frame's args
       const parent = stack[stack.length - 1];
+      if (!parent) throw new ScriptError("Stack underflow");
       parent.args.push(result);
     }
   }
@@ -285,6 +292,7 @@ async function handleAsyncResult(
   }
 
   const parent = stack[stack.length - 1];
+  if (!parent) throw new ScriptError("Stack underflow");
   parent.args.push(currentResult);
 
   // Resume the loop (async version)
@@ -297,6 +305,16 @@ async function handleAsyncResult(
     }
 
     const frame = stack[stack.length - 1];
+    if (!frame) throw new ScriptError("Stack underflow");
+
+    const def = OPS[frame.op];
+    if (!def) throw new ScriptError(`Unknown opcode: ${frame.op}`);
+
+    // If Lazy, pass all remaining args as is and execute immediately
+    if (def.metadata.lazy && frame.remaining.length > 0) {
+      frame.args.push(...frame.remaining);
+      frame.remaining = [];
+    }
 
     if (frame.remaining.length > 0) {
       const nextArg = frame.remaining.shift()!;
@@ -321,7 +339,7 @@ async function handleAsyncResult(
       stack.pop();
 
       try {
-        currentResult = OPS[frame.op].handler(frame.args, ctx);
+        currentResult = def.handler(frame.args, ctx);
       } catch (e: any) {
         let scriptError: ScriptError;
         if (e instanceof ScriptError) {
@@ -349,6 +367,7 @@ async function handleAsyncResult(
       }
 
       const parent = stack[stack.length - 1];
+      if (!parent) throw new ScriptError("Stack underflow");
       parent.args.push(currentResult);
     }
   }

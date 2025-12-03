@@ -19,7 +19,7 @@ mock.module("node:fs/promises", () => ({
 // const originalFetch = global.fetch;
 global.fetch = mock((_url: string | Request | URL) =>
   Promise.resolve(new Response("http response")),
-);
+) as any;
 
 import {
   evaluate,
@@ -65,49 +65,62 @@ describe("System Integration Security", () => {
   });
 
   test("FS.read with capability", async () => {
-    const script = FS["fs.read"](
-      Kernel["get_capability"]("fs.read"),
-      "/tmp/test.txt",
-    );
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    const content = await evaluate(script, ctx);
+    const content = await evaluate(
+      FS["fs.read"](Kernel["get_capability"]("fs.read"), "/tmp/test.txt"),
+      ctx,
+    );
     expect(content).toBe("file content");
   });
 
   test("FS.read without capability", async () => {
-    const script = FS["fs.read"](
-      Kernel["get_capability"]("fs.read"), // User has none, returns null
-      "/tmp/test.txt",
-    );
     const ctx = createScriptContext({ caller: user, this: user, args: [] });
-    expect(evaluate(script, ctx)).rejects.toThrow();
+    expect(
+      evaluate(
+        FS["fs.read"](
+          Kernel["get_capability"]("fs.read"), // User has none, returns null
+          "/tmp/test.txt",
+        ),
+        ctx,
+      ),
+    ).rejects.toThrow();
   });
 
   test("FS.read outside allowed path", async () => {
-    const script = FS["fs.read"](
-      Kernel["get_capability"]("fs.read"),
-      "/etc/passwd", // Outside /tmp
-    );
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    expect(evaluate(script, ctx)).rejects.toThrow();
+    expect(
+      evaluate(
+        FS["fs.read"](
+          Kernel["get_capability"]("fs.read"),
+          "/etc/passwd", // Outside /tmp
+        ),
+        ctx,
+      ),
+    ).rejects.toThrow();
   });
 
   test("Net.http.get with capability", async () => {
-    const script = Net["net.http.get"](
-      Kernel["get_capability"]("net.http.read"),
-      "https://api.example.com/data",
-    );
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    const response = await evaluate(script, ctx);
+    const response = await evaluate(
+      Net["net.http.get"](
+        Kernel["get_capability"]("net.http.read"),
+        "https://api.example.com/data",
+      ),
+      ctx,
+    );
     expect(response).toBe("http response");
   });
 
   test("Net.http.get domain mismatch", async () => {
-    const script = Net["net.http.get"](
-      Kernel["get_capability"]("net.http.read"),
-      "https://google.com", // Not example.com
-    );
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    expect(evaluate(script, ctx)).rejects.toThrow();
+    expect(
+      evaluate(
+        Net["net.http.get"](
+          Kernel["get_capability"]("net.http.read"),
+          "https://google.com", // Not example.com
+        ),
+        ctx,
+      ),
+    ).rejects.toThrow();
   });
 });

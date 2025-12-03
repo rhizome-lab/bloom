@@ -1,9 +1,7 @@
 import {
   defineOpcode,
-  ScriptValue,
   ScriptError,
   Capability,
-  evaluate,
 } from "@viwo/scripting";
 import { checkCapability } from "../utils";
 import * as fs from "node:fs/promises";
@@ -28,10 +26,7 @@ function checkFsCapability(
   });
 }
 
-const read = defineOpcode<
-  [ScriptValue<Capability>, ScriptValue<string>],
-  string
->("fs.read", {
+const read = defineOpcode<[Capability | null, string], Promise<string>>("fs.read", {
   metadata: {
     label: "Read File",
     category: "fs",
@@ -41,21 +36,22 @@ const read = defineOpcode<
       { name: "Path", type: "string" },
     ],
     parameters: [
-      { name: "cap", type: "Capability" },
+      { name: "cap", type: "Capability | null" },
       { name: "path", type: "string" },
     ],
-    returnType: "string",
+    returnType: "Promise<string>",
   },
   handler: async (args, ctx) => {
-    const [capExpr, pathExpr] = args;
-    const cap = evaluate(capExpr, ctx);
-    const filePath = evaluate(pathExpr, ctx);
+    const [cap, filePath] = args as [Capability | null, string];
+    if (!cap) {
+      throw new ScriptError("fs.read: missing capability");
+    }
 
     if (typeof filePath !== "string") {
       throw new ScriptError("fs.read: path must be a string");
     }
 
-    checkFsCapability(ctx, cap as Capability, "fs.read", filePath);
+    checkFsCapability(ctx, cap, "fs.read", filePath);
 
     try {
       return await fs.readFile(filePath, "utf-8");
@@ -66,10 +62,7 @@ const read = defineOpcode<
 });
 export { read as "fs.read" };
 
-const write = defineOpcode<
-  [ScriptValue<Capability>, ScriptValue<string>, ScriptValue<string>],
-  null
->("fs.write", {
+const write = defineOpcode<[Capability | null, string, string], Promise<null>>("fs.write", {
   metadata: {
     label: "Write File",
     category: "fs",
@@ -80,17 +73,17 @@ const write = defineOpcode<
       { name: "Content", type: "string" },
     ],
     parameters: [
-      { name: "cap", type: "Capability" },
+      { name: "cap", type: "Capability | null" },
       { name: "path", type: "string" },
       { name: "content", type: "string" },
     ],
-    returnType: "null",
+    returnType: "Promise<null>",
   },
   handler: async (args, ctx) => {
-    const [capExpr, pathExpr, contentExpr] = args;
-    const cap = evaluate(capExpr, ctx);
-    const filePath = evaluate(pathExpr, ctx);
-    const content = evaluate(contentExpr, ctx);
+    const [cap, filePath, content] = args as [Capability | null, string, string];
+    if (!cap) {
+      throw new ScriptError("fs.write: missing capability");
+    }
 
     if (typeof filePath !== "string") {
       throw new ScriptError("fs.write: path must be a string");
@@ -99,7 +92,7 @@ const write = defineOpcode<
       throw new ScriptError("fs.write: content must be a string");
     }
 
-    checkFsCapability(ctx, cap as Capability, "fs.write", filePath);
+    checkFsCapability(ctx, cap, "fs.write", filePath);
 
     try {
       await fs.writeFile(filePath, content, "utf-8");
@@ -111,10 +104,7 @@ const write = defineOpcode<
 });
 export { write as "fs.write" };
 
-const list = defineOpcode<
-  [ScriptValue<Capability>, ScriptValue<string>],
-  string[]
->("fs.list", {
+const list = defineOpcode<[Capability | null, string], Promise<readonly string[]>>("fs.list", {
   metadata: {
     label: "List Directory",
     category: "fs",
@@ -124,21 +114,22 @@ const list = defineOpcode<
       { name: "Path", type: "string" },
     ],
     parameters: [
-      { name: "cap", type: "Capability" },
+      { name: "cap", type: "Capability | null" },
       { name: "path", type: "string" },
     ],
-    returnType: "string[]",
+    returnType: "Promise<readonly string[]>",
   },
   handler: async (args, ctx) => {
-    const [capExpr, pathExpr] = args;
-    const cap = evaluate(capExpr, ctx);
-    const dirPath = evaluate(pathExpr, ctx);
+    const [cap, dirPath] = args as [Capability | null, string];
+    if (!cap) {
+      throw new ScriptError("fs.list: missing capability");
+    }
 
     if (typeof dirPath !== "string") {
       throw new ScriptError("fs.list: path must be a string");
     }
 
-    checkFsCapability(ctx, cap as Capability, "fs.read", dirPath);
+    checkFsCapability(ctx, cap, "fs.read", dirPath);
 
     try {
       return await fs.readdir(dirPath);

@@ -58,6 +58,7 @@ export const seq = defineOpcode<ScriptValue<unknown>[], any>("seq", {
     slots: [],
     parameters: [{ name: "...args", type: "unknown[]" }],
     returnType: "any",
+    lazy: true,
   },
   handler: (args, ctx) => {
     if (args.length === 0) {
@@ -112,6 +113,7 @@ const ifOp = defineOpcode<
       { name: "else", type: "T" },
     ],
     returnType: "T",
+    lazy: true,
   },
   handler: (args, ctx) => {
     if (args.length < 2 || args.length > 3) {
@@ -152,6 +154,7 @@ const whileOp = defineOpcode<[ScriptValue<boolean>, ScriptValue<unknown>], any>(
         { name: "Condition", type: "block" },
         { name: "Body", type: "block" },
       ],
+      lazy: true,
     },
     handler: (args, ctx) => {
       if (args.length !== 2) {
@@ -232,6 +235,7 @@ const forOp = defineOpcode<
       { name: "body", type: "unknown" },
     ],
     returnType: "any",
+    lazy: true,
   },
   handler: (args, ctx) => {
     if (args.length !== 3) {

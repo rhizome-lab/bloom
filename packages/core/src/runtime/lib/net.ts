@@ -1,9 +1,7 @@
 import {
   defineOpcode,
-  ScriptValue,
   ScriptError,
   Capability,
-  evaluate,
 } from "@viwo/scripting";
 import { checkCapability } from "../utils";
 
@@ -23,10 +21,10 @@ function checkNetCapability(
   });
 }
 
-const http_get = defineOpcode<
-  [ScriptValue<Capability>, ScriptValue<string>],
-  string
->("net.http.get", {
+// TODO: Get binary
+// TODO: Also, return a response rather than just a string
+
+const http_get = defineOpcode<[Capability | null, string], Promise<string>>("net.http.get", {
   metadata: {
     label: "HTTP GET",
     category: "net",
@@ -36,15 +34,16 @@ const http_get = defineOpcode<
       { name: "URL", type: "string" },
     ],
     parameters: [
-      { name: "cap", type: "Capability" },
+      { name: "cap", type: "Capability | null" },
       { name: "url", type: "string" },
     ],
-    returnType: "string",
+    returnType: "Promise<string>",
   },
   handler: async (args, ctx) => {
-    const [capExpr, urlExpr] = args;
-    const cap = evaluate(capExpr, ctx);
-    const urlStr = evaluate(urlExpr, ctx);
+    const [cap, urlStr] = args as [Capability | null, string];
+    if (!cap) {
+      throw new ScriptError("net.http.get: missing capability");
+    }
 
     if (typeof urlStr !== "string") {
       throw new ScriptError("net.http.get: url must be a string");
@@ -57,7 +56,7 @@ const http_get = defineOpcode<
       throw new ScriptError("net.http.get: invalid url");
     }
 
-    checkNetCapability(ctx, cap as Capability, "net.http.read", url.hostname);
+    checkNetCapability(ctx, cap, "net.http.read", url.hostname);
 
     try {
       const response = await fetch(urlStr);
@@ -69,57 +68,57 @@ const http_get = defineOpcode<
 });
 export { http_get as "net.http.get" };
 
-const http_post = defineOpcode<
-  [ScriptValue<Capability>, ScriptValue<string>, ScriptValue<string>],
-  string
->("net.http.post", {
-  metadata: {
-    label: "HTTP POST",
-    category: "net",
-    description: "Perform an HTTP POST request",
-    slots: [
-      { name: "Cap", type: "block" },
-      { name: "URL", type: "string" },
-      { name: "Body", type: "string" },
-    ],
-    parameters: [
-      { name: "cap", type: "Capability" },
-      { name: "url", type: "string" },
-      { name: "body", type: "string" },
-    ],
-    returnType: "string",
+const http_post = defineOpcode<[Capability | null, string, string], Promise<string>>(
+  "net.http.post",
+  {
+    metadata: {
+      label: "HTTP POST",
+      category: "net",
+      description: "Perform an HTTP POST request",
+      slots: [
+        { name: "Cap", type: "block" },
+        { name: "URL", type: "string" },
+        { name: "Body", type: "string" },
+      ],
+      parameters: [
+        { name: "cap", type: "Capability | null" },
+        { name: "url", type: "string" },
+        { name: "body", type: "string" },
+      ],
+      returnType: "Promise<string>",
+    },
+    handler: async (args, ctx) => {
+      const [cap, urlStr, body] = args as [Capability | null, string, string];
+      if (!cap) {
+        throw new ScriptError("net.http.post: missing capability");
+      }
+
+      if (typeof urlStr !== "string") {
+        throw new ScriptError("net.http.post: url must be a string");
+      }
+      if (typeof body !== "string") {
+        throw new ScriptError("net.http.post: body must be a string");
+      }
+
+      let url: URL;
+      try {
+        url = new URL(urlStr);
+      } catch {
+        throw new ScriptError("net.http.post: invalid url");
+      }
+
+      checkNetCapability(ctx, cap, "net.http.write", url.hostname);
+
+      try {
+        const response = await fetch(urlStr, {
+          method: "POST",
+          body: body,
+        });
+        return await response.text();
+      } catch (e: any) {
+        throw new ScriptError(`net.http.post failed: ${e.message}`);
+      }
+    },
   },
-  handler: async (args, ctx) => {
-    const [capExpr, urlExpr, bodyExpr] = args;
-    const cap = evaluate(capExpr, ctx);
-    const urlStr = evaluate(urlExpr, ctx);
-    const body = evaluate(bodyExpr, ctx);
-
-    if (typeof urlStr !== "string") {
-      throw new ScriptError("net.http.post: url must be a string");
-    }
-    if (typeof body !== "string") {
-      throw new ScriptError("net.http.post: body must be a string");
-    }
-
-    let url: URL;
-    try {
-      url = new URL(urlStr);
-    } catch {
-      throw new ScriptError("net.http.post: invalid url");
-    }
-
-    checkNetCapability(ctx, cap as Capability, "net.http.write", url.hostname);
-
-    try {
-      const response = await fetch(urlStr, {
-        method: "POST",
-        body: body,
-      });
-      return await response.text();
-    } catch (e: any) {
-      throw new ScriptError(`net.http.post failed: ${e.message}`);
-    }
-  },
-});
+);
 export { http_post as "net.http.post" };

@@ -14,7 +14,7 @@ import {
 import { Entity } from "@viwo/shared/jsonrpc";
 
 export const get_capability = defineOpcode<
-  [ScriptValue<string>, ScriptValue<object> | undefined],
+  [ScriptValue<string>, ScriptValue<object>?],
   Capability | null
 >("get_capability", {
   metadata: {
@@ -32,6 +32,11 @@ export const get_capability = defineOpcode<
     returnType: "Capability | null",
   },
   handler: (args, ctx) => {
+    if (args.length !== 1 && args.length !== 2) {
+      throw new ScriptError(
+        "get_capability: expected type and optionally filter",
+      );
+    }
     const [typeExpr, filterExpr] = args;
     const type = evaluate(typeExpr, ctx);
     const filter = filterExpr ? evaluate(filterExpr, ctx) : {};
@@ -80,17 +85,25 @@ export const mint = defineOpcode<
     returnType: "Capability",
   },
   handler: (args, ctx) => {
+    if (args.length !== 3) {
+      throw new ScriptError("mint: expected authority, type, and params");
+    }
     const [authExpr, typeExpr, paramsExpr] = args;
     const auth = evaluate(authExpr, ctx);
-    const type = evaluate(typeExpr, ctx);
-    const params = evaluate(paramsExpr, ctx);
-
     if (
       !auth ||
       typeof auth !== "object" ||
       (auth as any).__brand !== "Capability"
     ) {
       throw new ScriptError("mint: expected capability for authority");
+    }
+    const type = evaluate(typeExpr, ctx);
+    if (typeof type !== "string") {
+      throw new ScriptError("mint: expected string for type");
+    }
+    const params = evaluate(paramsExpr, ctx);
+    if (typeof params !== "object") {
+      throw new ScriptError("mint: expected object for params");
     }
 
     // Verify authority
@@ -116,17 +129,8 @@ export const mint = defineOpcode<
         `mint: authority namespace '${allowedNs}' does not cover '${type}'`,
       );
     }
-
-    const newId = createCapability(
-      ctx.this.id,
-      type as string,
-      params as Record<string, unknown>,
-    );
-
-    return {
-      __brand: "Capability",
-      id: newId,
-    };
+    const newId = createCapability(ctx.this.id, type, params);
+    return { __brand: "Capability", id: newId };
   },
 });
 
@@ -149,6 +153,9 @@ export const delegate = defineOpcode<
     returnType: "Capability",
   },
   handler: (args, ctx) => {
+    if (args.length !== 2) {
+      throw new ScriptError("delegate: expected parent and restrictions");
+    }
     const [parentExpr, restrictionsExpr] = args;
     const parent = evaluate(parentExpr, ctx);
     const restrictions = evaluate(restrictionsExpr, ctx);
@@ -199,6 +206,9 @@ export const give_capability = defineOpcode<
     returnType: "null",
   },
   handler: (args, ctx) => {
+    if (args.length !== 2) {
+      throw new ScriptError("give_capability: expected capability and target");
+    }
     const [capExpr, targetExpr] = args;
     const cap = evaluate(capExpr, ctx);
     const target = evaluate(targetExpr, ctx);

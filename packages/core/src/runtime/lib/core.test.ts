@@ -11,6 +11,13 @@ import {
 } from "@viwo/scripting";
 import * as Core from "./core";
 
+const cap1 = crypto.randomUUID();
+const cap2 = crypto.randomUUID();
+const cap3 = crypto.randomUUID();
+const cap4 = crypto.randomUUID();
+const cap5 = crypto.randomUUID();
+const cap6 = crypto.randomUUID();
+
 // Mock repo functions
 mock.module("../../repo", () => ({
   createEntity: () => 100,
@@ -49,12 +56,38 @@ mock.module("../../repo", () => ({
         id: 3,
         entity_id: 103,
         name: "say_hello",
-        code: ["test.send", "message", "Hello!"],
+        code: Std["send"]("message", "Hello!"),
         permissions: {},
       };
     }
     return null;
   },
+  getCapability: (id: string) => {
+    switch (id) {
+      case cap1:
+        return { owner_id: 2, type: "sys.create", params: {} };
+      case cap2:
+        return {
+          owner_id: 2,
+          type: "entity.control",
+          params: { target_id: 1 },
+        };
+      case cap3:
+        return { owner_id: 2, type: "sys.sudo", params: {} };
+      case cap4:
+        return {
+          owner_id: 2,
+          type: "entity.control",
+          params: { target_id: 101 },
+        };
+      case cap5:
+        return { owner_id: 3, type: "sys.sudo", params: {} }; // System
+      case cap6:
+        return { owner_id: 4, type: "sys.sudo", params: {} }; // Bot
+    }
+    return null;
+  },
+  createCapability: () => {},
 }));
 
 // Mock scheduler
@@ -69,21 +102,9 @@ createLibraryTester(Core, "Core Library", (test) => {
   registerLibrary(List);
   registerLibrary(Std);
 
-  // Register a test library to allow side effects (sending messages)
-  const TestLib = {
-    "test.send": {
-      metadata: { label: "Test Send", category: "test" } as any,
-      handler: (args: any[], ctx: ScriptContext) => {
-        if (ctx.send) {
-          ctx.send(args[0], args[1]);
-        }
-        return null;
-      },
-    },
-  };
-  registerLibrary(TestLib);
-
   let ctx: ScriptContext;
+  const sysCreateCap = { __brand: "Capability" as const, id: cap1 };
+  const entityControlCap = { __brand: "Capability" as const, id: cap2 };
 
   beforeEach(() => {
     ctx = createScriptContext({
@@ -97,11 +118,11 @@ createLibraryTester(Core, "Core Library", (test) => {
 
   // Entity Interaction
   test("create", () => {
-    expect(evaluate(Core["create"]({}), ctx)).toBe(100);
+    expect(evaluate(Core["create"](sysCreateCap, {}), ctx)).toBe(100);
   });
 
   test("destroy", () => {
-    evaluate(Core["destroy"]({ id: 1 }), ctx);
+    evaluate(Core["destroy"](entityControlCap, { id: 1 }), ctx);
   });
 
   test("call", () => {
@@ -153,7 +174,7 @@ createLibraryTester(Core, "Core Library", (test) => {
   });
 
   test("set_entity", () => {
-    evaluate(Core["set_entity"]({ id: 1 }), ctx);
+    evaluate(Core["set_entity"](entityControlCap, { id: 1 }), ctx);
   });
 
   test("get_prototype", () => {
@@ -161,7 +182,7 @@ createLibraryTester(Core, "Core Library", (test) => {
   });
 
   test("set_prototype", () => {
-    evaluate(Core["set_prototype"]({ id: 1 }, 2), ctx);
+    evaluate(Core["set_prototype"](entityControlCap, { id: 1 }, 2), ctx);
   });
 
   test("resolve_props", () => {
@@ -172,21 +193,25 @@ createLibraryTester(Core, "Core Library", (test) => {
   });
 
   test("sudo", () => {
-    // 1. Deny if not system/bot
+    // 1. Deny if not system/bot (and missing capability)
     const userCtx = createScriptContext({
       caller: { id: 100 } as any,
       this: { id: 100 } as any,
       args: [],
       send: () => {},
     });
+    // We pass a fake cap that won't exist or won't be owned
+    const fakeCap = { __brand: "Capability" as const, id: crypto.randomUUID() };
+
     expect(() =>
       evaluate(
-        Core["sudo"]({ id: 101 }, "get_dynamic", List["list.new"]()),
+        Core["sudo"](fakeCap, { id: 101 }, "get_dynamic", List["list.new"]()),
         userCtx,
       ),
-    ).toThrow("Expected capability of type sys.sudo");
+    ).toThrow("Invalid capability"); // Or "Capability not owned"
 
-    // 2. Allow if System (ID 3)
+    // 2. Allow if System (ID 3) with valid cap
+    const sysSudoCap = { __brand: "Capability" as const, id: cap5 };
     const systemCtx = createScriptContext({
       caller: { id: 3 } as any,
       this: { id: 3 } as any,
@@ -195,12 +220,18 @@ createLibraryTester(Core, "Core Library", (test) => {
     });
     expect(
       evaluate(
-        Core["sudo"]({ id: 101 }, "get_dynamic", List["list.new"]()),
+        Core["sudo"](
+          sysSudoCap,
+          { id: 101 },
+          "get_dynamic",
+          List["list.new"](),
+        ),
         systemCtx,
       ),
     ).toBe("resolved_value");
 
-    // 3. Allow if Bot (ID 4)
+    // 3. Allow if Bot (ID 4) with valid cap
+    const botSudoCap = { __brand: "Capability" as const, id: cap6 };
     const botCtx = createScriptContext({
       caller: { id: 4 } as any,
       this: { id: 4 } as any,
@@ -209,7 +240,12 @@ createLibraryTester(Core, "Core Library", (test) => {
     });
     expect(
       evaluate(
-        Core["sudo"]({ id: 101 }, "get_dynamic", List["list.new"]()),
+        Core["sudo"](
+          botSudoCap,
+          { id: 101 },
+          "get_dynamic",
+          List["list.new"](),
+        ),
         botCtx,
       ),
     ).toBe("resolved_value");
@@ -225,18 +261,8 @@ createLibraryTester(Core, "Core Library", (test) => {
       },
     });
 
-    // Call 'say_hello' on entity 103 via sudo
-    // The 'say_hello' verb (mocked above) calls send("message", "Hello!")
-    // We expect this to be forwarded as:
-    // type: "forward"
-    // payload: { target: 103, type: "message", payload: "Hello!" }
-
-    // Execute the 'say_hello' verb via sudo.
-    // This should trigger a 'send' call which we expect to be forwarded.
-    // We use a simple lambda for the verb code in this mock scenario if needed,
-    // but here we are testing the routing logic, so we assume the verb execution works.
     evaluate(
-      Core["sudo"]({ id: 103 }, "say_hello", List["list.new"]()),
+      Core["sudo"](botSudoCap, { id: 103 }, "say_hello", List["list.new"]()),
       botForwardCtx,
     );
 

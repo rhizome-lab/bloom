@@ -26,6 +26,7 @@ import {
 } from "./repo";
 import * as Core from "./runtime/lib/core";
 import * as Kernel from "./runtime/lib/kernel";
+import { CoreLib } from ".";
 
 describe("Capability Security", () => {
   registerLibrary(Std);
@@ -62,24 +63,25 @@ describe("Capability Security", () => {
   });
 
   test("Kernel.get_capability", () => {
-    const script = Kernel["get_capability"]("sys.mint");
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    const cap = evaluate(script, ctx);
+    const cap = evaluate(Kernel["get_capability"]("sys.mint"), ctx);
     expect(cap).not.toBeNull();
-    expect(cap.__brand).toBe("Capability");
+    expect((cap as any)?.__brand).toBe("Capability");
   });
 
   test("Kernel.mint", () => {
     // Admin mints a capability for themselves
-    const script = Kernel["mint"](
-      Kernel["get_capability"]("sys.mint"),
-      "test.cap",
-      ObjectLib["obj.new"](),
-    );
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    const newCap = evaluate(script, ctx);
+    const newCap = evaluate(
+      Kernel["mint"](
+        Kernel["get_capability"]("sys.mint"),
+        "test.cap",
+        ObjectLib["obj.new"](),
+      ),
+      ctx,
+    );
     expect(newCap).not.toBeNull();
-    expect(newCap.__brand).toBe("Capability");
+    expect((newCap as any)?.__brand).toBe("Capability");
 
     // Verify in DB
     const caps = getCapabilities(admin.id);
@@ -88,22 +90,25 @@ describe("Capability Security", () => {
 
   test("Core.create requires capability", () => {
     // User tries to create without capability
-    const script = Core["create"](ObjectLib["obj.new"](["name", "Fail"]));
     const ctx = createScriptContext({ caller: user, this: user, args: [] });
 
     // Should fail because first arg is not capability (it's the object)
     // Or if we pass null/invalid cap
-    expect(() => evaluate(script, ctx)).toThrow();
+    expect(() =>
+      evaluate(CoreLib["create"](ObjectLib["obj.new"](["name", "Fail"])), ctx),
+    ).toThrow();
   });
 
   test("Core.create with capability", () => {
     // Admin creates entity
-    const script = Core["create"](
-      Kernel["get_capability"]("sys.create"),
-      ObjectLib["obj.new"](["name", "Success"]),
-    );
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    const newId = evaluate(script, ctx);
+    const newId = evaluate(
+      CoreLib["create"](
+        Kernel["get_capability"]("sys.create"),
+        ObjectLib["obj.new"](["name", "Success"]),
+      ),
+      ctx,
+    );
     expect(typeof newId).toBe("number");
   });
 
@@ -113,28 +118,33 @@ describe("Capability Security", () => {
     // const target = getEntity(targetId)!;
 
     // User tries to modify
-    const script = Core["set_entity"](
-      // Missing capability arg, passing target directly will fail type check or runtime check
-      Core["entity"](targetId),
-      ObjectLib["obj.new"](["name", "Hacked"]),
-    );
     const ctx = createScriptContext({ caller: user, this: user, args: [] });
-    expect(() => evaluate(script, ctx)).toThrow();
+    expect(() =>
+      evaluate(
+        CoreLib["set_entity"](
+          CoreLib["entity"](targetId),
+          ObjectLib["obj.new"](["name", "Hacked"]),
+        ),
+        ctx,
+      ),
+    ).toThrow();
   });
 
   test("Core.set_entity with capability", () => {
     const targetId = createEntity({ name: "Target" });
 
     // Admin has wildcard control
-    const script = Core["set_entity"](
-      Kernel["get_capability"](
-        "entity.control",
-        ObjectLib["obj.new"](["*", true]),
-      ),
-      ObjectLib["obj.set"](Core["entity"](targetId), "name", "Modified"),
-    );
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
-    evaluate(script, ctx);
+    evaluate(
+      CoreLib["set_entity"](
+        Kernel["get_capability"](
+          "entity.control",
+          ObjectLib["obj.new"](["*", true]),
+        ),
+        ObjectLib["obj.set"](CoreLib["entity"](targetId), "name", "Modified"),
+      ),
+      ctx,
+    );
 
     const updated = getEntity(targetId)! as any;
     expect(updated.name).toBe("Modified");
