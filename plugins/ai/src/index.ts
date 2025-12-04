@@ -82,7 +82,10 @@ async function getModel(modelSpec?: string) {
 
     if (!providerFn) {
       // Try camelCase for hyphenated names
-      const camel = providerName.replace(/-([a-z])/g, (g) => g[1]?.toUpperCase() ?? "");
+      const camel = providerName.replace(
+        /-([a-z])/g,
+        (g) => g[1]?.toUpperCase() ?? "",
+      );
       providerFn = mod[camel];
     }
 
@@ -108,8 +111,6 @@ export class AiPlugin implements Plugin {
     ctx.registerCommand("gen", this.handleGen.bind(this));
     ctx.registerCommand("image", this.handleImage.bind(this));
 
-    // Note: Type assertions are currently unsafe. Tracked in TODO.md.
-    // Note: Future improvement: Switch `handleGen` to use `generateObject`. Tracked in TODO.md.
     // Register default templates
     this.registerTemplate({
       name: "item",
@@ -212,8 +213,13 @@ export class AiPlugin implements Plugin {
       return;
     }
 
-    const roomItems = this.getResolvedRoom(ctx, playerEntity["location"] as number)?.contents;
-    const target = roomItems?.find((e: any) => e.name.toLowerCase() === targetName.toLowerCase());
+    const roomItems = this.getResolvedRoom(
+      ctx,
+      playerEntity["location"] as number,
+    )?.contents;
+    const target = roomItems?.find(
+      (e: any) => e.name.toLowerCase() === targetName.toLowerCase(),
+    );
 
     if (!target) {
       ctx.send("message", `You don't see '${targetName}' here.`);
@@ -226,7 +232,11 @@ export class AiPlugin implements Plugin {
         model,
         system: `You are roleplaying as ${target["name"]}.\
 ${target["description"] ? `\nDescription: ${target["description"]}` : ""}
-${target["adjectives"] ? `\nAdjectives: ${(target["adjectives"] as string[]).join(", ")}` : ""}
+${
+  target["adjectives"]
+    ? `\nAdjectives: ${(target["adjectives"] as string[]).join(", ")}`
+    : ""
+}
 Keep your response short and in character.`,
         prompt: message,
       });
@@ -295,7 +305,10 @@ Keep your response short and in character.`,
           adjectives: data.adjectives,
           custom_css: data.custom_css,
         });
-        const room = this.getResolvedRoom(ctx, playerEntity["location"] as number);
+        const room = this.getResolvedRoom(
+          ctx,
+          playerEntity["location"] as number,
+        );
         if (room) {
           ctx.send("room_id", { roomId: room.id });
           ctx.send("message", `Created ${data.name}.`);
@@ -329,7 +342,9 @@ Keep your response short and in character.`,
 
       const base64Data = image.base64;
       const buffer = Buffer.from(base64Data, "base64");
-      const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+      const filename = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(7)}.png`;
       const filepath = `apps/web/public/images/${filename}`;
       const publicUrl = `/images/${filename}`;
 
@@ -356,9 +371,13 @@ Keep your response short and in character.`,
         targetId = playerEntity["location"] as number;
       } else {
         // Find item
-        const roomItems = this.getResolvedRoom(ctx, playerEntity["location"] as number)?.contents;
+        const roomItems = this.getResolvedRoom(
+          ctx,
+          playerEntity["location"] as number,
+        )?.contents;
         const item = roomItems?.find(
-          (item) => (item["name"] as string).toLowerCase() === targetName.toLowerCase(),
+          (item) =>
+            (item["name"] as string).toLowerCase() === targetName.toLowerCase(),
         );
         if (item) {
           targetId = item.id;

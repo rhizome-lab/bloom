@@ -1,14 +1,9 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { describe, test, expect, mock } from "bun:test";
 import { handleJsonRpcRequest } from "./index";
 import { JsonRpcRequest } from "@viwo/shared/jsonrpc";
 import { createEntity } from "./repo";
 
 describe("Login Logic", () => {
-  beforeEach(() => {
-    // Reset DB for each test (TODO: use in-memory db or transaction rollback)
-    // For now, let's just create new entities.
-  });
-
   test("Login with valid entity ID", async () => {
     const entityId = createEntity({ name: "Test User", description: "Test" });
     const ws = {

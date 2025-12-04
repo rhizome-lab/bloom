@@ -1,5 +1,11 @@
 import { serve } from "bun";
-import { createEntity, deleteEntity, getEntity, updateEntity, createCapability } from "./repo";
+import {
+  createEntity,
+  deleteEntity,
+  getEntity,
+  updateEntity,
+  createCapability,
+} from "./repo";
 import {
   createScriptContext,
   evaluate,
@@ -21,7 +27,12 @@ import * as Net from "./runtime/lib/net";
 
 import { PluginManager, CommandContext } from "./plugin";
 import { scheduler } from "./scheduler";
-import { JsonRpcRequest, JsonRpcResponse, JsonRpcNotification, Entity } from "@viwo/shared/jsonrpc";
+import {
+  JsonRpcRequest,
+  JsonRpcResponse,
+  JsonRpcNotification,
+  Entity,
+} from "@viwo/shared/jsonrpc";
 import { resolveProps } from "./runtime/utils";
 
 export { PluginManager };
@@ -84,7 +95,11 @@ scheduler.setSendFactory((entityId: number) => {
 
   // Fallback for entities without a connected client (e.g. NPCs, Rooms)
   return (type: string, payload: unknown) => {
-    console.log(`[Scheduled Task Output for Entity ${entityId}]`, type, payload);
+    console.log(
+      `[Scheduled Task Output for Entity ${entityId}]`,
+      type,
+      payload,
+    );
   };
 });
 
@@ -150,7 +165,11 @@ export function startServer(port: number = 8080) {
 
           if ("method" in data && "id" in data) {
             // It's a request
-            const response = await handleJsonRpcRequest(data as JsonRpcRequest, ws.data.userId, ws);
+            const response = await handleJsonRpcRequest(
+              data as JsonRpcRequest,
+              ws.data.userId,
+              ws,
+            );
             ws.send(JSON.stringify(response));
           } else if ("method" in data) {
             // It's a notification
@@ -222,8 +241,8 @@ export async function handleJsonRpcRequest(
         };
       }
 
-      // In a real system, we would check authentication here.
-      // For now, we trust the entityId (as per TODO context).
+      // TODO: In a real system, we would check authentication here.
+      // For now, we trust the entityId.
 
       // Update session
       // Remove old mapping if exists

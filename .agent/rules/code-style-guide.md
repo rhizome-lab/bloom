@@ -1,8 +1,8 @@
 ---
 trigger: always_on
-glob:
 description: General Guidelines
 ---
+
 # Core Tenets
 - Deliberate slowly and thoroughly on matters that require more care/attention.
 - Avoid `any` whenever possible. It is the equivalent of `NaN` for the type system - it is infectious.
@@ -10,7 +10,6 @@ description: General Guidelines
 - Optimize for modularity. Anything that makes sense as a plugin should be a plugin; dependencies per module should be minimal - dependencies for optional functionality should be in plugins.
 - For `apps/web`, use BEM in `apps/web/src/index.css` instead of inline CSS.
 - Always write tests whenever possible. Run with `bun test --coverage` and try to maximize coverage.
-- Always address TODOs.
 - Always clean up long comments. Use `rg` with `//.+\n *//.+\n *//`.
 - Try to avoid `ts-expect-error`, but even that is preferable to `ts-ignore`.
 
@@ -24,10 +23,9 @@ description: General Guidelines
 - For background colors, prefer transparency - this means light colors with low transparency on dark mode, and dark colors with low transparency on light mode.
 
 ## Overarching Goal
-- A persistent multiplayer world with scriptable objects, rooms, NPCs etc.
-- Multiple frontends: Web, Discord, CLI, TUI
-
-## Prior Art
-- LambdaMOO (interactive world)
-- Lua (scripting - minimal yet powerful)
-- S-expressions in JSON (trivial to parse)
+- A fully scriptable, modular, flexible platform to manipulate objects
+  - Game world (LambdaMOO https://en.wikipedia.org/wiki/LambdaMOO)
+  - Note taking (Notion)
+  - AI Chatbots (SillyTavern https://github.com/SillyTavern/SillyTavern)
+  - AI World (Talemate https://github.com/vegu-ai/talemate)
+- Highly modular - every component should be embeddable and frontend agnostic
