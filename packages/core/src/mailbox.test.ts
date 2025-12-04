@@ -119,7 +119,7 @@ describe("Mailbox Verification", () => {
               ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.var("item"), "id")]),
             ),
           ),
-          CoreLib.set_entity(
+          CoreLib.setEntity(
             StdLib.var("cap"),
             ObjectLib.objMerge(
               StdLib.var("item"),

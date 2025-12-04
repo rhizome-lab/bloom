@@ -38,7 +38,7 @@ describe("Scheduler Verification", () => {
             ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
           ),
         ),
-        CoreLib.set_entity(
+        CoreLib.setEntity(
           StdLib.var("cap"),
           ObjectLib.objSet(
             StdLib.this(),

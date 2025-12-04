@@ -102,7 +102,7 @@ describe("Capability Security", () => {
 
     try {
       await evaluate(
-        CoreLib.set_entity(
+        CoreLib.setEntity(
           ObjectLib.objNew(["name", "Fail"]), // Invalid cap
           CoreLib.entity(targetId),
         ),
@@ -119,7 +119,7 @@ describe("Capability Security", () => {
     const targetId = createEntity({ name: "Target" });
 
     await evaluate(
-      CoreLib.set_entity(
+      CoreLib.setEntity(
         KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true])),
         ObjectLib.objSet(CoreLib.entity(targetId), "name", "Modified"),
       ),

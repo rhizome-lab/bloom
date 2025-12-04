@@ -133,7 +133,7 @@ describe("Book Item Scripting", () => {
       ObjectLib.objSet(StdLib.var("newChapter"), "title", StdLib.var("title")),
       ObjectLib.objSet(StdLib.var("newChapter"), "content", StdLib.var("content")),
       ListLib.listPush(StdLib.var("chapters"), StdLib.var("newChapter")),
-      CoreLib.set_entity(ObjectLib.objSet(StdLib.this(), "chapters", StdLib.var("chapters"))),
+      CoreLib.setEntity(ObjectLib.objSet(StdLib.this(), "chapters", StdLib.var("chapters"))),
       CoreLib.call(StdLib.caller(), "tell", "Chapter added."),
     );
 

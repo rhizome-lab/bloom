@@ -72,7 +72,7 @@ describe("Capability Permissions", () => {
         BooleanLib.not(StdLib.var("cap")),
         StdLib.set("cap", KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true]))),
       ),
-      CoreLib.set_entity(
+      CoreLib.setEntity(
         StdLib.var("cap"),
         ObjectLib.objSet(CoreLib.entity(target.id), "name", newName),
       ),

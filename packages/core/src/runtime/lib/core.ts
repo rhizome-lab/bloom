@@ -225,7 +225,7 @@ export const entity = defineOpcode<[number], Entity>("entity", {
 /**
  * Updates one or more entities' properties transactionally.
  */
-export const set_entity = defineOpcode<[Capability | null, ...Entity[]], null>("set_entity", {
+export const setEntity = defineOpcode<[Capability | null, ...Entity[]], null>("set_entity", {
   metadata: {
     label: "Update Entity",
     category: "action",
@@ -265,7 +265,7 @@ export const set_entity = defineOpcode<[Capability | null, ...Entity[]], null>("
 /**
  * Gets the prototype ID of an entity.
  */
-export const get_prototype = defineOpcode<[Entity], number | null>("get_prototype", {
+export const getPrototype = defineOpcode<[Entity], number | null>("get_prototype", {
   metadata: {
     label: "Get Prototype",
     category: "world",
@@ -282,7 +282,7 @@ export const get_prototype = defineOpcode<[Entity], number | null>("get_prototyp
   },
 });
 
-export const set_prototype = defineOpcode<[Capability | null, Entity, number | null], null>(
+export const setPrototype = defineOpcode<[Capability | null, Entity, number | null], null>(
   "set_prototype",
   {
     metadata: {
@@ -379,6 +379,7 @@ export const sudo = defineOpcode<[Capability | null, Entity, string, unknown[]],
 
     const targetVerb = getVerb(target.id, verb);
     if (!targetVerb) {
+      console.log(getVerbs(target.id));
       throw new ScriptError(`sudo: verb '${verb}' not found on ${target.id}`);
     }
 

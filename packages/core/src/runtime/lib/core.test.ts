@@ -172,15 +172,15 @@ createLibraryTester(Core, "Core Library", (test) => {
   });
 
   test("set_entity", () => {
-    evaluate(Core.set_entity(entityControlCap, { id: 1 }), ctx);
+    evaluate(Core.setEntity(entityControlCap, { id: 1 }), ctx);
   });
 
   test("get_prototype", () => {
-    expect(evaluate(Core.get_prototype({ id: 1 }), ctx)).toBe(null);
+    expect(evaluate(Core.getPrototype({ id: 1 }), ctx)).toBe(null);
   });
 
   test("set_prototype", () => {
-    evaluate(Core.set_prototype(entityControlCap, { id: 1 }, 2), ctx);
+    evaluate(Core.setPrototype(entityControlCap, { id: 1 }, 2), ctx);
   });
 
   test("resolve_props", () => {
