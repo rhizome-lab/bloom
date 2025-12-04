@@ -29,7 +29,7 @@ The transpiler supports a subset of TypeScript that maps to ViwoScript opcodes:
 
 ### Variables
 
-- **Declaration**: `let x = 1;` -> `["let", "x", 1]`
+- **Declaration**: `let x = 1;` -> `["let", "x", 1]` (Block-scoped)
 - **Access**: `x` -> `["var", "x"]`
 - **Assignment**: `x = 2;` -> `["set", "x", 2]`
 

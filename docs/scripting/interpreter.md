@@ -37,7 +37,18 @@ classDiagram
     Interpreter --> StackArrays : manages
 
     note for StackArrays "Parallel Arrays (SOA)\nIndex 'i' represents one stack frame"
+    note for StackArrays "Parallel Arrays (SOA)\nIndex 'i' represents one stack frame"
 ```
+
+## Scope Management
+
+The interpreter uses a **prototype chain** mechanism to handle block scoping efficiently.
+
+- **Scope Chain**: Each scope is an object that inherits from its parent scope using `Object.create(parentScope)`. This allows variable lookups to naturally traverse up the chain (shadowing works automatically).
+- **Copy-On-Write (COW)**: To avoid creating new objects for every instruction that might need a scope (like `seq`), the interpreter uses a `cow` flag in the `ScriptContext`.
+  - When entering a potential new scope (e.g., `seq`), `cow` is set to `true`.
+  - If a variable is defined (`let`), the scope is "forked" (a new object is created inheriting from the current one) only if `cow` is true, and `cow` is reset to `false`.
+  - If no variables are defined, the scope remains shared, avoiding allocation overhead.
 
 ## Usage
 

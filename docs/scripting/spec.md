@@ -50,9 +50,22 @@ The standard library provides essential control flow, variable management, and s
 
 ### Variables
 
-- `["let", name, value]`: Defines a variable in the current scope.
-- `["var", name]`: Retrieves a variable's value.
-- `["set", name, value]`: Updates an existing variable.
+- `["let", name, value]`: Defines a variable in the current **block** scope. If a variable with the same name exists in an outer scope, it is shadowed.
+- `["var", name]`: Retrieves a variable's value from the current scope or nearest outer scope.
+- `["set", name, value]`: Updates an existing variable in the current or nearest outer scope. If the variable does not exist, it throws an error.
+
+### Scoping
+
+ViwoScript uses **lexical block scoping**. A new scope is created for:
+
+- `seq` (Sequence)
+- `if` (Then and Else branches)
+- `while` (Loop body)
+- `for` (Loop body)
+- `try` (Try and Catch blocks)
+- `lambda` (Function body)
+
+Variables declared with `let` are only accessible within the block they are defined in and its sub-blocks.
 
 ### System & Debugging
 

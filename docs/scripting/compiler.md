@@ -30,11 +30,11 @@ The compiler generates a synchronous JavaScript function that takes a `ScriptCon
 
 ### Variables
 
-| Opcode               | JavaScript Output | Notes                                                      |
-| :------------------- | :---------------- | :--------------------------------------------------------- |
-| `["let", name, val]` | `let name = val`  | Declares a local variable in the generated function scope. |
-| `["set", name, val]` | `name = val`      | Assigns to a variable.                                     |
-| `["var", name]`      | `name`            | Accesses a variable.                                       |
+| Opcode               | JavaScript Output | Notes                                                 |
+| :------------------- | :---------------- | :---------------------------------------------------- |
+| `["let", name, val]` | `let name = val`  | Declares a local variable in the current block scope. |
+| `["set", name, val]` | `name = val`      | Assigns to a variable.                                |
+| `["var", name]`      | `name`            | Accesses a variable.                                  |
 
 ### Functions
 
