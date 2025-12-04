@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 jobs:
   lint-and-format:
@@ -25,3 +25,9 @@ jobs:
 
       - name: Format Check
         run: bun run format --check
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Run Unit Tests
+        run: bun test
