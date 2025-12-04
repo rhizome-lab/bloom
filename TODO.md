@@ -5,6 +5,16 @@
   - TUI (should have the same layout as web frontend)
   - Discord bot
 
+- Flesh out transpiler and compiler:
+
+  - packages/scripting/src/transpiler.ts
+  - packages/scripting/src/compiler.ts
+  - docs/scripting/transpiler.md
+  - docs/scripting/compiler.md
+  - Add support for `i += 1`; `-=`, `||=`, `**=`, etc.
+  - Add support for `for (a; b; c)`
+  - Add support for `for (... in ...)`
+
 - packages/scripting/src/interpreter.ts: Lambdas should be interpreted inside the stack machine, instead of a recursive `evaluate` call
 - packages/core/src/runtime/lib/net.ts: GET/POST etc with binary output; GET/POST with JSON output
 - packages/core/src/runtime/lib/net.ts: Also, return a response rather than just the response

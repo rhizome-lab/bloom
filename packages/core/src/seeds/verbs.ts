@@ -542,6 +542,8 @@ export function book_search_chapters(this: Entity) {
 // @endverb
 
 declare const HOTEL_LOBBY_ID_PLACEHOLDER: number;
+declare const HOTEL_ROOM_PROTO_ID_PLACEHOLDER: number;
+declare const WING_PROTO_ID_PLACEHOLDER: number;
 
 // @verb hotel_room_on_leave
 export function hotel_room_on_leave(this: Entity) {
@@ -556,18 +558,8 @@ export function hotel_room_on_leave(this: Entity) {
     // Auto-lock logic
     const occupants = list.len(newContents);
     if (occupants === 0) {
-      // Reset owner
-      this["owner"] = null;
-      // Reset name
-      const roomNumber = this["room_number"];
-      this["name"] = `Room ${roomNumber}`;
-      // Reset description
-      this["description"] = "A standard hotel room.";
-      set_entity(cap, this);
-
-      // Notify lobby
-      const lobby = entity(HOTEL_LOBBY_ID_PLACEHOLDER);
-      call(lobby, "room_vacated", roomNumber);
+      // Destroy room
+      call(this, "destroy", this);
     }
   } else {
     send("message", "The room refuses to let you go.");
@@ -629,15 +621,169 @@ export function elevator_go(this: Entity) {
   if (direction === "out") {
     const currentFloor = this["current_floor"];
     const floors = (this["floors"] as Record<string, number>) || {};
-    const destId = floors[`${currentFloor}`];
+    let destId = floors[`${currentFloor}`];
+
+    if (!destId) {
+      // Create Floor on demand
+      const createCap = get_capability("sys.create", {});
+      const controlCap = get_capability("entity.control", {
+        target_id: this.id,
+      });
+
+      if (createCap && controlCap) {
+        // 1. Create Floor Lobby
+        const lobbyData: Record<string, any> = {};
+        lobbyData["name"] = `Floor ${currentFloor} Lobby`;
+        lobbyData["location"] = ENTITY_BASE_ID_PLACEHOLDER; // Void
+        lobbyData["description"] = `The lobby for the ${currentFloor}th floor.`;
+        const lobbyId = create(createCap, lobbyData);
+        set_prototype(createCap, entity(lobbyId), ENTITY_BASE_ID_PLACEHOLDER);
+
+        // 2. Create West Wing
+        const westData: Record<string, any> = {};
+        westData["name"] = `Floor ${currentFloor} West Wing`;
+        westData["location"] = ENTITY_BASE_ID_PLACEHOLDER;
+        westData["description"] = `The West Wing of floor ${currentFloor}.`;
+        const westId = create(createCap, westData);
+        set_prototype(createCap, entity(westId), WING_PROTO_ID_PLACEHOLDER);
+
+        // 3. Create East Wing
+        const eastData: Record<string, any> = {};
+        eastData["name"] = `Floor ${currentFloor} East Wing`;
+        eastData["location"] = ENTITY_BASE_ID_PLACEHOLDER;
+        eastData["description"] = `The East Wing of floor ${currentFloor}.`;
+        const eastId = create(createCap, eastData);
+        set_prototype(createCap, entity(eastId), WING_PROTO_ID_PLACEHOLDER);
+
+        // 4. Link Lobby -> West
+        const westExitData: Record<string, any> = {};
+        westExitData["name"] = "west";
+        westExitData["location"] = lobbyId;
+        westExitData["direction"] = "west";
+        westExitData["destination"] = westId;
+        const westExitId = create(createCap, westExitData);
+
+        // 5. Link West -> Lobby
+        const westBackExitData: Record<string, any> = {};
+        westBackExitData["name"] = "back";
+        westBackExitData["location"] = westId;
+        westBackExitData["direction"] = "back";
+        westBackExitData["destination"] = lobbyId;
+        const westBackExitId = create(createCap, westBackExitData);
+
+        // 6. Link Lobby -> East
+        const eastExitData: Record<string, any> = {};
+        eastExitData["name"] = "east";
+        eastExitData["location"] = lobbyId;
+        eastExitData["direction"] = "east";
+        eastExitData["destination"] = eastId;
+        const eastExitId = create(createCap, eastExitData);
+
+        // 7. Link East -> Lobby
+        const eastBackExitData: Record<string, any> = {};
+        eastBackExitData["name"] = "back";
+        eastBackExitData["location"] = eastId;
+        eastBackExitData["direction"] = "back";
+        eastBackExitData["destination"] = lobbyId;
+        const eastBackExitId = create(createCap, eastBackExitData);
+
+        // 8. Link Lobby -> Elevator
+        const elevatorExitData: Record<string, any> = {};
+        elevatorExitData["name"] = "elevator";
+        elevatorExitData["location"] = lobbyId;
+        elevatorExitData["direction"] = "elevator";
+        elevatorExitData["destination"] = this.id;
+        const elevatorExitId = create(createCap, elevatorExitData);
+
+        // Update Lobby Exits
+        const lobby = entity(lobbyId);
+        lobby["exits"] = [westExitId, eastExitId, elevatorExitId];
+        // We (Elevator) have control of Lobby because we created it.
+        const lobbyCap = get_capability("entity.control", {
+          target_id: lobbyId,
+        });
+        set_entity(lobbyCap, lobby);
+
+        // Update Wings Exits
+        const westWing = entity(westId);
+        westWing["exits"] = [westBackExitId];
+        const westCap = get_capability("entity.control", { target_id: westId });
+        set_entity(westCap, westWing);
+
+        const eastWing = entity(eastId);
+        eastWing["exits"] = [eastBackExitId];
+        const eastCap = get_capability("entity.control", { target_id: eastId });
+        set_entity(eastCap, eastWing);
+
+        destId = lobbyId;
+        floors[`${currentFloor}`] = destId;
+        this["floors"] = floors;
+        set_entity(controlCap, this);
+
+        // Store wing IDs on the lobby so we can find them later for destruction
+        lobby["wings"] = [westId, eastId];
+        set_entity(lobbyCap, lobby);
+      } else {
+        send("message", "Elevator malfunction: Cannot create floor.");
+        return;
+      }
+    }
+
     if (destId) {
       call(caller(), "teleport", entity(destId));
       send("message", "You step out of the elevator.");
-    } else {
-      send("message", "The doors refuse to open here.");
     }
   } else {
     send("message", "You can only move 'out' of the elevator.");
+  }
+}
+// @endverb
+
+// @verb elevator_on_enter
+export function elevator_on_enter(this: Entity) {
+  const floors = (this["floors"] as Record<string, number>) || {};
+  const controlCap = get_capability("entity.control", { target_id: this.id });
+
+  if (controlCap) {
+    let i = 0;
+    // Iterate 1 to 100 to find active floors
+    while (i < 100) {
+      i = i + 1;
+      const f = String(i);
+      const lobbyId = floors[f];
+      if (lobbyId) {
+        const lobby = entity(lobbyId);
+        const lobbyContents = (lobby["contents"] as number[]) ?? [];
+
+        // Check wings
+        const wings = (lobby["wings"] as number[]) ?? [];
+        let wingsEmpty = true;
+        for (const wId of wings) {
+          const wing = entity(wId);
+          const wContents = (wing["contents"] as number[]) ?? [];
+          if (list.len(wContents) > 0) {
+            wingsEmpty = false;
+          }
+        }
+
+        if (list.len(lobbyContents) === 0 && wingsEmpty) {
+          // Destroy everything
+          for (const wId of wings) {
+            call(this, "destroy", entity(wId));
+          }
+          call(this, "destroy", lobby);
+
+          // Remove from floors (set to null/undefined)
+          // We can't delete keys, but we can set to null.
+          // But the type is number.
+          // We can set to 0? Or just leave it and check for truthiness?
+          // If we set to 0, `if (destId)` will be false.
+          floors[f] = 0;
+        }
+      }
+    }
+    this["floors"] = floors;
+    set_entity(controlCap, this);
   }
 }
 // @endverb
@@ -689,10 +835,54 @@ export function wing_enter_room(this: Entity) {
   }
 
   const contents = (this["contents"] as number[]) ?? [];
-  const roomId = list.find(contents, (id: number) => {
+  let roomId = list.find(contents, (id: number) => {
     const props = resolve_props(entity(id));
     return (props["room_number"] as number) === roomNumber;
   });
+
+  if (!roomId) {
+    // Create Room on demand
+    const createCap = get_capability("sys.create", {});
+    const controlCap = get_capability("entity.control", { target_id: this.id });
+
+    if (createCap && controlCap) {
+      const roomData: Record<string, any> = {};
+      roomData["name"] = `Room ${roomNumber}`;
+      roomData["location"] = this.id;
+      roomData["description"] = "A standard hotel room.";
+      roomData["room_number"] = roomNumber;
+      roomData["owner"] = null;
+
+      roomId = create(createCap, roomData);
+      set_prototype(createCap, entity(roomId), HOTEL_ROOM_PROTO_ID_PLACEHOLDER);
+
+      // Link Room -> Wing (out)
+      const outExitData: Record<string, any> = {};
+      outExitData["name"] = "out";
+      outExitData["location"] = roomId;
+      outExitData["direction"] = "out";
+      outExitData["destination"] = this.id;
+      const outExitId = create(createCap, outExitData);
+
+      const room = entity(roomId);
+      room["exits"] = [outExitId];
+      const roomCap = get_capability("entity.control", { target_id: roomId });
+      set_entity(roomCap, room);
+
+      // Add 'on_leave' verb
+      // Again, we need a prototype or a way to add verbs.
+      // I will assume ROOM_BASE_ID_PLACEHOLDER exists.
+      // set_prototype(createCap, entity(roomId), ROOM_BASE_ID_PLACEHOLDER);
+
+      // Add to Wing contents
+      list.push(contents, roomId);
+      this["contents"] = contents;
+      set_entity(controlCap, this);
+    } else {
+      send("message", "Cannot create room: Permission denied.");
+      return;
+    }
+  }
 
   if (roomId) {
     call(caller(), "teleport", entity(roomId));

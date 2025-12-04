@@ -3,6 +3,8 @@ import { Entity } from "@viwo/shared/jsonrpc";
 
 let typecheck = true;
 
+const WHITELISTED_TYPES = new Set<string>(["any", "unknown", "Entity", "Capability"]);
+
 export function setTypechecking(enabled: boolean) {
   typecheck = enabled;
 }
@@ -365,16 +367,16 @@ function validateArgs(op: string, args: unknown[], metadata: OpcodeMetadata) {
     const arg = args[i];
     const type = currentParam.type.replace("[]", "");
 
-    if (type === "any" || type === "unknown") continue;
+    if (WHITELISTED_TYPES.has(type)) continue;
 
     if (currentParam.type.endsWith("[]")) {
       if (currentParam.name.startsWith("...")) {
         // Variadic
         if (
-          type !== "any" &&
-          type !== "unknown" &&
+          !WHITELISTED_TYPES.has(type) &&
+          !/\W/.test(type) &&
           !metadata.genericParameters?.some(
-            (param) => param.replace(/\bextends\b.+/, "") === type,
+            (param) => param.replace(/\s*\bextends\b.+/, "") === type,
           ) &&
           typeof arg !== type &&
           arg !== null
@@ -385,8 +387,9 @@ function validateArgs(op: string, args: unknown[], metadata: OpcodeMetadata) {
           if (
             type !== "object" &&
             typeof arg !== type &&
+            !/\W/.test(type) &&
             !metadata.genericParameters?.some(
-              (param) => param.replace(/\bextends\b.+/, "") === type,
+              (param) => param.replace(/\s*\bextends\b.+/, "") === type,
             )
           ) {
             throw new ScriptError(`${op}: expected ${type} for ${currentParam.name} at index ${i}`);
@@ -404,35 +407,30 @@ function validateArgs(op: string, args: unknown[], metadata: OpcodeMetadata) {
           throw new ScriptError(`${op}: expected object for ${currentParam.name}`);
         }
       } else if (typeof arg !== type) {
-        if (type.includes("|")) {
-          const types = type.split("|").map((t) => t.trim());
-          const argType = arg === null ? "null" : typeof arg;
-          if (
-            types.includes("Capability") &&
-            arg &&
-            typeof arg === "object" &&
-            (arg as any).__brand === "Capability"
-          ) {
-            continue;
-          }
-          if (
-            types.includes("Entity") &&
-            arg &&
-            typeof arg === "object" &&
-            typeof (arg as any).id === "number"
-          ) {
-            continue;
-          }
-          if (
-            !types.includes(argType) &&
-            !metadata.genericParameters?.some(
-              (param) => param.replace(/\bextends\b.+/, "") === type,
-            )
-          ) {
-            throw new ScriptError(`${op}: expected ${type} for ${currentParam.name}`);
-          }
-        } else if (
-          !metadata.genericParameters?.some((param) => param.replace(/\bextends\b.+/, "") === type)
+        const types = type.split("|").map((t) => t.trim());
+        const argType = arg === null ? "null" : typeof arg;
+        if (
+          types.includes("Capability") &&
+          arg &&
+          typeof arg === "object" &&
+          (arg as any).__brand === "Capability"
+        ) {
+          continue;
+        }
+        if (
+          types.includes("Entity") &&
+          arg &&
+          typeof arg === "object" &&
+          typeof (arg as any).id === "number"
+        ) {
+          continue;
+        }
+        if (
+          !types.includes(argType) &&
+          !/\W/.test(type) &&
+          !metadata.genericParameters?.some(
+            (param) => param.replace(/\s*\bextends\b.+/, "") === type,
+          )
         ) {
           throw new ScriptError(`${op}: expected ${type} for ${currentParam.name}`);
         }

@@ -374,9 +374,7 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
     return StringLib.strConcat(...parts);
   }
 
-  console.warn(`Unsupported node kind: ${node.kind}`);
-  console.warn(node.getText());
-  return undefined;
+  throw new Error(`Unsupported node kind: ${node.kind}\n${node.getText()}`);
 }
 
 function resolveDottedName(node: ts.Expression): string | null {
