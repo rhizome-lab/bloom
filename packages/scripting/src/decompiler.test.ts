@@ -89,12 +89,8 @@ describe("Decompiler", () => {
 
     // obj.get
     expect(decompile(ObjectLib.objGet(Std.var("o"), "k"))).toBe("o.k");
-    expect(decompile(ObjectLib.objGet(Std.var("o"), "invalid-key"))).toBe(
-      'o["invalid-key"]',
-    );
-    expect(decompile(ObjectLib.objGet(Std.var("o"), "k", "default"))).toBe(
-      '(o.k ?? "default")',
-    );
+    expect(decompile(ObjectLib.objGet(Std.var("o"), "invalid-key"))).toBe('o["invalid-key"]');
+    expect(decompile(ObjectLib.objGet(Std.var("o"), "k", "default"))).toBe('(o.k ?? "default")');
 
     // obj.set
     expect(decompile(ObjectLib.objSet(Std.var("o"), "k", 3))).toBe("o.k = 3");

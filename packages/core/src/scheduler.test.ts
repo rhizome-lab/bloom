@@ -13,9 +13,7 @@ describe("Scheduler Verification", () => {
 
   // Start Scheduler
   // Start Scheduler
-  scheduler.setSendFactory(
-    () => (msg) => console.log("[Scheduler System Message]:", msg),
-  );
+  scheduler.setSendFactory(() => (msg) => console.log("[Scheduler System Message]:", msg));
 
   setInterval(() => {
     scheduler.process();
@@ -37,10 +35,7 @@ describe("Scheduler Verification", () => {
           "cap",
           KernelLib.getCapability(
             "entity.control",
-            ObjectLib.objNew([
-              "target_id",
-              ObjectLib.objGet(StdLib.this(), "id"),
-            ]),
+            ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
           ),
         ),
         CoreLib.set_entity(
@@ -58,9 +53,7 @@ describe("Scheduler Verification", () => {
   it("should schedule a task", () => {
     scheduler.schedule(entityId, "increment", [], 100);
 
-    const task = db
-      .query("SELECT * FROM scheduled_tasks WHERE entity_id = ?")
-      .get(entityId) as any;
+    const task = db.query("SELECT * FROM scheduled_tasks WHERE entity_id = ?").get(entityId) as any;
     expect(task).toBeDefined();
     expect(task.verb).toBe("increment");
   });
@@ -72,9 +65,7 @@ describe("Scheduler Verification", () => {
     await scheduler.process();
 
     // Task should be gone
-    const task = db
-      .query("SELECT * FROM scheduled_tasks WHERE entity_id = ?")
-      .get(entityId);
+    const task = db.query("SELECT * FROM scheduled_tasks WHERE entity_id = ?").get(entityId);
     expect(task).toBeNull();
 
     // Let's check the entity state.

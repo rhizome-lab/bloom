@@ -130,10 +130,7 @@ describe("Compiler", () => {
       run(
         Std.seq(
           Std.let("x", 10),
-          Std.let(
-            "addX",
-            Std.lambda(["y"], MathLib.add(Std.var("x"), Std.var("y"))),
-          ),
+          Std.let("addX", Std.lambda(["y"], MathLib.add(Std.var("x"), Std.var("y")))),
           Std.apply(Std.var("addX"), 5),
         ),
       ),

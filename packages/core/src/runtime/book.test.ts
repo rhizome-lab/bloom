@@ -80,10 +80,7 @@ describe("Book Item Scripting", () => {
     const script = StdLib.seq(
       StdLib.let("index", StdLib.arg(0)),
       StdLib.let("chapters", ObjectLib.objGet(StdLib.this(), "chapters")),
-      StdLib.let(
-        "chapter",
-        ListLib.listGet(StdLib.var("chapters"), StdLib.var("index")),
-      ),
+      StdLib.let("chapter", ListLib.listGet(StdLib.var("chapters"), StdLib.var("index"))),
       StdLib.if(
         StdLib.var("chapter"),
         CoreLib.call(
@@ -134,15 +131,9 @@ describe("Book Item Scripting", () => {
       StdLib.let("chapters", ObjectLib.objGet(StdLib.this(), "chapters")),
       StdLib.let("newChapter", {}),
       ObjectLib.objSet(StdLib.var("newChapter"), "title", StdLib.var("title")),
-      ObjectLib.objSet(
-        StdLib.var("newChapter"),
-        "content",
-        StdLib.var("content"),
-      ),
+      ObjectLib.objSet(StdLib.var("newChapter"), "content", StdLib.var("content")),
       ListLib.listPush(StdLib.var("chapters"), StdLib.var("newChapter")),
-      CoreLib.set_entity(
-        ObjectLib.objSet(StdLib.this(), "chapters", StdLib.var("chapters")),
-      ),
+      CoreLib.set_entity(ObjectLib.objSet(StdLib.this(), "chapters", StdLib.var("chapters"))),
       CoreLib.call(StdLib.caller(), "tell", "Chapter added."),
     );
 
@@ -176,9 +167,7 @@ describe("Book Item Scripting", () => {
                 StringLib.strLower(StdLib.var("query")),
               ),
               StringLib.strIncludes(
-                StringLib.strLower(
-                  ObjectLib.objGet(StdLib.var("c"), "content"),
-                ),
+                StringLib.strLower(ObjectLib.objGet(StdLib.var("c"), "content")),
                 StringLib.strLower(StdLib.var("query")),
               ),
             ),

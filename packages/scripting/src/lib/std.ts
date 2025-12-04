@@ -305,13 +305,7 @@ export const typeof_ = defineOpcode<
   handler: ([val], _ctx) => {
     if (Array.isArray(val)) return "array";
     if (val === null) return "null";
-    return typeof val as
-      | "string"
-      | "number"
-      | "boolean"
-      | "object"
-      | "null"
-      | "array";
+    return typeof val as "string" | "number" | "boolean" | "object" | "null" | "array";
   },
 });
 export { typeof_ as typeof };
@@ -519,10 +513,7 @@ export { tryOp as try };
 /**
  * Creates a lambda (anonymous function).
  */
-export const lambda = defineOpcode<
-  [ScriptRaw<readonly string[]>, unknown],
-  any
->("lambda", {
+export const lambda = defineOpcode<[ScriptRaw<readonly string[]>, unknown], any>("lambda", {
   metadata: {
     label: "Lambda",
     category: "func",
@@ -571,9 +562,7 @@ export const apply = defineOpcode<[unknown, ...unknown[]], any>("apply", {
       throw new ScriptError("apply: func not found");
     }
     if ((func as any).type !== "lambda") {
-      throw new ScriptError(
-        `apply: func must be a lambda, got ${JSON.stringify(func)}`,
-      );
+      throw new ScriptError(`apply: func must be a lambda, got ${JSON.stringify(func)}`);
     }
 
     const lambdaFunc = func as any;

@@ -8,13 +8,7 @@ import {
   ListLib,
 } from "@viwo/scripting";
 import { Entity } from "@viwo/shared/jsonrpc";
-import {
-  createEntity,
-  getEntity,
-  addVerb,
-  updateEntity,
-  createCapability,
-} from "./repo";
+import { createEntity, getEntity, addVerb, updateEntity, createCapability } from "./repo";
 import { db } from ".";
 import * as CoreLib from "./runtime/lib/core";
 import * as KernelLib from "./runtime/lib/kernel";
@@ -45,9 +39,7 @@ describe("Mailbox Verification", () => {
 
     // Get System Entity
     const systemRes = db
-      .query<Entity, []>(
-        "SELECT * FROM entities WHERE json_extract(props, '$.name') = 'System'",
-      )
+      .query<Entity, []>("SELECT * FROM entities WHERE json_extract(props, '$.name') = 'System'")
       .get();
     if (!systemRes) throw new Error("System entity not found");
     system = getEntity(systemRes.id)!;
@@ -124,10 +116,7 @@ describe("Mailbox Verification", () => {
             "cap",
             KernelLib.getCapability(
               "entity.control",
-              ObjectLib.objNew([
-                "target_id",
-                ObjectLib.objGet(StdLib.var("item"), "id"),
-              ]),
+              ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.var("item"), "id")]),
             ),
           ),
           CoreLib.set_entity(
@@ -177,10 +166,7 @@ describe("Mailbox Verification", () => {
         KernelLib.hasCapability(
           StdLib.caller(),
           "entity.control",
-          ObjectLib.objNew([
-            "target_id",
-            ObjectLib.objGet(StdLib.var("target"), "id"),
-          ]),
+          ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.var("target"), "id")]),
         ),
         ObjectLib.objGet(StdLib.var("target"), "contents", ListLib.listNew()),
         ListLib.listNew(),
@@ -189,11 +175,7 @@ describe("Mailbox Verification", () => {
 
     addVerb(system.id, "look_at", lookVerb);
 
-    const callLook = CoreLib.call(
-      CoreLib.entity(system.id),
-      "look_at",
-      CoreLib.entity(mailbox.id),
-    );
+    const callLook = CoreLib.call(CoreLib.entity(system.id), "look_at", CoreLib.entity(mailbox.id));
 
     const ctx = createScriptContext({
       caller: sender,
@@ -212,10 +194,7 @@ describe("Mailbox Verification", () => {
         KernelLib.hasCapability(
           StdLib.caller(),
           "entity.control",
-          ObjectLib.objNew([
-            "target_id",
-            ObjectLib.objGet(StdLib.var("target"), "id"),
-          ]),
+          ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.var("target"), "id")]),
         ),
         ObjectLib.objGet(StdLib.var("target"), "contents", ListLib.listNew()),
         ListLib.listNew(),
@@ -224,11 +203,7 @@ describe("Mailbox Verification", () => {
 
     addVerb(system.id, "look_at", lookVerb);
 
-    const callLook = CoreLib.call(
-      CoreLib.entity(system.id),
-      "look_at",
-      CoreLib.entity(mailbox.id),
-    );
+    const callLook = CoreLib.call(CoreLib.entity(system.id), "look_at", CoreLib.entity(mailbox.id));
 
     const ctx = createScriptContext({
       caller: receiver,

@@ -85,30 +85,20 @@ interface Capability {
       const name = parts[parts.length - 1];
       current["_funcs"] ??= [];
 
-      const params =
-        op.parameters?.map((p) => `${p.name}: ${p.type}`).join(", ") ?? "";
+      const params = op.parameters?.map((p) => `${p.name}: ${p.type}`).join(", ") ?? "";
       const ret = op.returnType ?? "any";
-      const sanitizedName = RESERVED_TYPESCRIPT_KEYWORDS.has(name!)
-        ? `${name}_`
-        : name;
-      const generics = op.genericParameters?.length
-        ? `<${op.genericParameters.join(", ")}>`
-        : "";
+      const sanitizedName = RESERVED_TYPESCRIPT_KEYWORDS.has(name!) ? `${name}_` : name;
+      const generics = op.genericParameters?.length ? `<${op.genericParameters.join(", ")}>` : "";
 
-      current["_funcs"].push(
-        `function ${sanitizedName}${generics}(${params}): ${ret};`,
-      );
+      current["_funcs"].push(`function ${sanitizedName}${generics}(${params}): ${ret};`);
     } else {
       // Global function
-      const params =
-        op.parameters?.map((p) => `${p.name}: ${p.type}`).join(", ") ?? "";
+      const params = op.parameters?.map((p) => `${p.name}: ${p.type}`).join(", ") ?? "";
       const ret = op.returnType ?? "any";
       const sanitizedOpcode = RESERVED_TYPESCRIPT_KEYWORDS.has(op.opcode)
         ? `${op.opcode}_`
         : op.opcode;
-      const generics = op.genericParameters?.length
-        ? `<${op.genericParameters.join(", ")}>`
-        : "";
+      const generics = op.genericParameters?.length ? `<${op.genericParameters.join(", ")}>` : "";
       definitions += `declare function ${sanitizedOpcode}${generics}(${params}): ${ret};\n`;
     }
   }
@@ -133,11 +123,7 @@ interface Capability {
     return output;
   }
 
-  function renderNamespaceContent(
-    name: string,
-    content: any,
-    indent: string,
-  ): string {
+  function renderNamespaceContent(name: string, content: any, indent: string): string {
     let output = `${indent}namespace ${name} {\n`;
     const innerIndent = indent + "  ";
 

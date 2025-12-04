@@ -82,10 +82,7 @@ async function getModel(modelSpec?: string) {
 
     if (!providerFn) {
       // Try camelCase for hyphenated names
-      const camel = providerName.replace(
-        /-([a-z])/g,
-        (g) => g[1]?.toUpperCase() ?? "",
-      );
+      const camel = providerName.replace(/-([a-z])/g, (g) => g[1]?.toUpperCase() ?? "");
       providerFn = mod[camel];
     }
 
@@ -213,13 +210,8 @@ export class AiPlugin implements Plugin {
       return;
     }
 
-    const roomItems = this.getResolvedRoom(
-      ctx,
-      playerEntity["location"] as number,
-    )?.contents;
-    const target = roomItems?.find(
-      (e: any) => e.name.toLowerCase() === targetName.toLowerCase(),
-    );
+    const roomItems = this.getResolvedRoom(ctx, playerEntity["location"] as number)?.contents;
+    const target = roomItems?.find((e: any) => e.name.toLowerCase() === targetName.toLowerCase());
 
     if (!target) {
       ctx.send("message", `You don't see '${targetName}' here.`);
@@ -301,10 +293,7 @@ Keep your response short and in character.`,
           adjectives: data.adjectives,
           custom_css: data.custom_css,
         });
-        const room = this.getResolvedRoom(
-          ctx,
-          playerEntity["location"] as number,
-        );
+        const room = this.getResolvedRoom(ctx, playerEntity["location"] as number);
         if (room) {
           ctx.send("room_id", { roomId: room.id });
           ctx.send("message", `Created ${data.name}.`);
@@ -365,13 +354,9 @@ Keep your response short and in character.`,
         targetId = playerEntity["location"] as number;
       } else {
         // Find item
-        const roomItems = this.getResolvedRoom(
-          ctx,
-          playerEntity["location"] as number,
-        )?.contents;
+        const roomItems = this.getResolvedRoom(ctx, playerEntity["location"] as number)?.contents;
         const item = roomItems?.find(
-          (item) =>
-            (item["name"] as string).toLowerCase() === targetName.toLowerCase(),
+          (item) => (item["name"] as string).toLowerCase() === targetName.toLowerCase(),
         );
         if (item) {
           targetId = item.id;

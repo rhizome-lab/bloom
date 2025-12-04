@@ -78,11 +78,7 @@ describe("Repo", () => {
 
   test("getVerb", () => {
     const entity = createEntity({ name: "Scripted" });
-    addVerb(
-      entity,
-      "jump",
-      CoreLib.call(StdLib.caller(), "tell", "You jumped"),
-    );
+    addVerb(entity, "jump", CoreLib.call(StdLib.caller(), "tell", "You jumped"));
 
     const verb = getVerb(entity, "jump");
     expect(verb).not.toBeNull();

@@ -1,25 +1,9 @@
-import {
-  createEntity,
-  addVerb,
-  updateVerb,
-  getVerb,
-  createCapability,
-} from "../repo";
-import {
-  StdLib,
-  ObjectLib,
-  StringLib,
-  ListLib,
-  BooleanLib,
-} from "@viwo/scripting";
+import { createEntity, addVerb, updateVerb, getVerb, createCapability } from "../repo";
+import { StdLib, ObjectLib, StringLib, ListLib, BooleanLib } from "@viwo/scripting";
 import * as CoreLib from "../runtime/lib/core";
 import * as KernelLib from "../runtime/lib/kernel";
 
-export function seedHotel(
-  lobbyId: number,
-  voidId: number,
-  entityBaseId: number,
-) {
+export function seedHotel(lobbyId: number, voidId: number, entityBaseId: number) {
   // 7. Hotel Implementation
   // 7. Hotel Implementation
   const exitPrototypeId = 1;
@@ -29,8 +13,7 @@ export function seedHotel(
     {
       name: "Grand Hotel Lobby",
       location: voidId,
-      description:
-        "The lavish lobby of the Grand Hotel. The elevator is to the side.",
+      description: "The lavish lobby of the Grand Hotel. The elevator is to the side.",
     },
     entityBaseId,
   );
@@ -75,19 +58,12 @@ export function seedHotel(
     "leave",
     StdLib.seq(
       CoreLib.call(StdLib.caller(), "move", hotelLobbyId), // Move player out first
-      CoreLib.call(
-        StdLib.caller(),
-        "tell",
-        "You leave the room and it fades away behind you.",
-      ),
+      CoreLib.call(StdLib.caller(), "tell", "You leave the room and it fades away behind you."),
       StdLib.let(
         "cap",
         KernelLib.getCapability(
           "entity.control",
-          ObjectLib.objNew([
-            "target_id",
-            ObjectLib.objGet(StdLib.this(), "id"),
-          ]),
+          ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
         ),
       ),
       CoreLib.destroy(StdLib.var("cap"), StdLib.this()), // Destroy the room
@@ -100,23 +76,12 @@ export function seedHotel(
     StdLib.seq(
       StdLib.let("lobbyId", ObjectLib.objGet(StdLib.this(), "lobby_id")),
       CoreLib.call(StdLib.caller(), "move", StdLib.var("lobbyId")),
-      CoreLib.call(
-        StdLib.caller(),
-        "tell",
-        "You leave the room and it fades away behind you.",
-      ),
+      CoreLib.call(StdLib.caller(), "tell", "You leave the room and it fades away behind you."),
       // Destroy contents (furnishings)
-      StdLib.let(
-        "freshThis",
-        CoreLib.entity(ObjectLib.objGet(StdLib.this(), "id")),
-      ),
+      StdLib.let("freshThis", CoreLib.entity(ObjectLib.objGet(StdLib.this(), "id"))),
       StdLib.let(
         "contents",
-        ObjectLib.objGet(
-          StdLib.var("freshThis"),
-          "contents",
-          ListLib.listNew(),
-        ),
+        ObjectLib.objGet(StdLib.var("freshThis"), "contents", ListLib.listNew()),
       ),
       StdLib.for(
         "itemId",
@@ -130,10 +95,7 @@ export function seedHotel(
                 "itemCap",
                 KernelLib.getCapability(
                   "entity.control",
-                  ObjectLib.objNew([
-                    "target_id",
-                    ObjectLib.objGet(StdLib.var("item"), "id"),
-                  ]),
+                  ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.var("item"), "id")]),
                 ),
               ),
               CoreLib.destroy(StdLib.var("itemCap"), StdLib.var("item")),
@@ -145,10 +107,7 @@ export function seedHotel(
         "cap",
         KernelLib.getCapability(
           "entity.control",
-          ObjectLib.objNew([
-            "target_id",
-            ObjectLib.objGet(StdLib.this(), "id"),
-          ]),
+          ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
         ),
       ),
       CoreLib.destroy(StdLib.var("cap"), StdLib.this()),
@@ -212,18 +171,11 @@ export function seedHotel(
     StdLib.seq(
       StdLib.let("floor", StdLib.arg(0)),
       ObjectLib.objSet(StdLib.this(), "current_floor", StdLib.var("floor")),
-      CoreLib.set_entity(
-        KernelLib.getCapability("entity.control"),
-        StdLib.this(),
-      ),
+      CoreLib.set_entity(KernelLib.getCapability("entity.control"), StdLib.this()),
       CoreLib.call(
         StdLib.caller(),
         "tell",
-        StringLib.strConcat(
-          "The elevator hums and moves to floor ",
-          StdLib.var("floor"),
-          ".",
-        ),
+        StringLib.strConcat("The elevator hums and moves to floor ", StdLib.var("floor"), "."),
       ),
     ),
   );
@@ -240,11 +192,7 @@ export function seedHotel(
         BooleanLib.eq(StdLib.var("floor"), 1),
         StdLib.seq(
           CoreLib.call(StdLib.caller(), "move", hotelLobbyId),
-          CoreLib.call(
-            StdLib.caller(),
-            "tell",
-            "The doors open to the Grand Lobby.",
-          ),
+          CoreLib.call(StdLib.caller(), "tell", "The doors open to the Grand Lobby."),
         ),
         StdLib.seq(
           // Create Ephemeral Floor Lobby
@@ -266,22 +214,11 @@ export function seedHotel(
               ". West and East wings extend from here.",
             ),
           ),
-          ObjectLib.objSet(
-            StdLib.var("lobbyData"),
-            "floor",
-            StdLib.var("floor"),
-          ),
+          ObjectLib.objSet(StdLib.var("lobbyData"), "floor", StdLib.var("floor")),
           ObjectLib.objSet(StdLib.var("lobbyData"), "elevator_id", elevatorId),
-          StdLib.let(
-            "lobbyId",
-            CoreLib.create(StdLib.var("createCap"), StdLib.var("lobbyData")),
-          ),
+          StdLib.let("lobbyId", CoreLib.create(StdLib.var("createCap"), StdLib.var("lobbyData"))),
           StdLib.let("filter", ObjectLib.objNew()),
-          ObjectLib.objSet(
-            StdLib.var("filter"),
-            "target_id",
-            StdLib.var("lobbyId"),
-          ),
+          ObjectLib.objSet(StdLib.var("filter"), "target_id", StdLib.var("lobbyId")),
           CoreLib.set_prototype(
             KernelLib.getCapability("entity.control", StdLib.var("filter")),
             CoreLib.entity(StdLib.var("lobbyId")),
@@ -289,10 +226,7 @@ export function seedHotel(
           ),
           // Give capabilities to Lobby
           // 1. sys.create
-          StdLib.let(
-            "lobbyCreateCap",
-            KernelLib.delegate(StdLib.var("createCap"), {}),
-          ),
+          StdLib.let("lobbyCreateCap", KernelLib.delegate(StdLib.var("createCap"), {})),
           KernelLib.giveCapability(
             StdLib.var("lobbyCreateCap"),
             CoreLib.entity(StdLib.var("lobbyId")),
@@ -300,10 +234,7 @@ export function seedHotel(
           // 2. entity.control (self)
           StdLib.let(
             "lobbyControlCap",
-            KernelLib.delegate(
-              KernelLib.getCapability("entity.control", StdLib.var("filter")),
-              {},
-            ),
+            KernelLib.delegate(KernelLib.getCapability("entity.control", StdLib.var("filter")), {}),
           ),
           KernelLib.giveCapability(
             StdLib.var("lobbyControlCap"),
@@ -314,11 +245,7 @@ export function seedHotel(
           CoreLib.call(
             StdLib.caller(),
             "tell",
-            StringLib.strConcat(
-              "The doors open to Floor ",
-              StdLib.var("floor"),
-              ".",
-            ),
+            StringLib.strConcat("The doors open to Floor ", StdLib.var("floor"), "."),
           ),
         ),
       ),
@@ -339,10 +266,7 @@ export function seedHotel(
         "cap",
         KernelLib.getCapability(
           "entity.control",
-          ObjectLib.objNew([
-            "target_id",
-            ObjectLib.objGet(StdLib.this(), "id"),
-          ]),
+          ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
         ),
       ),
       CoreLib.destroy(StdLib.var("cap"), StdLib.this()),
@@ -371,15 +295,8 @@ export function seedHotel(
       ),
       ObjectLib.objSet(StdLib.var("wingData"), "floor", StdLib.var("floor")),
       ObjectLib.objSet(StdLib.var("wingData"), "side", "West"),
-      ObjectLib.objSet(
-        StdLib.var("wingData"),
-        "return_id",
-        ObjectLib.objGet(StdLib.this(), "id"),
-      ), // Return to THIS lobby
-      StdLib.let(
-        "wingId",
-        CoreLib.create(StdLib.var("createCap"), StdLib.var("wingData")),
-      ),
+      ObjectLib.objSet(StdLib.var("wingData"), "return_id", ObjectLib.objGet(StdLib.this(), "id")), // Return to THIS lobby
+      StdLib.let("wingId", CoreLib.create(StdLib.var("createCap"), StdLib.var("wingData"))),
       StdLib.let("filter", ObjectLib.objNew()),
       ObjectLib.objSet(StdLib.var("filter"), "target_id", StdLib.var("wingId")),
       CoreLib.set_prototype(
@@ -389,26 +306,14 @@ export function seedHotel(
       ),
       // Give capabilities to Wing
       // 1. sys.create
-      StdLib.let(
-        "wingCreateCap",
-        KernelLib.delegate(StdLib.var("createCap"), {}),
-      ),
-      KernelLib.giveCapability(
-        StdLib.var("wingCreateCap"),
-        CoreLib.entity(StdLib.var("wingId")),
-      ),
+      StdLib.let("wingCreateCap", KernelLib.delegate(StdLib.var("createCap"), {})),
+      KernelLib.giveCapability(StdLib.var("wingCreateCap"), CoreLib.entity(StdLib.var("wingId"))),
       // 2. entity.control (self)
       StdLib.let(
         "wingControlCap",
-        KernelLib.delegate(
-          KernelLib.getCapability("entity.control", StdLib.var("filter")),
-          {},
-        ),
+        KernelLib.delegate(KernelLib.getCapability("entity.control", StdLib.var("filter")), {}),
       ),
-      KernelLib.giveCapability(
-        StdLib.var("wingControlCap"),
-        CoreLib.entity(StdLib.var("wingId")),
-      ),
+      KernelLib.giveCapability(StdLib.var("wingControlCap"), CoreLib.entity(StdLib.var("wingId"))),
 
       CoreLib.call(StdLib.caller(), "move", StdLib.var("wingId")),
       CoreLib.call(StdLib.caller(), "tell", "You walk down the West Wing."),
@@ -437,15 +342,8 @@ export function seedHotel(
       ),
       ObjectLib.objSet(StdLib.var("wingData"), "floor", StdLib.var("floor")),
       ObjectLib.objSet(StdLib.var("wingData"), "side", "East"),
-      ObjectLib.objSet(
-        StdLib.var("wingData"),
-        "return_id",
-        ObjectLib.objGet(StdLib.this(), "id"),
-      ),
-      StdLib.let(
-        "wingId",
-        CoreLib.create(StdLib.var("createCap"), StdLib.var("wingData")),
-      ),
+      ObjectLib.objSet(StdLib.var("wingData"), "return_id", ObjectLib.objGet(StdLib.this(), "id")),
+      StdLib.let("wingId", CoreLib.create(StdLib.var("createCap"), StdLib.var("wingData"))),
       StdLib.let("filter", ObjectLib.objNew()),
       ObjectLib.objSet(StdLib.var("filter"), "target_id", StdLib.var("wingId")),
       CoreLib.set_prototype(
@@ -455,26 +353,14 @@ export function seedHotel(
       ),
       // Give capabilities to Wing
       // 1. sys.create
-      StdLib.let(
-        "wingCreateCap",
-        KernelLib.delegate(StdLib.var("createCap"), {}),
-      ),
-      KernelLib.giveCapability(
-        StdLib.var("wingCreateCap"),
-        CoreLib.entity(StdLib.var("wingId")),
-      ),
+      StdLib.let("wingCreateCap", KernelLib.delegate(StdLib.var("createCap"), {})),
+      KernelLib.giveCapability(StdLib.var("wingCreateCap"), CoreLib.entity(StdLib.var("wingId"))),
       // 2. entity.control (self)
       StdLib.let(
         "wingControlCap",
-        KernelLib.delegate(
-          KernelLib.getCapability("entity.control", StdLib.var("filter")),
-          {},
-        ),
+        KernelLib.delegate(KernelLib.getCapability("entity.control", StdLib.var("filter")), {}),
       ),
-      KernelLib.giveCapability(
-        StdLib.var("wingControlCap"),
-        CoreLib.entity(StdLib.var("wingId")),
-      ),
+      KernelLib.giveCapability(StdLib.var("wingControlCap"), CoreLib.entity(StdLib.var("wingId"))),
 
       CoreLib.call(StdLib.caller(), "move", StdLib.var("wingId")),
       CoreLib.call(StdLib.caller(), "tell", "You walk down the East Wing."),
@@ -514,10 +400,7 @@ export function seedHotel(
         "cap",
         KernelLib.getCapability(
           "entity.control",
-          ObjectLib.objNew([
-            "target_id",
-            ObjectLib.objGet(StdLib.this(), "id"),
-          ]),
+          ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
         ),
       ),
       CoreLib.destroy(StdLib.var("cap"), StdLib.this()),
@@ -541,11 +424,7 @@ export function seedHotel(
             BooleanLib.gt(StdLib.var("roomNum"), 50),
           ),
           StdLib.seq(
-            CoreLib.call(
-              StdLib.caller(),
-              "tell",
-              "Room numbers in the West Wing are 1-50.",
-            ),
+            CoreLib.call(StdLib.caller(), "tell", "Room numbers in the West Wing are 1-50."),
             StdLib.set("valid", false),
           ),
         ),
@@ -558,11 +437,7 @@ export function seedHotel(
             BooleanLib.gt(StdLib.var("roomNum"), 99),
           ),
           StdLib.seq(
-            CoreLib.call(
-              StdLib.caller(),
-              "tell",
-              "Room numbers in the East Wing are 51-99.",
-            ),
+            CoreLib.call(StdLib.caller(), "tell", "Room numbers in the East Wing are 51-99."),
             StdLib.set("valid", false),
           ),
         ),
@@ -580,26 +455,15 @@ export function seedHotel(
           ),
           ObjectLib.objSet(StdLib.var("roomData"), "kind", "ROOM"),
 
-          ObjectLib.objSet(
-            StdLib.var("roomData"),
-            "description",
-            "A standard hotel room.",
-          ),
+          ObjectLib.objSet(StdLib.var("roomData"), "description", "A standard hotel room."),
           ObjectLib.objSet(
             StdLib.var("roomData"),
             "lobby_id",
             ObjectLib.objGet(StdLib.this(), "id"),
           ), // Return to THIS wing
-          StdLib.let(
-            "roomId",
-            CoreLib.create(StdLib.var("createCap"), StdLib.var("roomData")),
-          ),
+          StdLib.let("roomId", CoreLib.create(StdLib.var("createCap"), StdLib.var("roomData"))),
           StdLib.let("roomFilter", ObjectLib.objNew()),
-          ObjectLib.objSet(
-            StdLib.var("roomFilter"),
-            "target_id",
-            StdLib.var("roomId"),
-          ),
+          ObjectLib.objSet(StdLib.var("roomFilter"), "target_id", StdLib.var("roomId")),
           CoreLib.set_prototype(
             KernelLib.getCapability("entity.control", StdLib.var("roomFilter")),
             CoreLib.entity(StdLib.var("roomId")),
@@ -609,21 +473,10 @@ export function seedHotel(
           StdLib.let("bedData", ObjectLib.objNew()),
           ObjectLib.objSet(StdLib.var("bedData"), "name", "Bed"),
           ObjectLib.objSet(StdLib.var("bedData"), "kind", "ITEM"),
-          ObjectLib.objSet(
-            StdLib.var("bedData"),
-            "location",
-            StdLib.var("roomId"),
-          ),
-          StdLib.let(
-            "bedId",
-            CoreLib.create(StdLib.var("createCap"), StdLib.var("bedData")),
-          ),
+          ObjectLib.objSet(StdLib.var("bedData"), "location", StdLib.var("roomId")),
+          StdLib.let("bedId", CoreLib.create(StdLib.var("createCap"), StdLib.var("bedData"))),
           StdLib.let("bedFilter", ObjectLib.objNew()),
-          ObjectLib.objSet(
-            StdLib.var("bedFilter"),
-            "target_id",
-            StdLib.var("bedId"),
-          ),
+          ObjectLib.objSet(StdLib.var("bedFilter"), "target_id", StdLib.var("bedId")),
           CoreLib.set_prototype(
             KernelLib.getCapability("entity.control", StdLib.var("bedFilter")),
             CoreLib.entity(StdLib.var("bedId")),
@@ -636,21 +489,10 @@ export function seedHotel(
           StdLib.let("lampData", ObjectLib.objNew()),
           ObjectLib.objSet(StdLib.var("lampData"), "name", "Lamp"),
           ObjectLib.objSet(StdLib.var("lampData"), "kind", "ITEM"),
-          ObjectLib.objSet(
-            StdLib.var("lampData"),
-            "location",
-            StdLib.var("roomId"),
-          ),
-          StdLib.let(
-            "lampId",
-            CoreLib.create(StdLib.var("createCap"), StdLib.var("lampData")),
-          ),
+          ObjectLib.objSet(StdLib.var("lampData"), "location", StdLib.var("roomId")),
+          StdLib.let("lampId", CoreLib.create(StdLib.var("createCap"), StdLib.var("lampData"))),
           StdLib.let("lampFilter", ObjectLib.objNew()),
-          ObjectLib.objSet(
-            StdLib.var("lampFilter"),
-            "target_id",
-            StdLib.var("lampId"),
-          ),
+          ObjectLib.objSet(StdLib.var("lampFilter"), "target_id", StdLib.var("lampId")),
           CoreLib.set_prototype(
             KernelLib.getCapability("entity.control", StdLib.var("lampFilter")),
             CoreLib.entity(StdLib.var("lampId")),
@@ -663,34 +505,17 @@ export function seedHotel(
           StdLib.let("chairData", ObjectLib.objNew()),
           ObjectLib.objSet(StdLib.var("chairData"), "name", "Chair"),
           ObjectLib.objSet(StdLib.var("chairData"), "kind", "ITEM"),
-          ObjectLib.objSet(
-            StdLib.var("chairData"),
-            "location",
-            StdLib.var("roomId"),
-          ),
-          StdLib.let(
-            "chairId",
-            CoreLib.create(StdLib.var("createCap"), StdLib.var("chairData")),
-          ),
+          ObjectLib.objSet(StdLib.var("chairData"), "location", StdLib.var("roomId")),
+          StdLib.let("chairId", CoreLib.create(StdLib.var("createCap"), StdLib.var("chairData"))),
           StdLib.let("chairFilter", ObjectLib.objNew()),
-          ObjectLib.objSet(
-            StdLib.var("chairFilter"),
-            "target_id",
-            StdLib.var("chairId"),
-          ),
+          ObjectLib.objSet(StdLib.var("chairFilter"), "target_id", StdLib.var("chairId")),
           CoreLib.set_prototype(
-            KernelLib.getCapability(
-              "entity.control",
-              StdLib.var("chairFilter"),
-            ),
+            KernelLib.getCapability("entity.control", StdLib.var("chairFilter")),
             CoreLib.entity(StdLib.var("chairId")),
             chairProtoId,
           ),
           KernelLib.giveCapability(
-            KernelLib.getCapability(
-              "entity.control",
-              StdLib.var("chairFilter"),
-            ),
+            KernelLib.getCapability("entity.control", StdLib.var("chairFilter")),
             CoreLib.entity(StdLib.var("roomId")),
           ),
 
@@ -700,11 +525,7 @@ export function seedHotel(
           ListLib.listPush(StdLib.var("contents"), StdLib.var("bedId")),
           ListLib.listPush(StdLib.var("contents"), StdLib.var("lampId")),
           ListLib.listPush(StdLib.var("contents"), StdLib.var("chairId")),
-          ObjectLib.objSet(
-            StdLib.var("room"),
-            "contents",
-            StdLib.var("contents"),
-          ),
+          ObjectLib.objSet(StdLib.var("room"), "contents", StdLib.var("contents")),
           CoreLib.set_entity(
             KernelLib.getCapability("entity.control", StdLib.var("roomFilter")),
             StdLib.var("room"),
@@ -712,10 +533,7 @@ export function seedHotel(
 
           KernelLib.giveCapability(
             KernelLib.delegate(
-              KernelLib.getCapability(
-                "entity.control",
-                StdLib.var("roomFilter"),
-              ),
+              KernelLib.getCapability("entity.control", StdLib.var("roomFilter")),
               {},
             ),
             CoreLib.entity(StdLib.var("roomId")),
@@ -758,11 +576,7 @@ export function seedHotel(
       ),
       StdLib.if(
         StringLib.strIncludes(StringLib.strLower(StdLib.var("msg")), "hello"),
-        CoreLib.call(
-          StdLib.caller(),
-          "say",
-          "Welcome to the Grand Hotel! How may I help you?",
-        ),
+        CoreLib.call(StdLib.caller(), "say", "Welcome to the Grand Hotel! How may I help you?"),
       ),
     ),
   );

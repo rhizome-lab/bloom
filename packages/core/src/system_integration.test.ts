@@ -94,10 +94,7 @@ describe("System Integration Security", () => {
   test("Net.http.get with capability", async () => {
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
     const response = await evaluate(
-      NetLib.netHttpGet(
-        KernelLib.getCapability("net.http.read"),
-        "https://api.example.com/data",
-      ),
+      NetLib.netHttpGet(KernelLib.getCapability("net.http.read"), "https://api.example.com/data"),
       ctx,
     );
     expect(response).toBe("http response");

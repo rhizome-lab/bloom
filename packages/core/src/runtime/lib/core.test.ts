@@ -202,10 +202,7 @@ createLibraryTester(Core, "Core Library", (test) => {
     const fakeCap = { __brand: "Capability" as const, id: crypto.randomUUID() };
 
     expect(() =>
-      evaluate(
-        Core.sudo(fakeCap, { id: 101 }, "get_dynamic", ListLib.listNew()),
-        userCtx,
-      ),
+      evaluate(Core.sudo(fakeCap, { id: 101 }, "get_dynamic", ListLib.listNew()), userCtx),
     ).toThrow("Invalid capability"); // Or "Capability not owned"
 
     // 2. Allow if System (ID 3) with valid cap
@@ -217,10 +214,7 @@ createLibraryTester(Core, "Core Library", (test) => {
       send: () => {},
     });
     expect(
-      evaluate(
-        Core.sudo(sysSudoCap, { id: 101 }, "get_dynamic", ListLib.listNew()),
-        systemCtx,
-      ),
+      evaluate(Core.sudo(sysSudoCap, { id: 101 }, "get_dynamic", ListLib.listNew()), systemCtx),
     ).toBe("resolved_value");
 
     // 3. Allow if Bot (ID 4) with valid cap
@@ -232,10 +226,7 @@ createLibraryTester(Core, "Core Library", (test) => {
       send: () => {},
     });
     expect(
-      evaluate(
-        Core.sudo(botSudoCap, { id: 101 }, "get_dynamic", ListLib.listNew()),
-        botCtx,
-      ),
+      evaluate(Core.sudo(botSudoCap, { id: 101 }, "get_dynamic", ListLib.listNew()), botCtx),
     ).toBe("resolved_value");
 
     // 4. Verify message forwarding for Bot
@@ -249,10 +240,7 @@ createLibraryTester(Core, "Core Library", (test) => {
       },
     });
 
-    evaluate(
-      Core.sudo(botSudoCap, { id: 103 }, "say_hello", ListLib.listNew()),
-      botForwardCtx,
-    );
+    evaluate(Core.sudo(botSudoCap, { id: 103 }, "say_hello", ListLib.listNew()), botForwardCtx);
 
     expect(sentMessage).toEqual({
       type: "forward",

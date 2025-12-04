@@ -16,10 +16,7 @@ export const strLen = StringLib<[string], number>("str.len", {
 });
 
 /** Concatenates multiple strings into one. */
-export const strConcat = StringLib<
-  (string | number | boolean | null)[],
-  string
->("str.concat", {
+export const strConcat = StringLib<(string | number | boolean | null)[], string>("str.concat", {
   metadata: {
     label: "Concat",
     category: "string",
@@ -59,31 +56,28 @@ export const strSplit = StringLib<[string, string], string[]>("str.split", {
 });
 
 /** Extracts a section of a string and returns it as a new string. */
-export const strSlice = StringLib<[string, number, number?], string>(
-  "str.slice",
-  {
-    metadata: {
-      label: "Slice",
-      category: "string",
-      description: "Extract part of string",
-      slots: [
-        { name: "String", type: "string" },
-        { name: "Start", type: "number" },
-        { name: "End", type: "number", default: null },
-      ],
-      parameters: [
-        { name: "string", type: "string" },
-        { name: "start", type: "number" },
-        { name: "end", type: "number", optional: true },
-      ],
-      returnType: "string",
-    },
-    handler: ([str, start, endExpr], _ctx) => {
-      const end = endExpr !== undefined ? endExpr : str.length;
-      return str.slice(start, end);
-    },
+export const strSlice = StringLib<[string, number, number?], string>("str.slice", {
+  metadata: {
+    label: "Slice",
+    category: "string",
+    description: "Extract part of string",
+    slots: [
+      { name: "String", type: "string" },
+      { name: "Start", type: "number" },
+      { name: "End", type: "number", default: null },
+    ],
+    parameters: [
+      { name: "string", type: "string" },
+      { name: "start", type: "number" },
+      { name: "end", type: "number", optional: true },
+    ],
+    returnType: "string",
   },
-);
+  handler: ([str, start, endExpr], _ctx) => {
+    const end = endExpr !== undefined ? endExpr : str.length;
+    return str.slice(start, end);
+  },
+});
 
 /** Converts a string to uppercase. */
 export const strUpper = StringLib<[string], string>("str.upper", {
@@ -131,54 +125,48 @@ export const strTrim = StringLib<[string], string>("str.trim", {
 });
 
 /** Replaces occurrences of a substring with another string. */
-export const strReplace = StringLib<[string, string, string], string>(
-  "str.replace",
-  {
-    metadata: {
-      label: "Replace",
-      category: "string",
-      description: "Replace substring",
-      slots: [
-        { name: "String", type: "string" },
-        { name: "Search", type: "string" },
-        { name: "Replace", type: "string" },
-      ],
-      parameters: [
-        { name: "string", type: "string" },
-        { name: "search", type: "string" },
-        { name: "replace", type: "string" },
-      ],
-      returnType: "string",
-    },
-    handler: ([str, search, replace], _ctx) => {
-      return str.replace(search, replace);
-    },
+export const strReplace = StringLib<[string, string, string], string>("str.replace", {
+  metadata: {
+    label: "Replace",
+    category: "string",
+    description: "Replace substring",
+    slots: [
+      { name: "String", type: "string" },
+      { name: "Search", type: "string" },
+      { name: "Replace", type: "string" },
+    ],
+    parameters: [
+      { name: "string", type: "string" },
+      { name: "search", type: "string" },
+      { name: "replace", type: "string" },
+    ],
+    returnType: "string",
   },
-);
+  handler: ([str, search, replace], _ctx) => {
+    return str.replace(search, replace);
+  },
+});
 
 /** Checks if a string contains another string. */
-export const strIncludes = StringLib<[string, string], boolean>(
-  "str.includes",
-  {
-    metadata: {
-      label: "Includes",
-      category: "string",
-      description: "Check if string includes substring",
-      slots: [
-        { name: "String", type: "string" },
-        { name: "Search", type: "string" },
-      ],
-      parameters: [
-        { name: "string", type: "string" },
-        { name: "search", type: "string" },
-      ],
-      returnType: "boolean",
-    },
-    handler: ([str, search], _ctx) => {
-      return str.includes(search);
-    },
+export const strIncludes = StringLib<[string, string], boolean>("str.includes", {
+  metadata: {
+    label: "Includes",
+    category: "string",
+    description: "Check if string includes substring",
+    slots: [
+      { name: "String", type: "string" },
+      { name: "Search", type: "string" },
+    ],
+    parameters: [
+      { name: "string", type: "string" },
+      { name: "search", type: "string" },
+    ],
+    returnType: "boolean",
   },
-);
+  handler: ([str, search], _ctx) => {
+    return str.includes(search);
+  },
+});
 
 /** Joins elements of a list into a string using a separator. */
 export const strJoin = StringLib<[any[], string], string>("str.join", {

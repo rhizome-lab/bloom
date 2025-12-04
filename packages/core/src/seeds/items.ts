@@ -1,11 +1,5 @@
 import { createEntity, addVerb } from "../repo";
-import {
-  StdLib,
-  StringLib,
-  ObjectLib,
-  ListLib,
-  BooleanLib,
-} from "@viwo/scripting";
+import { StdLib, StringLib, ObjectLib, ListLib, BooleanLib } from "@viwo/scripting";
 import * as CoreLib from "../runtime/lib/core";
 
 export function seedItems(locationId: number) {
@@ -30,14 +24,8 @@ export function seedItems(locationId: number) {
         StdLib.throw("Please specify a chapter index (0-based)."),
       ),
       StdLib.let("chapters", ObjectLib.objGet(StdLib.this(), "chapters")),
-      StdLib.let(
-        "chapter",
-        ListLib.listGet(StdLib.var("chapters"), StdLib.var("index")),
-      ),
-      StdLib.if(
-        BooleanLib.not(StdLib.var("chapter")),
-        StdLib.throw("Chapter not found."),
-      ),
+      StdLib.let("chapter", ListLib.listGet(StdLib.var("chapters"), StdLib.var("index"))),
+      StdLib.if(BooleanLib.not(StdLib.var("chapter")), StdLib.throw("Chapter not found.")),
       CoreLib.call(
         StdLib.caller(),
         "tell",
@@ -80,9 +68,7 @@ export function seedItems(locationId: number) {
       StdLib.let("title", StdLib.arg(0)),
       StdLib.let("content", StdLib.arg(1)),
       StdLib.if(
-        BooleanLib.not(
-          BooleanLib.and(StdLib.var("title"), StdLib.var("content")),
-        ),
+        BooleanLib.not(BooleanLib.and(StdLib.var("title"), StdLib.var("content"))),
         StdLib.throw("Usage: add_chapter <title> <content>"),
       ),
       StdLib.let("chapters", ObjectLib.objGet(StdLib.this(), "chapters")),
@@ -90,11 +76,7 @@ export function seedItems(locationId: number) {
       // Construct new chapter object
       StdLib.let("newChapter", {}),
       ObjectLib.objSet(StdLib.var("newChapter"), "title", StdLib.var("title")),
-      ObjectLib.objSet(
-        StdLib.var("newChapter"),
-        "content",
-        StdLib.var("content"),
-      ),
+      ObjectLib.objSet(StdLib.var("newChapter"), "content", StdLib.var("content")),
 
       ListLib.listPush(StdLib.var("chapters"), StdLib.var("newChapter")),
       ObjectLib.objSet(StdLib.this(), "chapters", StdLib.var("chapters")), // Save back to entity
@@ -124,9 +106,7 @@ export function seedItems(locationId: number) {
                 StdLib.var("query"),
               ),
               StringLib.strIncludes(
-                StringLib.strLower(
-                  ObjectLib.objGet(StdLib.var("c"), "content"),
-                ),
+                StringLib.strLower(ObjectLib.objGet(StdLib.var("c"), "content")),
                 StdLib.var("query"),
               ),
             ),

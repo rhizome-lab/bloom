@@ -8,12 +8,7 @@ import {
   ListLib,
 } from "@viwo/scripting";
 import { Entity } from "@viwo/shared/jsonrpc";
-import {
-  createEntity,
-  getEntity,
-  createCapability,
-  getCapabilities,
-} from "./repo";
+import { createEntity, getEntity, createCapability, getCapabilities } from "./repo";
 import * as CoreLib from "./runtime/lib/core";
 import * as KernelLib from "./runtime/lib/kernel";
 import { db } from ".";
@@ -63,11 +58,7 @@ describe("Capability Security", () => {
     // Admin mints a capability for themselves
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
     const newCap = await evaluate(
-      KernelLib.mint(
-        KernelLib.getCapability("sys.mint"),
-        "test.cap",
-        ObjectLib.objNew(),
-      ),
+      KernelLib.mint(KernelLib.getCapability("sys.mint"), "test.cap", ObjectLib.objNew()),
       ctx,
     );
     expect(newCap).not.toBeNull();
@@ -88,10 +79,7 @@ describe("Capability Security", () => {
     // expect(async () => await evaluate(...)).toThrow() works in bun test?
 
     try {
-      await evaluate(
-        CoreLib.create(null, ObjectLib.objNew(["name", "Fail"])),
-        ctx,
-      );
+      await evaluate(CoreLib.create(null, ObjectLib.objNew(["name", "Fail"])), ctx);
       expect(true).toBe(false); // Should not reach here
     } catch (e) {
       expect(e).toBeDefined();
@@ -102,10 +90,7 @@ describe("Capability Security", () => {
     // Admin creates entity
     const ctx = createScriptContext({ caller: admin, this: admin, args: [] });
     const newId = await evaluate(
-      CoreLib.create(
-        KernelLib.getCapability("sys.create"),
-        ObjectLib.objNew(["name", "Success"]),
-      ),
+      CoreLib.create(KernelLib.getCapability("sys.create"), ObjectLib.objNew(["name", "Success"])),
       ctx,
     );
     expect(typeof newId).toBe("number");
@@ -135,10 +120,7 @@ describe("Capability Security", () => {
 
     await evaluate(
       CoreLib.set_entity(
-        KernelLib.getCapability(
-          "entity.control",
-          ObjectLib.objNew(["*", true]),
-        ),
+        KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true])),
         ObjectLib.objSet(CoreLib.entity(targetId), "name", "Modified"),
       ),
       ctx,
