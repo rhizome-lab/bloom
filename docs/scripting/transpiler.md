@@ -35,7 +35,7 @@ The transpiler supports a subset of TypeScript that maps to ViwoScript opcodes:
 
 ### Special Variables
 
-- **this**: `this` -> `["this_"]` (Accesses the current entity context)
+- **this**: `this` -> `["this"]` (Accesses the current entity context)
 
 ### Literals
 
@@ -59,6 +59,7 @@ The transpiler supports a subset of TypeScript that maps to ViwoScript opcodes:
 - **Assignment**: `obj.x = 1` -> `["obj.set", obj, "x", 1]`
 - **Delete**: `delete obj.x` -> `["obj.del", obj, "x"]`
 - **In**: `'x' in obj` -> `["obj.has", obj, "x"]`
+- **Optional Chaining**: `obj?.x` -> `(complex logic)` (Safe access)
 
 ### Operators
 
@@ -71,6 +72,9 @@ The transpiler supports a subset of TypeScript that maps to ViwoScript opcodes:
 - **If/Else**: `if (c) { ... } else { ... }` -> `["if", c, then, else]`
 - **While**: `while (c) { ... }` -> `["while", c, body]`
 - **For...Of**: `for (let x of list) { ... }` -> `["for", "x", list, body]`
+- **For...In**: `for (let k in obj) { ... }` -> `["for", "k", ["obj.keys", obj], body]`
+- **C-Style For**: `for (let i=0; i<10; i++) { ... }` -> `["seq", ["let", "i", 0], ["while", ...]]`
+- **Break**: `break` -> `["break"]`
 - **Try/Catch**: `try { ... } catch (e) { ... }` -> `["try", try, "e", catch]`
 - **Throw**: `throw "err"` -> `["throw", "err"]`
 
