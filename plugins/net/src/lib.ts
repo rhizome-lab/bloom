@@ -1,4 +1,4 @@
-import { defineOpcode, ScriptError, Capability } from "@viwo/scripting";
+import { defineFullOpcode, ScriptError, Capability } from "@viwo/scripting";
 import { checkCapability } from "@viwo/core";
 
 function checkNetCapability(ctx: any, cap: Capability, targetDomain: string, method: string) {
@@ -30,7 +30,7 @@ export interface HttpResponse {
 }
 
 // TODO: Support JSON body
-export const netHttpFetch = defineOpcode<
+export const netHttpFetch = defineFullOpcode<
   [
     Capability | null,
     string,
@@ -102,24 +102,27 @@ export const netHttpFetch = defineOpcode<
   },
 });
 
-export const netHttpResponseText = defineOpcode<[HttpResponse], string>("net.http.response_text", {
-  metadata: {
-    label: "Response Text",
-    category: "net",
-    description: "Get response body as text",
-    slots: [{ name: "Response", type: "block" }],
-    parameters: [{ name: "response", type: "object" }],
-    returnType: "string",
+export const netHttpResponseText = defineFullOpcode<[HttpResponse], string>(
+  "net.http.response_text",
+  {
+    metadata: {
+      label: "Response Text",
+      category: "net",
+      description: "Get response body as text",
+      slots: [{ name: "Response", type: "block" }],
+      parameters: [{ name: "response", type: "object" }],
+      returnType: "string",
+    },
+    handler: async ([response], _ctx) => {
+      if (!response || !response.__response) {
+        throw new ScriptError("net.http.response_text: invalid response object");
+      }
+      return await (response as HttpResponse).__response.text();
+    },
   },
-  handler: async ([response], _ctx) => {
-    if (!response || !response.__response) {
-      throw new ScriptError("net.http.response_text: invalid response object");
-    }
-    return await (response as HttpResponse).__response.text();
-  },
-});
+);
 
-export const netHttpResponseJson = defineOpcode<[HttpResponse], any>("net.http.response_json", {
+export const netHttpResponseJson = defineFullOpcode<[HttpResponse], any>("net.http.response_json", {
   metadata: {
     label: "Response JSON",
     category: "net",
@@ -140,7 +143,7 @@ export const netHttpResponseJson = defineOpcode<[HttpResponse], any>("net.http.r
   },
 });
 
-export const netHttpResponseBytes = defineOpcode<[HttpResponse], number[]>(
+export const netHttpResponseBytes = defineFullOpcode<[HttpResponse], number[]>(
   "net.http.response_bytes",
   {
     metadata: {

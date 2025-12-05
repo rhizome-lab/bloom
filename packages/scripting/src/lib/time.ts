@@ -1,7 +1,7 @@
-import { defineOpcode } from "../def";
+import { defineFullOpcode } from "../types";
 
 /** Returns the current time as an ISO 8601 string. */
-export const timeNow = defineOpcode<[], string>("time.now", {
+export const timeNow = defineFullOpcode<[], string>("time.now", {
   metadata: {
     label: "Now",
     category: "time",
@@ -16,7 +16,7 @@ export const timeNow = defineOpcode<[], string>("time.now", {
 });
 
 /** Formats a timestamp string. */
-export const timeFormat = defineOpcode<[string, string?], string>("time.format", {
+export const timeFormat = defineFullOpcode<[string, string?], string>("time.format", {
   metadata: {
     label: "Format Time",
     category: "time",
@@ -37,7 +37,7 @@ export const timeFormat = defineOpcode<[string, string?], string>("time.format",
 });
 
 /** Parses a datetime string and returns it in ISO 8601 format. */
-export const timeParse = defineOpcode<[string], string>("time.parse", {
+export const timeParse = defineFullOpcode<[string], string>("time.parse", {
   metadata: {
     label: "Parse Time",
     category: "time",
@@ -52,7 +52,7 @@ export const timeParse = defineOpcode<[string], string>("time.parse", {
 });
 
 /** Converts a numeric timestamp (ms since epoch) to an ISO 8601 string. */
-export const timeFromTimestamp = defineOpcode<[number], string>("time.from_timestamp", {
+export const timeFromTimestamp = defineFullOpcode<[number], string>("time.from_timestamp", {
   metadata: {
     label: "From Timestamp",
     category: "time",
@@ -67,7 +67,7 @@ export const timeFromTimestamp = defineOpcode<[number], string>("time.from_times
 });
 
 /** Converts an ISO 8601 string to a numeric timestamp (ms since epoch). */
-export const timeToTimestamp = defineOpcode<[string], number>("time.to_timestamp", {
+export const timeToTimestamp = defineFullOpcode<[string], number>("time.to_timestamp", {
   metadata: {
     label: "To Timestamp",
     category: "time",
@@ -82,7 +82,7 @@ export const timeToTimestamp = defineOpcode<[string], number>("time.to_timestamp
 });
 
 /** Adds an offset to a timestamp. */
-export const timeOffset = defineOpcode<
+export const timeOffset = defineFullOpcode<
   [
     number,
     (

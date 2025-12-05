@@ -1,7 +1,11 @@
-import { ScriptValue } from "./def";
-
-export * from "./types";
-import { OpcodeDefinition, OpcodeMetadata, ScriptContext, ScriptError, StackFrame } from "./types";
+import {
+  OpcodeDefinition,
+  OpcodeMetadata,
+  ScriptContext,
+  ScriptError,
+  ScriptValue,
+  StackFrame,
+} from "./types";
 
 let typecheck = true;
 

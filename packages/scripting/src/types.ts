@@ -1,5 +1,4 @@
 import { Entity } from "@viwo/shared/jsonrpc";
-import { ScriptRaw, ScriptValue } from "./def";
 
 /**
  * Execution context for a script.
@@ -66,8 +65,15 @@ export class ScriptError extends Error {
   }
 }
 
+interface OpcodeParameter {
+  name: string;
+  type: string;
+  optional?: boolean;
+  description?: string;
+}
+
 /** Metadata describing an opcode for documentation and UI generation. */
-export interface OpcodeMetadata<Lazy = boolean> {
+export interface OpcodeMetadata<Lazy extends boolean = boolean, Full extends boolean = false> {
   /** Human-readable label. */
   label: string;
   /** The opcode name. */
@@ -84,14 +90,18 @@ export interface OpcodeMetadata<Lazy = boolean> {
     default?: any;
   }[];
   // For Monaco/TS
-  parameters?: { name: string; type: string; optional?: boolean; description?: string }[];
+  parameters?: readonly (Full extends true ? Required<OpcodeParameter> : OpcodeParameter)[];
   genericParameters?: string[];
   returnType?: string;
   /** If true, arguments are NOT evaluated before being passed to the handler. Default: false (Strict). */
   lazy?: Lazy;
 }
 
-export type OpcodeHandler<Args extends readonly unknown[], Ret, Lazy = boolean> = (
+export type FullOpcodeMetadata<Lazy extends boolean = boolean> = Required<
+  OpcodeMetadata<Lazy, true>
+>;
+
+export type OpcodeHandler<Args extends readonly unknown[], Ret, Lazy extends boolean = boolean> = (
   args: {
     [K in keyof Args]: Args[K] extends ScriptRaw<infer T>
       ? T
@@ -102,7 +112,107 @@ export type OpcodeHandler<Args extends readonly unknown[], Ret, Lazy = boolean> 
   ctx: ScriptContext,
 ) => Ret | Promise<Ret>;
 
-export interface OpcodeDefinition<Lazy = boolean> {
+export interface OpcodeDefinition<Lazy extends boolean = boolean> {
   handler: OpcodeHandler<any, unknown, Lazy>;
   metadata: OpcodeMetadata<Lazy>;
+}
+
+declare const RAW_MARKER: unique symbol;
+export type ScriptRaw<T> = { [RAW_MARKER]: T };
+
+export interface Capability {
+  readonly __brand: "Capability";
+  readonly id: string;
+}
+
+type UnknownUnion =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Capability
+  | (Record<string, unknown> & { readonly length?: never })
+  | (Record<string, unknown> & { readonly slice?: never });
+
+export type ScriptValue_<T> = Exclude<T, readonly unknown[]>;
+
+/**
+ * Represents a value in the scripting language.
+ * Can be a primitive, an object, or a nested S-expression (array).
+ */
+export type ScriptValue<T> =
+  | (unknown extends T
+      ? ScriptValue_<UnknownUnion>
+      : object extends T
+        ? Extract<ScriptValue_<UnknownUnion>, object>
+        : ScriptValue_<T>)
+  | ScriptExpression<any[], T>;
+
+// Phantom type for return type safety
+export type ScriptExpression<Args extends (string | ScriptValue_<unknown>)[], Ret> = [
+  string,
+  ...Args,
+] & {
+  __returnType: Ret;
+};
+
+export interface OpcodeBuilder<
+  Args extends (string | ScriptValue_<unknown>)[],
+  Ret,
+  Lazy extends boolean = boolean,
+> {
+  (
+    ...args: {
+      [K in keyof Args]: Args[K] extends ScriptRaw<infer T> ? T : ScriptValue<Args[K]>;
+    }
+  ): ScriptExpression<Args, Ret>;
+  opcode: string;
+  handler: OpcodeHandler<Args, Ret, Lazy>;
+  metadata: OpcodeMetadata<Lazy>;
+}
+
+/**
+ * Defines a new opcode.
+ *
+ * @param opcode - The opcode name (e.g., "log", "+").
+ * @param def - The opcode definition (metadata and handler).
+ * @returns A builder function that can be used to construct S-expressions for this opcode in TypeScript.
+ */
+export function defineOpcode<
+  Args extends (string | ScriptValue_<unknown>)[] = never,
+  Ret = never,
+  Lazy extends boolean = false,
+  Full extends boolean = false,
+>(
+  opcode: string,
+  def: {
+    metadata: Omit<OpcodeMetadata<Lazy, Full>, "opcode">;
+    handler: OpcodeHandler<Args, Ret, Lazy>;
+  },
+): OpcodeBuilder<Args, Ret, Lazy> {
+  const builder = ((...args: Args) => {
+    const expr = [opcode, ...args] as unknown as ScriptExpression<Args, Ret>;
+    return expr;
+  }) as OpcodeBuilder<Args, Ret, Lazy>;
+
+  builder.opcode = opcode;
+  builder.handler = def.handler;
+  builder.metadata = { ...def.metadata, opcode };
+
+  return builder;
+}
+
+export function defineFullOpcode<
+  Args extends (string | ScriptValue_<unknown>)[] = never,
+  Ret = never,
+  Lazy extends boolean = false,
+>(
+  opcode: string,
+  def: {
+    metadata: Omit<OpcodeMetadata<Lazy, true>, "opcode">;
+    handler: OpcodeHandler<Args, Ret, Lazy>;
+  },
+): OpcodeBuilder<Args, Ret, Lazy> {
+  return defineOpcode(opcode, def);
 }

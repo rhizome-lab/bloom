@@ -1,5 +1,5 @@
+export * from "./types";
 export * from "./interpreter";
-export * from "./def";
 export * as MathLib from "./lib/math";
 export * as BooleanLib from "./lib/boolean";
 export * as ListLib from "./lib/list";

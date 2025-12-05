@@ -1,9 +1,9 @@
 import { evaluate } from "../interpreter";
-import { defineOpcode } from "../def";
+import { defineFullOpcode } from "../types";
 
 // Comparison
 /** Checks if all arguments are equal. */
-export const eq = defineOpcode<[unknown, unknown, ...unknown[]], boolean>("==", {
+export const eq = defineFullOpcode<[unknown, unknown, ...unknown[]], boolean>("==", {
   metadata: {
     label: "==",
     category: "logic",
@@ -33,7 +33,7 @@ export const eq = defineOpcode<[unknown, unknown, ...unknown[]], boolean>("==", 
 });
 
 /** Checks if adjacent arguments are different. */
-export const neq = defineOpcode<[unknown, unknown, ...unknown[]], boolean>("!=", {
+export const neq = defineFullOpcode<[unknown, unknown, ...unknown[]], boolean>("!=", {
   metadata: {
     label: "!=",
     category: "logic",
@@ -63,7 +63,7 @@ export const neq = defineOpcode<[unknown, unknown, ...unknown[]], boolean>("!=",
 });
 
 /** Checks if arguments are strictly increasing. */
-export const lt = defineOpcode<[number, number, ...number[]], boolean>("<", {
+export const lt = defineFullOpcode<[number, number, ...number[]], boolean>("<", {
   metadata: {
     label: "<",
     category: "logic",
@@ -93,7 +93,7 @@ export const lt = defineOpcode<[number, number, ...number[]], boolean>("<", {
 });
 
 /** Checks if arguments are strictly decreasing. */
-export const gt = defineOpcode<[number, number, ...number[]], boolean>(">", {
+export const gt = defineFullOpcode<[number, number, ...number[]], boolean>(">", {
   metadata: {
     label: ">",
     category: "logic",
@@ -123,7 +123,7 @@ export const gt = defineOpcode<[number, number, ...number[]], boolean>(">", {
 });
 
 /** Checks if arguments are non-decreasing. */
-export const lte = defineOpcode<[number, number, ...number[]], boolean>("<=", {
+export const lte = defineFullOpcode<[number, number, ...number[]], boolean>("<=", {
   metadata: {
     label: "<=",
     category: "logic",
@@ -153,7 +153,7 @@ export const lte = defineOpcode<[number, number, ...number[]], boolean>("<=", {
 });
 
 /** Checks if arguments are non-increasing. */
-export const gte = defineOpcode<[number, number, ...number[]], boolean>(">=", {
+export const gte = defineFullOpcode<[number, number, ...number[]], boolean>(">=", {
   metadata: {
     label: ">=",
     category: "logic",
@@ -184,7 +184,7 @@ export const gte = defineOpcode<[number, number, ...number[]], boolean>(">=", {
 
 // Logic
 /** Logical AND. */
-export const and = defineOpcode<[boolean, boolean, ...boolean[]], boolean, true>("and", {
+export const and = defineFullOpcode<[boolean, boolean, ...boolean[]], boolean, true>("and", {
   metadata: {
     label: "And",
     category: "logic",
@@ -227,7 +227,7 @@ export const and = defineOpcode<[boolean, boolean, ...boolean[]], boolean, true>
 });
 
 /** Logical OR. */
-export const or = defineOpcode<[boolean, boolean, ...boolean[]], boolean, true>("or", {
+export const or = defineFullOpcode<[boolean, boolean, ...boolean[]], boolean, true>("or", {
   metadata: {
     label: "Or",
     category: "logic",
@@ -272,7 +272,7 @@ export const or = defineOpcode<[boolean, boolean, ...boolean[]], boolean, true>(
 /**
  * Logical NOT.
  */
-export const not = defineOpcode<[boolean], boolean>("not", {
+export const not = defineFullOpcode<[boolean], boolean>("not", {
   metadata: {
     label: "Not",
     category: "logic",

@@ -1,4 +1,4 @@
-import { defineOpcode, ScriptError, Capability } from "@viwo/scripting";
+import { defineFullOpcode, ScriptError, Capability } from "@viwo/scripting";
 import {
   getCapabilities,
   createCapability,
@@ -7,43 +7,46 @@ import {
 } from "../../repo";
 import { Entity } from "@viwo/shared/jsonrpc";
 
-export const getCapability = defineOpcode<[string, object?], Capability | null>("get_capability", {
-  metadata: {
-    label: "Get Capability",
-    category: "kernel",
-    description: "Retrieve a capability owned by the current entity",
-    slots: [
-      { name: "Type", type: "string" },
-      { name: "Filter", type: "block" },
-    ],
-    parameters: [
-      { name: "type", type: "string" },
-      { name: "filter", type: "object", optional: true },
-    ],
-    returnType: "Capability | null",
-  },
-  handler: ([type, filter = {}], ctx) => {
-    const caps = getCapabilities(ctx.this.id);
-    const match = caps.find((c) => {
-      if (c.type !== type) return false;
-      // Check for wildcard
-      if (c.params["*"] === true) return true;
-      // Check filter params
-      for (const [k, v] of Object.entries(filter as Record<string, unknown>)) {
-        if (JSON.stringify(c.params[k]) !== JSON.stringify(v)) {
-          return false;
+export const getCapability = defineFullOpcode<[string, object?], Capability | null>(
+  "get_capability",
+  {
+    metadata: {
+      label: "Get Capability",
+      category: "kernel",
+      description: "Retrieve a capability owned by the current entity",
+      slots: [
+        { name: "Type", type: "string" },
+        { name: "Filter", type: "block" },
+      ],
+      parameters: [
+        { name: "type", type: "string" },
+        { name: "filter", type: "object", optional: true },
+      ],
+      returnType: "Capability | null",
+    },
+    handler: ([type, filter = {}], ctx) => {
+      const caps = getCapabilities(ctx.this.id);
+      const match = caps.find((c) => {
+        if (c.type !== type) return false;
+        // Check for wildcard
+        if (c.params["*"] === true) return true;
+        // Check filter params
+        for (const [k, v] of Object.entries(filter as Record<string, unknown>)) {
+          if (JSON.stringify(c.params[k]) !== JSON.stringify(v)) {
+            return false;
+          }
         }
+        return true;
+      });
+      if (!match) {
+        return null;
       }
-      return true;
-    });
-    if (!match) {
-      return null;
-    }
-    return { __brand: "Capability", id: match.id };
+      return { __brand: "Capability", id: match.id };
+    },
   },
-});
+);
 
-export const mint = defineOpcode<[Capability | null, string, object], Capability>("mint", {
+export const mint = defineFullOpcode<[Capability | null, string, object], Capability>("mint", {
   metadata: {
     label: "Mint Capability",
     category: "kernel",
@@ -91,7 +94,7 @@ export const mint = defineOpcode<[Capability | null, string, object], Capability
   },
 });
 
-export const delegate = defineOpcode<[Capability | null, object], Capability>("delegate", {
+export const delegate = defineFullOpcode<[Capability | null, object], Capability>("delegate", {
   metadata: {
     label: "Delegate Capability",
     category: "kernel",
@@ -126,78 +129,84 @@ export const delegate = defineOpcode<[Capability | null, object], Capability>("d
   },
 });
 
-export const giveCapability = defineOpcode<[Capability | null, Entity], null>("give_capability", {
-  metadata: {
-    label: "Give Capability",
-    category: "kernel",
-    description: "Transfer a capability to another entity",
-    slots: [
-      { name: "Cap", type: "block" },
-      { name: "Target", type: "block" },
-    ],
-    parameters: [
-      { name: "cap", type: "object" },
-      { name: "target", type: "object" },
-    ],
-    returnType: "null",
-  },
-  handler: ([cap, target], ctx) => {
-    if (!cap || (cap as any).__brand !== "Capability") {
-      throw new ScriptError("give_capability: expected capability");
-    }
-
-    if (!target || typeof target.id !== "number") {
-      throw new ScriptError("give_capability: expected target entity");
-    }
-
-    const dbCap = originalGetCapability((cap as Capability).id);
-    if (!dbCap || dbCap["owner_id"] !== ctx.this.id) {
-      throw new ScriptError("give_capability: invalid capability");
-    }
-
-    updateCapabilityOwner((cap as Capability).id, target.id);
-    return null;
-  },
-});
-
-export const hasCapability = defineOpcode<[Entity, string, object?], boolean>("has_capability", {
-  metadata: {
-    label: "Has Capability",
-    category: "kernel",
-    description: "Check if an entity has a capability",
-    slots: [
-      { name: "Target", type: "block" },
-      { name: "Type", type: "string" },
-      { name: "Filter", type: "block" },
-    ],
-    parameters: [
-      { name: "target", type: "object" },
-      { name: "type", type: "string" },
-      { name: "filter", type: "object", optional: true },
-    ],
-    returnType: "boolean",
-  },
-  handler: ([target, type, filter = {}], _ctx) => {
-    if (!target || typeof target.id !== "number") {
-      throw new ScriptError("has_capability: expected target entity");
-    }
-
-    const caps = getCapabilities(target.id);
-    const match = caps.find((c) => {
-      if (c.type !== type) return false;
-
-      // Check for wildcard
-      if (c.params["*"] === true) return true;
-
-      // Check filter params
-      for (const [k, v] of Object.entries(filter as Record<string, unknown>)) {
-        if (JSON.stringify(c.params[k]) !== JSON.stringify(v)) {
-          return false;
-        }
+export const giveCapability = defineFullOpcode<[Capability | null, Entity], null>(
+  "give_capability",
+  {
+    metadata: {
+      label: "Give Capability",
+      category: "kernel",
+      description: "Transfer a capability to another entity",
+      slots: [
+        { name: "Cap", type: "block" },
+        { name: "Target", type: "block" },
+      ],
+      parameters: [
+        { name: "cap", type: "object" },
+        { name: "target", type: "object" },
+      ],
+      returnType: "null",
+    },
+    handler: ([cap, target], ctx) => {
+      if (!cap || (cap as any).__brand !== "Capability") {
+        throw new ScriptError("give_capability: expected capability");
       }
-      return true;
-    });
 
-    return !!match;
+      if (!target || typeof target.id !== "number") {
+        throw new ScriptError("give_capability: expected target entity");
+      }
+
+      const dbCap = originalGetCapability((cap as Capability).id);
+      if (!dbCap || dbCap["owner_id"] !== ctx.this.id) {
+        throw new ScriptError("give_capability: invalid capability");
+      }
+
+      updateCapabilityOwner((cap as Capability).id, target.id);
+      return null;
+    },
   },
-});
+);
+
+export const hasCapability = defineFullOpcode<[Entity, string, object?], boolean>(
+  "has_capability",
+  {
+    metadata: {
+      label: "Has Capability",
+      category: "kernel",
+      description: "Check if an entity has a capability",
+      slots: [
+        { name: "Target", type: "block" },
+        { name: "Type", type: "string" },
+        { name: "Filter", type: "block" },
+      ],
+      parameters: [
+        { name: "target", type: "object" },
+        { name: "type", type: "string" },
+        { name: "filter", type: "object", optional: true },
+      ],
+      returnType: "boolean",
+    },
+    handler: ([target, type, filter = {}], _ctx) => {
+      if (!target || typeof target.id !== "number") {
+        throw new ScriptError("has_capability: expected target entity");
+      }
+
+      const caps = getCapabilities(target.id);
+      const match = caps.find((c) => {
+        if (c.type !== type) return false;
+
+        // Check for wildcard
+        if (c.params["*"] === true) return true;
+
+        // Check filter params
+        for (const [k, v] of Object.entries(filter as Record<string, unknown>)) {
+          if (JSON.stringify(c.params[k]) !== JSON.stringify(v)) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      return !!match;
+    },
+  },
+);

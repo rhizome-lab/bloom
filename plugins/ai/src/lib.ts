@@ -1,4 +1,4 @@
-import { defineOpcode } from "@viwo/scripting";
+import { defineFullOpcode } from "@viwo/scripting";
 import {
   generateText,
   generateObject,
@@ -16,7 +16,7 @@ import {
   getTranscriptionModel,
 } from "./models";
 
-export const aiText = defineOpcode<[string, string, string?], string>("ai.text", {
+export const aiText = defineFullOpcode<[string, string, string?], string>("ai.text", {
   metadata: {
     label: "Generate Text Response",
     category: "AI",
@@ -39,7 +39,7 @@ export const aiText = defineOpcode<[string, string, string?], string>("ai.text",
   },
 });
 
-export const aiJson = defineOpcode<[string, string, object?], any>("ai.json", {
+export const aiJson = defineFullOpcode<[string, string, object?], any>("ai.json", {
   metadata: {
     label: "Generate JSON Response",
     category: "AI",
@@ -61,7 +61,7 @@ export const aiJson = defineOpcode<[string, string, object?], any>("ai.json", {
   },
 });
 
-export const aiEmbeddingText = defineOpcode<[string, string], number[]>("ai.embedding.text", {
+export const aiEmbeddingText = defineFullOpcode<[string, string], number[]>("ai.embedding.text", {
   metadata: {
     label: "Generate Text Embedding",
     category: "AI",
@@ -79,7 +79,7 @@ export const aiEmbeddingText = defineOpcode<[string, string], number[]>("ai.embe
   },
 });
 
-export const aiImage = defineOpcode<[string, string], object>("ai.image", {
+export const aiImage = defineFullOpcode<[string, string], object>("ai.image", {
   metadata: {
     label: "Generate Image",
     category: "AI",
@@ -99,7 +99,7 @@ export const aiImage = defineOpcode<[string, string], object>("ai.image", {
   },
 });
 
-export const aiGenerateSpeech = defineOpcode<[string, string], object>("ai.generate_speech", {
+export const aiGenerateSpeech = defineFullOpcode<[string, string], object>("ai.generate_speech", {
   metadata: {
     label: "Generate Speech",
     category: "AI",
@@ -118,7 +118,7 @@ export const aiGenerateSpeech = defineOpcode<[string, string], object>("ai.gener
   },
 });
 
-export const aiTranscribe = defineOpcode<[string, string], object>("ai.transcribe", {
+export const aiTranscribe = defineFullOpcode<[string, string], object>("ai.transcribe", {
   metadata: {
     label: "Transcribe Audio",
     category: "AI",

@@ -1,10 +1,10 @@
-import { evaluate, executeLambda, ScriptError } from "../interpreter";
-import { defineOpcode, ScriptRaw, ScriptValue } from "../def";
+import { evaluate, executeLambda } from "../interpreter";
+import { defineFullOpcode, ScriptError, ScriptRaw, ScriptValue } from "../types";
 
 const DISALLOWED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 /** Creates a new object from key-value pairs. */
-export const objNew = defineOpcode<
+export const objNew = defineFullOpcode<
   [...ScriptRaw<[key: ScriptValue<string>, value: ScriptValue<unknown>]>[]],
   any,
   true
@@ -48,7 +48,7 @@ export const objNew = defineOpcode<
 });
 
 /** Returns an array of a given object's own enumerable property names. */
-export const objKeys = defineOpcode<[object], string[]>("obj.keys", {
+export const objKeys = defineFullOpcode<[object], string[]>("obj.keys", {
   metadata: {
     label: "Keys",
     category: "object",
@@ -64,7 +64,7 @@ export const objKeys = defineOpcode<[object], string[]>("obj.keys", {
 });
 
 /** Returns an array of a given object's own enumerable property values. */
-export const objValues = defineOpcode<[object], any[]>("obj.values", {
+export const objValues = defineFullOpcode<[object], any[]>("obj.values", {
   metadata: {
     label: "Values",
     category: "object",
@@ -80,7 +80,7 @@ export const objValues = defineOpcode<[object], any[]>("obj.values", {
 });
 
 /** Returns an array of a given object's own enumerable string-keyed property [key, value] pairs. */
-export const objEntries = defineOpcode<[object], [string, any][]>("obj.entries", {
+export const objEntries = defineFullOpcode<[object], [string, any][]>("obj.entries", {
   metadata: {
     label: "Entries",
     category: "object",
@@ -96,7 +96,7 @@ export const objEntries = defineOpcode<[object], [string, any][]>("obj.entries",
 });
 
 /** Retrieves a property from an object. */
-export const objGet = defineOpcode<[object, string, unknown?], any>("obj.get", {
+export const objGet = defineFullOpcode<[object, string, unknown?], any>("obj.get", {
   metadata: {
     label: "Get",
     category: "object",
@@ -126,7 +126,7 @@ export const objGet = defineOpcode<[object, string, unknown?], any>("obj.get", {
 });
 
 /** Sets a property on an object. Returns the entire object. */
-export const objSet = defineOpcode<[object, string, unknown], any>("obj.set", {
+export const objSet = defineFullOpcode<[object, string, unknown], any>("obj.set", {
   metadata: {
     label: "Set",
     category: "object",
@@ -154,7 +154,7 @@ export const objSet = defineOpcode<[object, string, unknown], any>("obj.set", {
 });
 
 /** Checks if an object has a specific property. */
-export const objHas = defineOpcode<[object, string], boolean>("obj.has", {
+export const objHas = defineFullOpcode<[object, string], boolean>("obj.has", {
   metadata: {
     label: "Has Key",
     category: "object",
@@ -176,7 +176,7 @@ export const objHas = defineOpcode<[object, string], boolean>("obj.has", {
 });
 
 /** Deletes a property from an object. */
-export const objDel = defineOpcode<[object, string], boolean>("obj.del", {
+export const objDel = defineFullOpcode<[object, string], boolean>("obj.del", {
   metadata: {
     label: "Delete Key",
     category: "object",
@@ -202,7 +202,7 @@ export const objDel = defineOpcode<[object, string], boolean>("obj.del", {
 });
 
 /** Merges multiple objects into a new object. */
-export const objMerge = defineOpcode<[object, object, ...object[]], any>("obj.merge", {
+export const objMerge = defineFullOpcode<[object, object, ...object[]], any>("obj.merge", {
   metadata: {
     label: "Merge",
     category: "object",
@@ -218,7 +218,7 @@ export const objMerge = defineOpcode<[object, object, ...object[]], any>("obj.me
 });
 
 /** Creates a new object with the same keys as the original, but with values transformed by a function. */
-export const objMap = defineOpcode<[object, unknown], any>("obj.map", {
+export const objMap = defineFullOpcode<[object, unknown], any>("obj.map", {
   metadata: {
     label: "Map Object",
     category: "object",
@@ -248,7 +248,7 @@ export const objMap = defineOpcode<[object, unknown], any>("obj.map", {
 });
 
 /** Creates a new object with a subset of properties that pass the test implemented by the provided function. */
-export const objFilter = defineOpcode<[object, unknown], any>("obj.filter", {
+export const objFilter = defineFullOpcode<[object, unknown], any>("obj.filter", {
   metadata: {
     label: "Filter Object",
     category: "object",
@@ -281,7 +281,7 @@ export const objFilter = defineOpcode<[object, unknown], any>("obj.filter", {
 });
 
 /** Executes a user-supplied "reducer" callback function on each entry of the object. */
-export const objReduce = defineOpcode<[object, unknown, unknown], any>("obj.reduce", {
+export const objReduce = defineFullOpcode<[object, unknown, unknown], any>("obj.reduce", {
   metadata: {
     label: "Reduce Object",
     category: "object",
@@ -315,7 +315,7 @@ export const objReduce = defineOpcode<[object, unknown, unknown], any>("obj.redu
 });
 
 /** Creates a new object by applying a given callback function to each entry of the object, and then flattening the result. */
-export const objFlatMap = defineOpcode<[object, unknown], any>("obj.flatMap", {
+export const objFlatMap = defineFullOpcode<[object, unknown], any>("obj.flatMap", {
   metadata: {
     label: "FlatMap Object",
     category: "object",

@@ -1,8 +1,7 @@
-import { defineOpcode } from "../def";
+import { defineFullOpcode } from "../types";
 
-// Arithmetic
 /** Adds numbers.*/
-export const add = defineOpcode<[number, number, ...number[]], number>("+", {
+export const add = defineFullOpcode<[number, number, ...number[]], number>("+", {
   metadata: {
     label: "+",
     category: "math",
@@ -29,7 +28,7 @@ export const add = defineOpcode<[number, number, ...number[]], number>("+", {
 });
 
 /** Subtracts numbers. */
-export const sub = defineOpcode<[number, number, ...number[]], number>("-", {
+export const sub = defineFullOpcode<[number, number, ...number[]], number>("-", {
   metadata: {
     label: "-",
     category: "math",
@@ -56,7 +55,7 @@ export const sub = defineOpcode<[number, number, ...number[]], number>("-", {
 });
 
 /** Multiplies numbers. */
-export const mul = defineOpcode<[number, number, ...number[]], number>("*", {
+export const mul = defineFullOpcode<[number, number, ...number[]], number>("*", {
   metadata: {
     label: "*",
     category: "math",
@@ -83,7 +82,7 @@ export const mul = defineOpcode<[number, number, ...number[]], number>("*", {
 });
 
 /** Divides numbers. */
-export const div = defineOpcode<[number, number, ...number[]], number>("/", {
+export const div = defineFullOpcode<[number, number, ...number[]], number>("/", {
   metadata: {
     label: "/",
     category: "math",
@@ -110,7 +109,7 @@ export const div = defineOpcode<[number, number, ...number[]], number>("/", {
 });
 
 /** Calculates the modulo of two numbers. */
-export const mod = defineOpcode<[number, number], number>("%", {
+export const mod = defineFullOpcode<[number, number], number>("%", {
   metadata: {
     label: "%",
     category: "math",
@@ -132,7 +131,7 @@ export const mod = defineOpcode<[number, number], number>("%", {
 });
 
 /** Calculates exponentiation (power tower). */
-export const pow = defineOpcode<[number, number, ...number[]], number>("^", {
+export const pow = defineFullOpcode<[number, number, ...number[]], number>("^", {
   metadata: {
     label: "^",
     category: "math",
@@ -166,7 +165,7 @@ export const pow = defineOpcode<[number, number, ...number[]], number>("^", {
  * - `random(max)`: Returns a number between 0 (inclusive) and `max` (inclusive). If `max` is an integer, returns an integer.
  * - `random(min, max)`: Returns a number between `min` (inclusive) and `max` (inclusive). If `min` and `max` are integers, returns an integer.
  */
-export const random = defineOpcode<[number?, number?], number>("random", {
+export const random = defineFullOpcode<[number?, number?], number>("random", {
   metadata: {
     label: "Random",
     category: "math",

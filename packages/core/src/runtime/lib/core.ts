@@ -2,7 +2,7 @@ import {
   evaluate,
   ScriptError,
   createScriptContext,
-  defineOpcode,
+  defineFullOpcode,
   Capability,
 } from "@viwo/scripting";
 import {
@@ -26,7 +26,7 @@ import { Entity } from "@viwo/shared/jsonrpc";
 /**
  * Creates a new entity.
  */
-export const create = defineOpcode<[Capability | null, object], number>("create", {
+export const create = defineFullOpcode<[Capability | null, object], number>("create", {
   metadata: {
     label: "Create",
     category: "action",
@@ -58,7 +58,7 @@ export const create = defineOpcode<[Capability | null, object], number>("create"
 });
 
 /** Destroys an entity. */
-export const destroy = defineOpcode<[Capability | null, Entity], null>("destroy", {
+export const destroy = defineFullOpcode<[Capability | null, Entity], null>("destroy", {
   metadata: {
     label: "Destroy",
     category: "action",
@@ -92,7 +92,7 @@ export const destroy = defineOpcode<[Capability | null, Entity], null>("destroy"
 });
 
 /** Calls a verb on an entity. */
-export const call = defineOpcode<[Entity, string, ...unknown[]], any>("call", {
+export const call = defineFullOpcode<[Entity, string, ...unknown[]], any>("call", {
   metadata: {
     label: "Call",
     category: "action",
@@ -129,7 +129,7 @@ export const call = defineOpcode<[Entity, string, ...unknown[]], any>("call", {
   },
 });
 
-export const schedule = defineOpcode<[string, unknown[], number], null>("schedule", {
+export const schedule = defineFullOpcode<[string, unknown[], number], null>("schedule", {
   metadata: {
     label: "Schedule",
     category: "action",
@@ -156,7 +156,7 @@ export const schedule = defineOpcode<[string, unknown[], number], null>("schedul
 /**
  * Returns a list of verbs available on an entity.
  */
-export const verbs = defineOpcode<[Entity], readonly Verb[]>("verbs", {
+export const verbs = defineFullOpcode<[Entity], readonly Verb[]>("verbs", {
   metadata: {
     label: "Verbs",
     category: "world",
@@ -176,7 +176,7 @@ export const verbs = defineOpcode<[Entity], readonly Verb[]>("verbs", {
 /**
  * Returns a specific verb from an entity.
  */
-export const get_verb = defineOpcode<[Entity, string], Verb | null>("get_verb", {
+export const get_verb = defineFullOpcode<[Entity, string], Verb | null>("get_verb", {
   metadata: {
     label: "Get Verb",
     category: "world",
@@ -202,7 +202,7 @@ export const get_verb = defineOpcode<[Entity, string], Verb | null>("get_verb", 
 /**
  * Retrieves an entity by ID.
  */
-export const entity = defineOpcode<[number], Entity>("entity", {
+export const entity = defineFullOpcode<[number], Entity>("entity", {
   metadata: {
     label: "Entity",
     category: "world",
@@ -223,7 +223,7 @@ export const entity = defineOpcode<[number], Entity>("entity", {
 /**
  * Updates one or more entities' properties transactionally.
  */
-export const setEntity = defineOpcode<[Capability | null, ...Entity[]], null>("set_entity", {
+export const setEntity = defineFullOpcode<[Capability | null, ...Entity[]], null>("set_entity", {
   metadata: {
     label: "Update Entity",
     category: "action",
@@ -263,7 +263,7 @@ export const setEntity = defineOpcode<[Capability | null, ...Entity[]], null>("s
 /**
  * Gets the prototype ID of an entity.
  */
-export const getPrototype = defineOpcode<[Entity], number | null>("get_prototype", {
+export const getPrototype = defineFullOpcode<[Entity], number | null>("get_prototype", {
   metadata: {
     label: "Get Prototype",
     category: "world",
@@ -280,7 +280,7 @@ export const getPrototype = defineOpcode<[Entity], number | null>("get_prototype
   },
 });
 
-export const setPrototype = defineOpcode<[Capability | null, Entity, number | null], null>(
+export const setPrototype = defineFullOpcode<[Capability | null, Entity, number | null], null>(
   "set_prototype",
   {
     metadata: {
@@ -325,7 +325,7 @@ export const setPrototype = defineOpcode<[Capability | null, Entity, number | nu
 );
 
 /** Resolves all properties of an entity, including dynamic ones. */
-export const resolve_props = defineOpcode<[Entity], Entity>("resolve_props", {
+export const resolve_props = defineFullOpcode<[Entity], Entity>("resolve_props", {
   metadata: {
     label: "Resolve Props",
     category: "data",
@@ -343,7 +343,7 @@ export const resolve_props = defineOpcode<[Entity], Entity>("resolve_props", {
  * Executes a verb on an entity as if called by that entity (impersonation).
  * Restricted to System (ID 3) and Bot (ID 4).
  */
-export const sudo = defineOpcode<[Capability | null, Entity, string, unknown[]], any>("sudo", {
+export const sudo = defineFullOpcode<[Capability | null, Entity, string, unknown[]], any>("sudo", {
   metadata: {
     label: "Sudo",
     category: "system",

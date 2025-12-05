@@ -1,7 +1,7 @@
-import { defineOpcode as StringLib } from "../def";
+import { defineFullOpcode } from "../types";
 
 /** Returns the length of a string. */
-export const strLen = StringLib<[string], number>("str.len", {
+export const strLen = defineFullOpcode<[string], number>("str.len", {
   metadata: {
     label: "Length",
     category: "string",
@@ -16,26 +16,29 @@ export const strLen = StringLib<[string], number>("str.len", {
 });
 
 /** Concatenates multiple strings into one. */
-export const strConcat = StringLib<(string | number | boolean | null)[], string>("str.concat", {
-  metadata: {
-    label: "Concat",
-    category: "string",
-    description: "Concatenate strings",
-    slots: [{ name: "Strings", type: "block" }], // Variadic?
-    parameters: [{ name: "...strings", type: "any[]" }],
-    returnType: "string",
+export const strConcat = defineFullOpcode<(string | number | boolean | null)[], string>(
+  "str.concat",
+  {
+    metadata: {
+      label: "Concat",
+      category: "string",
+      description: "Concatenate strings",
+      slots: [{ name: "Strings", type: "block" }], // Variadic?
+      parameters: [{ name: "...strings", type: "any[]" }],
+      returnType: "string",
+    },
+    handler: (args, _ctx) => {
+      const strings: string[] = [];
+      for (const arg of args) {
+        strings.push(String(arg));
+      }
+      return strings.join("");
+    },
   },
-  handler: (args, _ctx) => {
-    const strings: string[] = [];
-    for (const arg of args) {
-      strings.push(String(arg));
-    }
-    return strings.join("");
-  },
-});
+);
 
 /** Splits a string into an array of substrings using a separator. */
-export const strSplit = StringLib<[string, string], string[]>("str.split", {
+export const strSplit = defineFullOpcode<[string, string], string[]>("str.split", {
   metadata: {
     label: "Split",
     category: "string",
@@ -56,7 +59,7 @@ export const strSplit = StringLib<[string, string], string[]>("str.split", {
 });
 
 /** Extracts a section of a string and returns it as a new string. */
-export const strSlice = StringLib<[string, number, number?], string>("str.slice", {
+export const strSlice = defineFullOpcode<[string, number, number?], string>("str.slice", {
   metadata: {
     label: "Slice",
     category: "string",
@@ -80,7 +83,7 @@ export const strSlice = StringLib<[string, number, number?], string>("str.slice"
 });
 
 /** Converts a string to uppercase. */
-export const strUpper = StringLib<[string], string>("str.upper", {
+export const strUpper = defineFullOpcode<[string], string>("str.upper", {
   metadata: {
     label: "To Upper",
     category: "string",
@@ -95,7 +98,7 @@ export const strUpper = StringLib<[string], string>("str.upper", {
 });
 
 /** Converts a string to lowercase. */
-export const strLower = StringLib<[string], string>("str.lower", {
+export const strLower = defineFullOpcode<[string], string>("str.lower", {
   metadata: {
     label: "To Lower",
     category: "string",
@@ -110,7 +113,7 @@ export const strLower = StringLib<[string], string>("str.lower", {
 });
 
 /** Removes whitespace from both ends of a string. */
-export const strTrim = StringLib<[string], string>("str.trim", {
+export const strTrim = defineFullOpcode<[string], string>("str.trim", {
   metadata: {
     label: "Trim",
     category: "string",
@@ -125,7 +128,7 @@ export const strTrim = StringLib<[string], string>("str.trim", {
 });
 
 /** Replaces occurrences of a substring with another string. */
-export const strReplace = StringLib<[string, string, string], string>("str.replace", {
+export const strReplace = defineFullOpcode<[string, string, string], string>("str.replace", {
   metadata: {
     label: "Replace",
     category: "string",
@@ -148,7 +151,7 @@ export const strReplace = StringLib<[string, string, string], string>("str.repla
 });
 
 /** Checks if a string contains another string. */
-export const strIncludes = StringLib<[string, string], boolean>("str.includes", {
+export const strIncludes = defineFullOpcode<[string, string], boolean>("str.includes", {
   metadata: {
     label: "Includes",
     category: "string",
@@ -169,7 +172,7 @@ export const strIncludes = StringLib<[string, string], boolean>("str.includes", 
 });
 
 /** Joins elements of a list into a string using a separator. */
-export const strJoin = StringLib<[any[], string], string>("str.join", {
+export const strJoin = defineFullOpcode<[any[], string], string>("str.join", {
   metadata: {
     label: "Join",
     category: "string",

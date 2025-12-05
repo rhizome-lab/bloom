@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
 import { createScriptContext, evaluate, registerLibrary } from "../interpreter";
-import { defineOpcode } from "../def";
 import * as Std from "./std";
 import * as Boolean from "./boolean";
 import * as Math from "./math";
+import { defineFullOpcode } from "../types";
 
-const asyncOp = defineOpcode<[], Promise<number>>("asyncOp", {
+const asyncOp = defineFullOpcode<[], Promise<number>>("asyncOp", {
   metadata: {
     label: "Async Op",
     category: "test",

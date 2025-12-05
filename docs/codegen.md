@@ -19,7 +19,7 @@ If you add a new opcode or modify an existing one, you must regenerate the type 
 Use the `defineOpcode` helper to create your opcode and provide metadata.
 
 ```typescript
-import { defineOpcode } from "../def";
+import { defineOpcode } from "../types";
 
 export const myOpcode = defineOpcode<[number], void>("my_opcode", {
   metadata: {
@@ -27,7 +27,7 @@ export const myOpcode = defineOpcode<[number], void>("my_opcode", {
     category: "misc",
     description: "Does something cool",
     slots: [],
-    parameters: [{ name: "arg", type: "number" }],
+    parameters: [{ name: "arg", type: "number", description: "An argument" }],
     returnType: "void",
   },
   handler: ([arg], ctx) => {

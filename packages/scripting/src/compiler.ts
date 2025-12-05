@@ -1,5 +1,5 @@
-import { ScriptValue } from "./def";
-import { ScriptContext, OPS, ScriptError, BreakSignal } from "./interpreter";
+import { OPS, BreakSignal } from "./interpreter";
+import { ScriptContext, ScriptError, ScriptValue } from "./types";
 
 /**
  * Compiles a ViwoScript AST into a JavaScript function.
@@ -7,7 +7,7 @@ import { ScriptContext, OPS, ScriptError, BreakSignal } from "./interpreter";
  * @param script The script to compile.
  * @returns A function that takes a ScriptContext and returns a Promise resolving to the result.
  */
-export function compile(script: ScriptValue<any>): (ctx: ScriptContext) => any {
+export function compile<T>(script: ScriptValue<T>): (ctx: ScriptContext) => T {
   const code = compileNode(script);
   // We wrap the code in a function that takes 'ctx' and 'OPS' as arguments.
   // We also need 'ScriptError' and 'BreakSignal' available for throwing/catching.

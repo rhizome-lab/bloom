@@ -1,7 +1,6 @@
-import { evaluate, ScriptError, BreakSignal } from "../interpreter";
-import { defineOpcode, ScriptRaw } from "../def";
+import { evaluate, BreakSignal } from "../interpreter";
 import { Entity } from "@viwo/shared/jsonrpc";
-import { ScriptContext } from "../interpreter";
+import { defineFullOpcode, ScriptContext } from "../types";
 
 function enterScope(ctx: ScriptContext) {
   const snapshot = { vars: ctx.vars, cow: ctx.cow };
@@ -36,10 +35,8 @@ function setVar(ctx: ScriptContext, name: string, value: any) {
 }
 
 // Values
-/**
- * Returns the current entity (this).
- */
-const this_ = defineOpcode<[], Entity>("this", {
+/** Returns the current entity (this). */
+const this_ = defineFullOpcode<[], Entity>("this", {
   metadata: {
     label: "This",
     category: "data",
@@ -55,10 +52,8 @@ const this_ = defineOpcode<[], Entity>("this", {
 });
 export { this_ as this };
 
-/**
- * Returns the entity that called the current script.
- */
-export const caller = defineOpcode<[], Entity>("caller", {
+/** Returns the entity that called the current script. */
+export const caller = defineFullOpcode<[], Entity>("caller", {
   metadata: {
     label: "Caller",
     category: "data",
@@ -77,7 +72,7 @@ export const caller = defineOpcode<[], Entity>("caller", {
 /**
  * Executes a sequence of steps and returns the result of the last step.
  */
-export const seq = defineOpcode<unknown[], any, true>("seq", {
+export const seq = defineFullOpcode<unknown[], any, true>("seq", {
   metadata: {
     label: "Sequence",
     category: "logic",
@@ -131,7 +126,7 @@ export const seq = defineOpcode<unknown[], any, true>("seq", {
 });
 
 /** Conditional execution. */
-const if_ = defineOpcode<[boolean, unknown, unknown?], any, true>("if", {
+const if_ = defineFullOpcode<[boolean, unknown, unknown?], any, true>("if", {
   metadata: {
     label: "If",
     category: "logic",
@@ -189,7 +184,7 @@ const if_ = defineOpcode<[boolean, unknown, unknown?], any, true>("if", {
 export { if_ as if };
 
 /** Repeats a body while a condition is true. */
-const while_ = defineOpcode<[boolean, unknown], any, true>("while", {
+const while_ = defineFullOpcode<[boolean, unknown], any, true>("while", {
   metadata: {
     label: "While",
     category: "logic",
@@ -304,7 +299,7 @@ export { while_ as while };
 /**
  * Iterates over a list.
  */
-const for_ = defineOpcode<[ScriptRaw<string>, readonly unknown[], unknown], any, true>("for", {
+const for_ = defineFullOpcode<[ScriptRaw<string>, readonly unknown[], unknown], any, true>("for", {
   metadata: {
     label: "For Loop",
     category: "logic",
@@ -390,7 +385,7 @@ export { for_ as for };
 /**
  * Breaks out of the current loop.
  */
-const break_ = defineOpcode<[unknown?], never>("break", {
+const break_ = defineFullOpcode<[unknown?], never>("break", {
   metadata: {
     label: "Break",
     category: "control-flow",
@@ -407,7 +402,7 @@ export { break_ as break };
 
 // Data Structures
 /** Converts a value to a JSON string. */
-export const jsonStringify = defineOpcode<[unknown], string>("json.stringify", {
+export const jsonStringify = defineFullOpcode<[unknown], string>("json.stringify", {
   metadata: {
     label: "JSON Stringify",
     category: "data",
@@ -422,7 +417,7 @@ export const jsonStringify = defineOpcode<[unknown], string>("json.stringify", {
 });
 
 /** Parses a JSON string into a value. */
-export const jsonParse = defineOpcode<[string], unknown>("json.parse", {
+export const jsonParse = defineFullOpcode<[string], unknown>("json.parse", {
   metadata: {
     label: "JSON Parse",
     category: "data",
@@ -441,7 +436,7 @@ export const jsonParse = defineOpcode<[string], unknown>("json.parse", {
 });
 
 /** Returns the type of a value. */
-const typeof_ = defineOpcode<
+const typeof_ = defineFullOpcode<
   [unknown],
   "string" | "number" | "boolean" | "object" | "null" | "array"
 >("typeof", {
@@ -463,7 +458,7 @@ export { typeof_ as typeof };
 
 // Variables
 /** Defines a local variable in the current scope. */
-const let_ = defineOpcode<[string, unknown], any>("let", {
+const let_ = defineFullOpcode<[string, unknown], any>("let", {
   metadata: {
     label: "Let",
     category: "logic",
@@ -491,7 +486,7 @@ const let_ = defineOpcode<[string, unknown], any>("let", {
 export { let_ as let };
 
 /** Retrieves a local variable from the current scope. */
-const var_ = defineOpcode<[string], any>("var", {
+const var_ = defineFullOpcode<[string], any>("var", {
   metadata: {
     label: "Get Variable",
     category: "logic",
@@ -509,7 +504,7 @@ export { var_ as var };
 /**
  * Updates the value of an existing variable.
  */
-const set_ = defineOpcode<[string, unknown], any>("set", {
+const set_ = defineFullOpcode<[string, unknown], any>("set", {
   metadata: {
     label: "Set",
     category: "action",
@@ -535,7 +530,7 @@ export { set_ as set };
 
 // System
 /** Logs a message to the console/client. */
-export const log = defineOpcode<[unknown, ...unknown[]], null>("log", {
+export const log = defineFullOpcode<[unknown, ...unknown[]], null>("log", {
   metadata: {
     label: "Log",
     category: "action",
@@ -554,7 +549,7 @@ export const log = defineOpcode<[unknown, ...unknown[]], null>("log", {
 });
 
 /** Retrieves a specific argument passed to the script. */
-export const arg = defineOpcode<[number], any>("arg", {
+export const arg = defineFullOpcode<[number], any>("arg", {
   metadata: {
     label: "Get Arg",
     category: "data",
@@ -571,7 +566,7 @@ export const arg = defineOpcode<[number], any>("arg", {
 });
 
 /** Retrieves all arguments passed to the script. */
-export const args = defineOpcode<[], readonly any[]>("args", {
+export const args = defineFullOpcode<[], readonly any[]>("args", {
   metadata: {
     label: "Get Args",
     category: "data",
@@ -586,7 +581,7 @@ export const args = defineOpcode<[], readonly any[]>("args", {
 });
 
 /** Sends a warning message to the client. */
-export const warn = defineOpcode<[unknown], void>("warn", {
+export const warn = defineFullOpcode<[unknown], void>("warn", {
   metadata: {
     label: "Warn",
     category: "action",
@@ -601,7 +596,7 @@ export const warn = defineOpcode<[unknown], void>("warn", {
 });
 
 /** Throws an error, stopping script execution. */
-const throw_ = defineOpcode<[unknown], never>("throw", {
+const throw_ = defineFullOpcode<[unknown], never>("throw", {
   metadata: {
     label: "Throw",
     category: "action",
@@ -616,7 +611,7 @@ const throw_ = defineOpcode<[unknown], never>("throw", {
 });
 export { throw_ as throw };
 
-const try_ = defineOpcode<[unknown, string, unknown], any, true>("try", {
+const try_ = defineFullOpcode<[unknown, string, unknown], any, true>("try", {
   metadata: {
     label: "Try/Catch",
     category: "logic",
@@ -668,34 +663,37 @@ const try_ = defineOpcode<[unknown, string, unknown], any, true>("try", {
 export { try_ as try };
 
 /** Creates a lambda (anonymous function). */
-export const lambda = defineOpcode<[ScriptRaw<readonly string[]>, unknown], any, true>("lambda", {
-  metadata: {
-    label: "Lambda",
-    category: "func",
-    description: "Create a lambda function",
-    slots: [
-      { name: "Args", type: "block" },
-      { name: "Body", type: "block" },
-    ],
-    parameters: [
-      { name: "args", type: "string[]" },
-      { name: "body", type: "any" },
-    ],
-    returnType: "any",
-    lazy: true,
+export const lambda = defineFullOpcode<[ScriptRaw<readonly string[]>, unknown], any, true>(
+  "lambda",
+  {
+    metadata: {
+      label: "Lambda",
+      category: "func",
+      description: "Create a lambda function",
+      slots: [
+        { name: "Args", type: "block" },
+        { name: "Body", type: "block" },
+      ],
+      parameters: [
+        { name: "args", type: "string[]" },
+        { name: "body", type: "any" },
+      ],
+      returnType: "any",
+      lazy: true,
+    },
+    handler: ([argNames, body], ctx) => {
+      return {
+        type: "lambda",
+        args: argNames,
+        body,
+        closure: ctx.vars,
+      };
+    },
   },
-  handler: ([argNames, body], ctx) => {
-    return {
-      type: "lambda",
-      args: argNames,
-      body,
-      closure: ctx.vars,
-    };
-  },
-});
+);
 
 /** Calls a lambda function. */
-export const apply = defineOpcode<[unknown, ...unknown[]], any>("apply", {
+export const apply = defineFullOpcode<[unknown, ...unknown[]], any>("apply", {
   metadata: {
     label: "Apply",
     category: "func",
@@ -743,7 +741,7 @@ export const apply = defineOpcode<[unknown, ...unknown[]], any>("apply", {
 });
 
 /** Sends a message to the client. */
-export const send = defineOpcode<[string, unknown], null>("send", {
+export const send = defineFullOpcode<[string, unknown], null>("send", {
   metadata: {
     label: "System Send",
     category: "system",
@@ -768,7 +766,7 @@ export const send = defineOpcode<[string, unknown], null>("send", {
  * Returns the argument as is, without evaluation.
  * Used for passing arrays as values to opcodes.
  */
-export const quote = defineOpcode<[ScriptRaw<unknown>], any, true>("quote", {
+export const quote = defineFullOpcode<[ScriptRaw<unknown>], any, true>("quote", {
   metadata: {
     label: "Quote",
     category: "data",
