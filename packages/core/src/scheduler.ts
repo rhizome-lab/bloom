@@ -6,7 +6,7 @@ import { evaluate, createScriptContext } from "@viwo/scripting";
  * Manages scheduled tasks (delayed verb executions).
  * Tasks are persisted in the database until execution.
  */
-export class TaskScheduler {
+class TaskScheduler {
   constructor() {}
 
   /**

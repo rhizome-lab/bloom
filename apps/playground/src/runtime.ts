@@ -13,7 +13,7 @@ import {
 import { BlockDefinition } from "@viwo/web-editor";
 
 // Simple output buffer
-export const outputBuffer: string[] = [];
+const outputBuffer: string[] = [];
 export const clearOutput = () => {
   outputBuffer.length = 0;
 };

@@ -1,8 +1,8 @@
 import { createStore } from "solid-js/store";
-import { ViwoClient, GameMessage, GameState as ClientGameState } from "@viwo/client";
+import { ViwoClient, GameState as ClientGameState } from "@viwo/client";
 import { Entity } from "@viwo/shared/jsonrpc";
 
-export type { Entity, GameMessage };
+export type { Entity };
 
 interface WebGameState extends ClientGameState {
   inspectedItem: number | null;

@@ -5,7 +5,7 @@ import { WebSocket } from "ws";
 /**
  * Context representing a connected player.
  */
-export interface PlayerContext {
+interface PlayerContext {
   id: number;
   ws: WebSocket;
 }

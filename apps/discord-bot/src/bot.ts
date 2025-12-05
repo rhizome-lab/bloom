@@ -4,7 +4,7 @@ import { db } from "./instances";
 import { sessionManager } from "./session";
 import { socketManager } from "./socket";
 
-export class DiscordBot {
+class DiscordBot {
   private client: Client;
 
   constructor() {

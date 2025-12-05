@@ -24,7 +24,7 @@ export interface ThemeColors {
   "--overlay-bg": string;
 }
 
-export interface ThemeManifestV1 {
+interface ThemeManifestV1 {
   kind: "viwo-theme";
   version: "1.0.0";
   name: string;
@@ -32,9 +32,9 @@ export interface ThemeManifestV1 {
   description?: string;
 }
 
-export type ThemeManifest = ThemeManifestV1;
+type ThemeManifest = ThemeManifestV1;
 
-export interface Theme {
+interface Theme {
   id: string;
   manifest: ThemeManifest;
   colors: ThemeColors;

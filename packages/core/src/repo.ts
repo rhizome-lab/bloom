@@ -273,7 +273,7 @@ export function setPrototypeId(id: number, prototypeId: number | null) {
   db.query("UPDATE entities SET prototype_id = ? WHERE id = ?").run(prototypeId, id);
 }
 
-export interface Capability {
+interface Capability {
   id: string;
   owner_id: number;
   type: string;
@@ -318,10 +318,6 @@ export function getCapability(id: string): Capability | null {
     ...row,
     params: JSON.parse(row.params),
   };
-}
-
-export function deleteCapability(id: string) {
-  db.query("DELETE FROM capabilities WHERE id = ?").run(id);
 }
 
 export function updateCapabilityOwner(id: string, newOwnerId: number) {

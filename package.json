@@ -38,7 +38,7 @@
     "check:unused": "knip",
     "check:circular": "madge --circular --extensions ts,tsx,js,jsx apps packages plugins",
     "commit": "bun generate:types && bun format && git add -A && git commit",
-    "ci:check": "bun run check:readmes && bun run check:unused && bun run check:circular && bun format --check && bun lint && bun typecheck && bun test"
+    "ci:check": "bun run check:readmes && bun run check:unused && bun format --check && bun lint && bun typecheck && bun test && bun run check:circular"
   },
   "workspaces": [
     "apps/*",
