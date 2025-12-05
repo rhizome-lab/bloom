@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { createCapability } from "../../repo";
+import { createCapability, KernelLib } from "@viwo/core";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { createScriptContext, evaluate, registerLibrary } from "@viwo/scripting";
-import * as KernelLib from "./kernel";
-import * as FsLib from "./fs";
+import * as FsLib from "./lib";
 
 registerLibrary(KernelLib);
 registerLibrary(FsLib);
@@ -33,6 +32,13 @@ describe("FS Library", () => {
 
     const content = await fs.readFile(filePath, "utf-8");
     expect(content).toBe("Hello World");
+  });
+
+  it("should read from a file", async () => {
+    const filePath = path.join(testDir, "read_test.txt");
+    await fs.writeFile(filePath, "Read Me");
+    const content = await evaluate(FsLib.fsRead(KernelLib.getCapability("fs.read"), filePath), ctx);
+    expect(content).toBe("Read Me");
   });
 
   it("should list files in a directory", async () => {

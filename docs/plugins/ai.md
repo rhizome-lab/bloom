@@ -91,3 +91,57 @@ interface GenerationTemplate<T = any> {
 ```
 
 Templates define a schema for the structured output and a prompt function to guide the AI.
+
+## Opcodes
+
+The plugin exposes several opcodes to the scripting environment for direct AI access.
+
+### `ai.text(model, prompt, [system])`
+
+Generates a text response from an LLM.
+
+- `model`: The model identifier (e.g., "gpt-4o").
+- `prompt`: The user prompt.
+- `system`: (Optional) The system prompt.
+- **Returns**: The generated text string.
+
+### `ai.json(model, prompt, [schema])`
+
+Generates a structured JSON response.
+
+- `model`: The model identifier.
+- `prompt`: The user prompt.
+- `schema`: (Optional) A JSON schema object to enforce structure.
+- **Returns**: The generated JSON object.
+
+### `ai.embedding.text(model, text)`
+
+Generates a vector embedding for the given text.
+
+- `model`: The embedding model identifier.
+- `text`: The text to embed.
+- **Returns**: An array of numbers representing the embedding.
+
+### `ai.image(model, prompt)`
+
+Generates an image.
+
+- `model`: The image generation model.
+- `prompt`: The image description.
+- **Returns**: An image object (currently internal format).
+
+### `ai.generate_speech(model, text)`
+
+Generates speech audio from text.
+
+- `model`: The text-to-speech model.
+- `text`: The text to speak.
+- **Returns**: An audio object (currently internal format).
+
+### `ai.transcribe(model, audio)`
+
+Transcribes audio to text.
+
+- `model`: The transcription model.
+- `audio`: The audio object to transcribe.
+- **Returns**: The transcribed text string.

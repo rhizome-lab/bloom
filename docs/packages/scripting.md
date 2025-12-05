@@ -13,6 +13,7 @@ This package contains the complete toolchain for ViwoScript, a custom scripting 
 - **`src/lib/`**: The Standard Library. A collection of built-in modules available to scripts, including:
   - `Std`: Core functions (control flow, variables).
   - `Math`: Mathematical operations.
+  - `Boolean`: Boolean logic and comparisons.
   - `List`: Array manipulation.
   - `Object`: Object manipulation.
   - `String`: String processing.

@@ -43,6 +43,5 @@
 - [ ] **Core**: Solve transactional updates for multiple entities with capabilities in `packages/core/src/runtime/lib/core.ts`.
 - [ ] **Core**: Add capability-based permissions for verbs
 - [ ] **Core**: Consider splitting permissions for net.http into multiple capabilities
-- [ ] **Core**: Move net and fs into standalone libraries, or move to `packages/scripting/`
-- [ ] **Plugins**: Add capabilities to plugins
+- [ ] **Plugins**: Add capability-based permissions to opcodes defined by plugins
 - [ ] **Codegen**: Require and generate JSDocs for opcodes

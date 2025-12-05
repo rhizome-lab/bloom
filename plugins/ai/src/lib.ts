@@ -14,7 +14,7 @@ import {
   getSpeechModel,
   getTextEmbeddingModel,
   getTranscriptionModel,
-} from "../models";
+} from "./models";
 
 export const aiText = defineOpcode<[string, string, string?], string>("ai.text", {
   metadata: {

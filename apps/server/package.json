@@ -12,7 +12,9 @@
   "dependencies": {
     "@viwo/core": "workspace:*",
     "@viwo/plugin-ai": "workspace:*",
-    "@viwo/plugin-memory": "workspace:*"
+    "@viwo/plugin-fs": "workspace:*",
+    "@viwo/plugin-memory": "workspace:*",
+    "@viwo/plugin-net": "workspace:*"
   },
   "devDependencies": {
     "@tsconfig/strictest": "^2.0.8",

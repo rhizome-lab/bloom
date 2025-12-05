@@ -1,5 +1,5 @@
 import { defineOpcode, ScriptError, Capability } from "@viwo/scripting";
-import { checkCapability } from "../utils";
+import { checkCapability } from "@viwo/core";
 
 function checkNetCapability(ctx: any, cap: Capability, targetDomain: string, method: string) {
   checkCapability(cap, ctx.this.id, "net.http", (params) => {

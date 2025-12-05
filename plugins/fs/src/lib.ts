@@ -1,5 +1,5 @@
 import { defineOpcode, ScriptError, Capability } from "@viwo/scripting";
-import { checkCapability } from "../utils";
+import { checkCapability } from "@viwo/core";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 

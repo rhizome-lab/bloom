@@ -3,8 +3,6 @@ process.env.NODE_ENV = "test";
 import { generateTypeDefinitions } from "@viwo/scripting";
 import * as CoreLib from "../src/runtime/lib/core";
 import * as KernelLib from "../src/runtime/lib/kernel";
-import * as FsLib from "../src/runtime/lib/fs";
-import * as NetLib from "../src/runtime/lib/net";
 import {
   MathLib,
   BooleanLib,
@@ -21,8 +19,6 @@ import { join } from "node:path";
 const libraries = [
   CoreLib,
   KernelLib,
-  FsLib,
-  NetLib,
   MathLib,
   BooleanLib,
   ListLib,

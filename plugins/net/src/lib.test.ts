@@ -1,8 +1,7 @@
 import { describe, it, expect, mock, beforeEach, afterEach } from "bun:test";
 import { createScriptContext, evaluate, registerLibrary, ScriptError } from "@viwo/scripting";
-import { createCapability } from "../../repo";
-import * as KernelLib from "./kernel";
-import * as NetLib from "./net";
+import { createCapability, KernelLib } from "@viwo/core";
+import * as NetLib from "./lib";
 
 // Mock fetch
 const originalFetch = global.fetch;

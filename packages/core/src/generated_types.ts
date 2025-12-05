@@ -117,19 +117,6 @@ declare global {
   function var_(name: string): any;
   function warn(message: unknown): void;
   function while_(condition: any, body: any): any;
-  namespace fs {
-    function list(cap: Capability | null, path: string): Promise<readonly string[]>;
-    function read(cap: Capability | null, path: string): Promise<string>;
-    function write(cap: Capability | null, path: string, content: string): Promise<null>;
-  }
-  namespace net {
-    namespace http {
-      function fetch(cap: Capability | null, url: string, options?: object): Promise<object>;
-      function response_bytes(response: object): number[];
-      function response_json(response: object): any;
-      function response_text(response: object): string;
-    }
-  }
   namespace list {
     function concat(...lists: readonly unknown[][]): any[];
     function empty(list: readonly unknown[]): boolean;

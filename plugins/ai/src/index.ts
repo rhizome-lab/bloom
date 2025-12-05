@@ -1,7 +1,7 @@
 import { Plugin, PluginContext, CommandContext } from "@viwo/core";
 import { generateText, generateObject, embed, streamText } from "ai";
 import { z } from "zod";
-import * as AiLib from "./lib/ai";
+import * as AiLib from "./lib";
 import { getImageModel, getLanguageModel, getTextEmbeddingModel } from "./models";
 
 export interface GenerationTemplate<T = any> {

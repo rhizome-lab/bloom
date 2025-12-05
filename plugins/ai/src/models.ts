@@ -69,7 +69,7 @@ function isProviderName(name: string): name is keyof typeof providerMap {
   return providerName.has(name as keyof typeof providerMap);
 }
 
-export function getProvider(providerName: string | undefined) {
+function getProvider(providerName: string | undefined) {
   if (!providerName || !isProviderName(providerName)) {
     throw new Error(`Unknown provider: ${providerName}`);
   }

@@ -16,8 +16,6 @@ import {
 } from "@viwo/scripting";
 import * as CoreLib from "./runtime/lib/core";
 import * as KernelLib from "./runtime/lib/kernel";
-import * as FsLib from "./runtime/lib/fs";
-import * as NetLib from "./runtime/lib/net";
 import { PluginManager, CommandContext } from "./plugin";
 import { scheduler } from "./scheduler";
 import { JsonRpcRequest, JsonRpcResponse, JsonRpcNotification, Entity } from "@viwo/shared/jsonrpc";
@@ -28,7 +26,16 @@ export type { CommandContext };
 export type { Plugin, PluginContext } from "./plugin";
 export { CoreLib };
 export { db } from "./db";
-export { createEntity, getEntity, addVerb, updateEntity } from "./repo";
+export {
+  createEntity,
+  getEntity,
+  addVerb,
+  updateEntity,
+  getCapability,
+  createCapability,
+} from "./repo";
+export { checkCapability } from "./runtime/utils";
+export { KernelLib };
 
 // Scheduler is started by the application (server/client)
 export { scheduler } from "./scheduler";
@@ -66,8 +73,6 @@ const clients = new Map<number, Bun.ServerWebSocket<{ userId: number }>>();
 registerLibrary(StdLib);
 registerLibrary(CoreLib);
 registerLibrary(KernelLib);
-registerLibrary(FsLib);
-registerLibrary(NetLib);
 registerLibrary(ListLib);
 registerLibrary(ObjectLib);
 registerLibrary(StringLib);
