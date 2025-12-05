@@ -663,6 +663,94 @@ function compileOpcodeCall(
       return { pre, expr: "ctx.this" };
     case "caller":
       return { pre, expr: "ctx.caller" };
+
+    // List Opcodes
+    case "list.len":
+      return { pre, expr: `${argExprs[0]}.length` };
+    case "list.empty":
+      return { pre, expr: `(${argExprs[0]}.length === 0)` };
+    case "list.get":
+      return { pre, expr: `${argExprs[0]}[${argExprs[1]}]` };
+    case "list.set":
+      return {
+        pre,
+        expr: `(${argExprs[0]}[${argExprs[1]}] = ${argExprs[2]})`,
+      };
+    case "list.push":
+      return { pre, expr: `${argExprs[0]}.push(${argExprs[1]})` };
+    case "list.pop":
+      return { pre, expr: `${argExprs[0]}.pop()` };
+    case "list.unshift":
+      return { pre, expr: `${argExprs[0]}.unshift(${argExprs[1]})` };
+    case "list.shift":
+      return { pre, expr: `${argExprs[0]}.shift()` };
+    case "list.slice":
+      return {
+        pre,
+        expr: `${argExprs[0]}.slice(${argExprs[1]}, ${args[2] ? argExprs[2] : "undefined"})`,
+      };
+    case "list.splice": {
+      // remaining args are items // args[0] is list, args[1] is start, args[2] is deleteCount // list.splice(list, start, deleteCount, ...items)
+      const items = argExprs.slice(3);
+      return {
+        pre,
+        expr: `${argExprs[0]}.splice(${argExprs[1]}, ${argExprs[2]}${
+          items.length > 0 ? ", " + items.join(", ") : ""
+        })`,
+      };
+    }
+    case "list.concat":
+      return { pre, expr: `[].concat(${argExprs.join(", ")})` };
+    case "list.includes":
+      return { pre, expr: `${argExprs[0]}.includes(${argExprs[1]})` };
+    case "list.reverse":
+      return { pre, expr: `${argExprs[0]}.reverse()` };
+    case "list.sort":
+      return { pre, expr: `${argExprs[0]}.sort()` };
+    case "list.join":
+      return { pre, expr: `${argExprs[0]}.join(${argExprs[1]})` };
+
+    // Object Opcodes
+    case "obj.keys":
+      return { pre, expr: `Object.getOwnPropertyNames(${argExprs[0]})` };
+    case "obj.values":
+      return {
+        pre,
+        expr: `Object.getOwnPropertyNames(${argExprs[0]}).map(k => ${argExprs[0]}[k])`,
+      };
+    case "obj.entries":
+      return {
+        pre,
+        expr: `Object.getOwnPropertyNames(${argExprs[0]}).map(k => [k, ${argExprs[0]}[k]])`,
+      };
+    case "obj.merge":
+      return { pre, expr: `Object.assign({}, ${argExprs.join(", ")})` };
+
+    // String Opcodes
+    case "str.len":
+      return { pre, expr: `${argExprs[0]}.length` };
+    case "str.split":
+      return { pre, expr: `${argExprs[0]}.split(${argExprs[1]})` };
+    case "str.slice":
+      return {
+        pre,
+        expr: `${argExprs[0]}.slice(${argExprs[1]}, ${args[2] ? argExprs[2] : "undefined"})`,
+      };
+    case "str.upper":
+      return { pre, expr: `${argExprs[0]}.toUpperCase()` };
+    case "str.lower":
+      return { pre, expr: `${argExprs[0]}.toLowerCase()` };
+    case "str.trim":
+      return { pre, expr: `${argExprs[0]}.trim()` };
+    case "str.replace":
+      return {
+        pre,
+        expr: `${argExprs[0]}.replace(${argExprs[1]}, ${args[2] ? argExprs[2] : "undefined"})`,
+      };
+    case "str.includes":
+      return { pre, expr: `${argExprs[0]}.includes(${argExprs[1]})` };
+    case "str.join": // Alias for list.join? No, str.join in string.ts takes list and separator.
+      return { pre, expr: `${argExprs[0]}.join(${argExprs[1]})` };
   }
 
   const def = OPS[op];

@@ -154,4 +154,94 @@ describe("Parity: Interpreter vs Compiler", () => {
     // Fail cases
     checkParity("chained lt fail", ["<", 1, 3, 2]);
   });
+
+  describe("List Library", () => {
+    checkParity("list.len", ["list.len", ["list.new", 1, 2, 3]]);
+    checkParity("list.empty true", ["list.empty", ["list.new"]]);
+    checkParity("list.empty false", ["list.empty", ["list.new", 1]]);
+    checkParity("list.get", ["list.get", ["list.new", 10, 20, 30], 1]);
+    checkParity("list.set", [
+      "seq",
+      ["let", "l", ["list.new", 1, 2, 3]],
+      ["list.set", ["var", "l"], 1, 99],
+      ["var", "l"],
+    ]);
+    checkParity("list.push", [
+      "seq",
+      ["let", "l", ["list.new", 1, 2]],
+      ["list.push", ["var", "l"], 3],
+      ["var", "l"],
+    ]);
+    checkParity("list.pop", [
+      "seq",
+      ["let", "l", ["list.new", 1, 2, 3]],
+      ["let", "popped", ["list.pop", ["var", "l"]]],
+      ["list.new", ["var", "popped"], ["var", "l"]],
+    ]);
+    checkParity("list.unshift", [
+      "seq",
+      ["let", "l", ["list.new", 2, 3]],
+      ["list.unshift", ["var", "l"], 1],
+      ["var", "l"],
+    ]);
+    checkParity("list.shift", [
+      "seq",
+      ["let", "l", ["list.new", 1, 2, 3]],
+      ["let", "shifted", ["list.shift", ["var", "l"]]],
+      ["list.new", ["var", "shifted"], ["var", "l"]],
+    ]);
+    checkParity("list.slice", ["list.slice", ["list.new", 1, 2, 3, 4, 5], 1, 4]);
+    checkParity("list.splice", [
+      "seq",
+      ["let", "l", ["list.new", 1, 2, 3, 4, 5]],
+      ["list.splice", ["var", "l"], 1, 2, 9, 10],
+      ["var", "l"],
+    ]);
+    checkParity("list.concat", [
+      "list.concat",
+      ["list.new", 1, 2],
+      ["list.new", 3, 4],
+      ["list.new", 5],
+    ]);
+    checkParity("list.includes true", ["list.includes", ["list.new", 1, 2, 3], 2]);
+    checkParity("list.includes false", ["list.includes", ["list.new", 1, 2, 3], 4]);
+    checkParity("list.reverse", [
+      "seq",
+      ["let", "l", ["list.new", 1, 2, 3]],
+      ["list.reverse", ["var", "l"]],
+      ["var", "l"],
+    ]);
+    checkParity("list.sort", [
+      "seq",
+      ["let", "l", ["list.new", 3, 1, 2]],
+      ["list.sort", ["var", "l"]],
+      ["var", "l"],
+    ]);
+    checkParity("list.join", ["list.join", ["list.new", "a", "b", "c"], "-"]);
+  });
+
+  describe("Object Library", () => {
+    checkParity("obj.keys", ["obj.keys", ["obj.new", ["a", 1], ["b", 2]]]);
+    checkParity("obj.values", ["obj.values", ["obj.new", ["a", 1], ["b", 2]]]);
+    checkParity("obj.entries", ["obj.entries", ["obj.new", ["a", 1], ["b", 2]]]);
+    checkParity("obj.merge", [
+      "obj.merge",
+      ["obj.new", ["a", 1]],
+      ["obj.new", ["b", 2]],
+      ["obj.new", ["a", 3]], // Override
+    ]);
+  });
+
+  describe("String Library", () => {
+    checkParity("str.len", ["str.len", "hello"]);
+    checkParity("str.split", ["str.split", "a-b-c", "-"]);
+    checkParity("str.slice", ["str.slice", "hello world", 0, 5]);
+    checkParity("str.upper", ["str.upper", "hello"]);
+    checkParity("str.lower", ["str.lower", "HELLO"]);
+    checkParity("str.trim", ["str.trim", "  hello  "]);
+    checkParity("str.replace", ["str.replace", "hello world", "world", "viwo"]);
+    checkParity("str.includes true", ["str.includes", "hello world", "world"]);
+    checkParity("str.includes false", ["str.includes", "hello world", "viwo"]);
+    checkParity("str.join", ["str.join", ["list.new", "x", "y", "z"], ","]);
+  });
 });
