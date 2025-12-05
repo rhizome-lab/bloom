@@ -2,6 +2,41 @@ import { Plugin, PluginContext, CommandContext } from "@viwo/core";
 import { generateText, generateObject, embed, streamText } from "ai";
 import { z } from "zod";
 
+import * as amazonBedrock from "@ai-sdk/amazon-bedrock";
+import * as anthropic from "@ai-sdk/anthropic";
+import * as assemblyai from "@ai-sdk/assemblyai";
+import * as azure from "@ai-sdk/azure";
+import * as baseten from "@ai-sdk/baseten";
+import * as blackForestLabs from "@ai-sdk/black-forest-labs";
+import * as cerebras from "@ai-sdk/cerebras";
+import * as cohere from "@ai-sdk/cohere";
+import * as deepgram from "@ai-sdk/deepgram";
+import * as deepinfra from "@ai-sdk/deepinfra";
+import * as deepseek from "@ai-sdk/deepseek";
+import * as elevenlabs from "@ai-sdk/elevenlabs";
+import * as fal from "@ai-sdk/fal";
+import * as fireworks from "@ai-sdk/fireworks";
+import * as gateway from "@ai-sdk/gateway";
+import * as gladia from "@ai-sdk/gladia";
+import * as google from "@ai-sdk/google";
+import * as googleVertex from "@ai-sdk/google-vertex";
+import * as groq from "@ai-sdk/groq";
+import * as huggingface from "@ai-sdk/huggingface";
+import * as hume from "@ai-sdk/hume";
+import * as langchain from "@ai-sdk/langchain";
+import * as llamaindex from "@ai-sdk/llamaindex";
+import * as lmnt from "@ai-sdk/lmnt";
+import * as luma from "@ai-sdk/luma";
+import * as mistral from "@ai-sdk/mistral";
+import * as openai from "@ai-sdk/openai";
+import * as openaiCompatible from "@ai-sdk/openai-compatible";
+import * as perplexity from "@ai-sdk/perplexity";
+import * as replicate from "@ai-sdk/replicate";
+import * as revai from "@ai-sdk/revai";
+import * as togetherai from "@ai-sdk/togetherai";
+import * as vercel from "@ai-sdk/vercel";
+import * as xai from "@ai-sdk/xai";
+
 export interface GenerationTemplate<T = any> {
   name: string;
   description: string;
@@ -9,41 +44,41 @@ export interface GenerationTemplate<T = any> {
   prompt: (context: CommandContext, instruction?: string) => string;
 }
 
-const providerMap: Record<string, string> = {
-  "amazon-bedrock": "@ai-sdk/amazon-bedrock",
-  anthropic: "@ai-sdk/anthropic",
-  assemblyai: "@ai-sdk/assemblyai",
-  azure: "@ai-sdk/azure",
-  baseten: "@ai-sdk/baseten",
-  "black-forest-labs": "@ai-sdk/black-forest-labs",
-  cerebras: "@ai-sdk/cerebras",
-  cohere: "@ai-sdk/cohere",
-  deepgram: "@ai-sdk/deepgram",
-  deepinfra: "@ai-sdk/deepinfra",
-  deepseek: "@ai-sdk/deepseek",
-  elevenlabs: "@ai-sdk/elevenlabs",
-  fal: "@ai-sdk/fal",
-  fireworks: "@ai-sdk/fireworks",
-  gateway: "@ai-sdk/gateway",
-  gladia: "@ai-sdk/gladia",
-  google: "@ai-sdk/google",
-  "google-vertex": "@ai-sdk/google-vertex",
-  groq: "@ai-sdk/groq",
-  huggingface: "@ai-sdk/huggingface",
-  hume: "@ai-sdk/hume",
-  langchain: "@ai-sdk/langchain",
-  llamaindex: "@ai-sdk/llamaindex",
-  lmnt: "@ai-sdk/lmnt",
-  luma: "@ai-sdk/luma",
-  mistral: "@ai-sdk/mistral",
-  openai: "@ai-sdk/openai",
-  "openai-compatible": "@ai-sdk/openai-compatible",
-  perplexity: "@ai-sdk/perplexity",
-  replicate: "@ai-sdk/replicate",
-  revai: "@ai-sdk/revai",
-  togetherai: "@ai-sdk/togetherai",
-  vercel: "@ai-sdk/vercel",
-  xai: "@ai-sdk/xai",
+const providerMap: Record<string, any> = {
+  "amazon-bedrock": amazonBedrock,
+  anthropic: anthropic,
+  assemblyai: assemblyai,
+  azure: azure,
+  baseten: baseten,
+  "black-forest-labs": blackForestLabs,
+  cerebras: cerebras,
+  cohere: cohere,
+  deepgram: deepgram,
+  deepinfra: deepinfra,
+  deepseek: deepseek,
+  elevenlabs: elevenlabs,
+  fal: fal,
+  fireworks: fireworks,
+  gateway: gateway,
+  gladia: gladia,
+  google: google,
+  "google-vertex": googleVertex,
+  groq: groq,
+  huggingface: huggingface,
+  hume: hume,
+  langchain: langchain,
+  llamaindex: llamaindex,
+  lmnt: lmnt,
+  luma: luma,
+  mistral: mistral,
+  openai: openai,
+  "openai-compatible": openaiCompatible,
+  perplexity: perplexity,
+  replicate: replicate,
+  revai: revai,
+  togetherai: togetherai,
+  vercel: vercel,
+  xai: xai,
 };
 
 async function getModel(modelSpec?: string) {
@@ -62,13 +97,12 @@ async function getModel(modelSpec?: string) {
     }
   }
 
-  const pkgName = providerMap[providerName];
-  if (!pkgName) {
+  const mod = providerMap[providerName];
+  if (!mod) {
     throw new Error(`Unknown provider: ${providerName}`);
   }
 
   try {
-    const mod = await import(pkgName);
     // Try to find the provider function (default, named export, or camelCase fallback).
 
     // Special cases mapping
@@ -87,9 +121,7 @@ async function getModel(modelSpec?: string) {
     }
 
     if (!providerFn) {
-      throw new Error(
-        `Could not find export for provider '${providerName}' in package '${pkgName}'`,
-      );
+      throw new Error(`Could not find export for provider '${providerName}'`);
     }
 
     return providerFn(modelName);

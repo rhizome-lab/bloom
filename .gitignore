@@ -36,3 +36,6 @@ pnpm-debug.log*
 
 # vitepress cache
 cache/
+
+# debugging text files
+*.txt
