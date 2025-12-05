@@ -9,10 +9,11 @@ import { ScriptContext, ScriptError, ScriptValue } from "./types";
  */
 export function compile<T>(script: ScriptValue<T>): (ctx: ScriptContext) => T {
   const ctxState = { tempIdx: 0 };
-  const code = compileStatements(script, ctxState);
+  const code = compileStatements(script, ctxState, true);
   const body = `\
 return function compiled(ctx) {
 ${code}}`;
+  console.log(body);
   return new Function("OPS", "ScriptError", body)(OPS, ScriptError);
 }
 
@@ -98,64 +99,35 @@ function genTemp(state: CtxState): string {
   return `_t${state.tempIdx++}`;
 }
 
-function compileExpression(node: any, state: CtxState): string {
-  if (node === null || node === undefined) {
+function compileExpression(node: any, state: CtxState, topLevel = false): string {
+  if (node === undefined) {
     return "null";
   }
-
-  if (typeof node === "number" || typeof node === "boolean") {
-    return String(node);
-  }
-
-  if (typeof node === "string") {
+  if (
+    node === null ||
+    typeof node === "number" ||
+    typeof node === "boolean" ||
+    typeof node === "string"
+  ) {
     return JSON.stringify(node);
   }
-
   if (Array.isArray(node)) {
     if (node.length === 0) return "[]";
-
     const [op, ...args] = node;
-
-    // Control flow constructs that need hoisting
-    if (
-      ["seq", "if", "while", "for", "let", "set", "try", "break", "return", "throw"].includes(op)
-    ) {
-      return compileStatements(node, state);
-    }
-
-    if (op === "var") {
-      return toJSName(args[0]);
-    }
-
-    if (op === "lambda") {
-      return compileLambda(args);
-    }
-
-    if (op === "list.new") {
-      const compiledArgs = args.map((a) => compileExpression(a, state));
-      return `[${compiledArgs.join(", ")}]`;
-    }
-
-    if (op === "obj.new") {
-      return compileObjNew(args, state);
-    }
-
     if (typeof op === "string" && OPS[op]) {
-      return compileOpcodeCall(op, args, state);
+      return compileOpcodeCall(op, args, state, topLevel);
     }
-
     throw new Error(`Unknown opcode: ${op}`);
   }
-
   throw new Error(`Unknown node type: ${typeof node}`);
 }
 
-function compileStatements(node: any, state: CtxState): string {
+function compileStatements(node: any, state: CtxState, topLevel = false): string {
   if (Array.isArray(node)) {
     const [op, ...args] = node;
     switch (op) {
       case "seq":
-        return compileSeq(args, state);
+        return compileSeq(args, state, topLevel);
       case "if":
         return compileIf(args, state);
       case "while":
@@ -178,14 +150,14 @@ function compileStatements(node: any, state: CtxState): string {
   }
 
   // Default: compile as expression
-  return `return ${compileExpression(node, state)}`;
+  return `${topLevel ? "return " : ""}${compileExpression(node, state)}`;
 }
 
-function compileSeq(args: any[], state: CtxState): string {
+function compileSeq(args: any[], state: CtxState, topLevel = false): string {
   if (args.length === 0) return "null";
   let code = "";
   for (let i = 0; i < args.length; i++) {
-    const result = compileStatements(args[i], state);
+    const result = compileStatements(args[i], state, topLevel && i === args.length - 1);
     code += result + "\n";
   }
   return code;
@@ -257,35 +229,17 @@ function compileThrow(args: any[], state: CtxState): string {
 
 function compileTry(args: any[], state: CtxState): string {
   const [tryBlock, errorVar, catchBlock] = args;
-  const tryCode = compileStatements(tryBlock, state);
-  const catchCode = compileStatements(catchBlock, state);
-  const errDecl = errorVar ? `let ${toJSName(errorVar)} = e.message || String(e);` : "";
-  const resultVar = genTemp(state);
   return `\
-let ${resultVar} = null;
 try {
-  ${resultVar} = ${tryCode}
-} catch (e) {
-  ${resultVar} = ${errDecl}
-  ${catchCode}
+${compileStatements(tryBlock, state)}
+} catch (${errorVar}) {
+${compileStatements(catchBlock, state)}
 }`;
 }
 
-function compileLambda(args: any[]): string {
-  const [params, body] = args;
-  const paramNames = (params as string[]).map(toJSName);
-  const lambdaState = { tempIdx: 0 }; // Fresh state for lambda
-  const code = compileStatements(body, lambdaState);
-
-  // TODO: How to fix this
-  return `({
-    type: "lambda",
-    args: ${JSON.stringify(params)},
-    execute: (ctx) => {
-      ${paramNames.map((p) => `let ${p} = ctx.vars[${JSON.stringify(p)}];`).join("\n")}
-      ${code}
-    }
-  })`;
+function compileLambda([params, body]: any[]): string {
+  return `(${(params as string[]).map((name) => toJSName(name)).join(", ")}) => {
+${compileStatements(body, { tempIdx: 0 }, true)}}`;
 }
 
 function compileObjNew(args: any[], state: CtxState): string {
@@ -311,13 +265,49 @@ function compileChainedComparison(argExprs: string[], op: string): string {
   return `(${parts.join(" && ")})`;
 }
 
-function compileOpcodeCall(op: string, args: any[], state: CtxState): string {
+function compileOpcodeCall(op: string, args: any[], state: CtxState, topLevel = false): string {
   if (op === "quote") {
     return JSON.stringify(args[0]);
+  }
+
+  switch (op) {
+    case "seq":
+      return compileSeq(args, state, topLevel);
+    case "if":
+      return compileIf(args, state);
+    case "while":
+      return compileWhile(args, state);
+    case "for":
+      return compileFor(args, state);
+    case "let":
+      return compileLet(args, state);
+    case "set":
+      return compileSet(args, state);
+    case "break":
+      return compileBreak(args, state);
+    case "return":
+      return compileReturn(args, state);
+    case "throw":
+      return compileThrow(args, state);
+    case "try":
+      return compileTry(args, state);
+    case "var":
+      return toJSName(args[0]);
+    case "lambda":
+      return compileLambda(args);
+    case "quote":
+      return JSON.stringify(args[0]);
+    case "list.new":
+      const compiledArgs = args.map((a) => compileExpression(a, state));
+      return `[${compiledArgs.join(", ")}]`;
+    case "obj.new":
+      return compileObjNew(args, state);
   }
   const argExprs = args.map((a) => compileExpression(a, state));
 
   switch (op) {
+    case "apply":
+      return `(${argExprs[0]})(${argExprs.slice(1).join(", ")})`;
     case "+":
       return `(${argExprs.join(" + ")})`;
     case "-":
