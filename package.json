@@ -26,7 +26,6 @@
     "db:wipe": "bun --filter @viwo/core db:wipe",
     "viwo-admin": "bun --filter @viwo/admin-cli start",
     "typecheck": "bun --filter '*' typecheck",
-    "test": "bun --filter '*' test",
     "lint": "oxlint",
     "format": "oxfmt",
     "build:docs": "bun --filter @viwo/docs build && bun --filter @viwo/playground build && cp -r apps/playground/dist docs/.vitepress/dist/playground",
@@ -38,7 +37,7 @@
     "check:unused": "knip",
     "check:circular": "madge --circular --extensions ts,tsx,js,jsx apps packages plugins",
     "commit": "bun generate:types && bun format && git add -A && git commit",
-    "ci:check": "bun run check:readmes && bun run check:unused && bun format --check && bun lint && bun typecheck && bun test && bun run check:circular"
+    "ci:check": "bun run check:readmes && bun run check:unused && bun format --check && bun lint && bun typecheck && bun test --only-failures && bun run check:circular"
   },
   "workspaces": [
     "apps/*",

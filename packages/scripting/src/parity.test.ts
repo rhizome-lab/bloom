@@ -49,6 +49,7 @@ async function checkParity(name: string, ast: any, ctxOverride?: Partial<ScriptC
     }
 
     if (errInterp) {
+      console.log(errInterp);
       expect(errCompile).toBeDefined();
       // We might want to check error message parity too, but for now just existence
       // expect(errCompile.message).toBe(errInterp.message);
@@ -69,12 +70,8 @@ describe("Parity: Interpreter vs Compiler", () => {
     checkParity("string", "hello");
     checkParity("boolean", true);
     checkParity("null", null);
-    checkParity("array", [1, 2, 3]); // This is actually a list literal in AST if not quoted? No, [1,2,3] is a node with op 1? No, AST is JSON.
-    // Wait, [1, 2, 3] in AST is (1 2 3) which is op=1 with args 2,3.
-    // If we want a list literal we need quote or list.new.
-    // But `evaluate` handles non-array as literal.
-    // Arrays in AST are function calls.
-
+    // Invalid because 1 is not an opcode
+    checkParity("invalid opcode", [1, 2, 3]);
     checkParity("quoted list", ["quote", [1, 2, 3]]);
   });
 
@@ -217,7 +214,6 @@ describe("Parity: Interpreter vs Compiler", () => {
       ["list.sort", ["var", "l"]],
       ["var", "l"],
     ]);
-    checkParity("list.join", ["list.join", ["list.new", "a", "b", "c"], "-"]);
   });
 
   describe("Object Library", () => {

@@ -1,6 +1,41 @@
 import { OPS } from "./interpreter";
 import { ScriptContext, ScriptError, ScriptValue } from "./types";
 
+const chainedCompare = {
+  ["<"]: (...args: any[]) => {
+    for (let i = 0; i < args.length - 1; i++) {
+      if (args[i] >= args[i + 1]) {
+        return false;
+      }
+    }
+    return true;
+  },
+  [">"]: (...args: any[]) => {
+    for (let i = 0; i < args.length - 1; i++) {
+      if (args[i] <= args[i + 1]) {
+        return false;
+      }
+    }
+    return true;
+  },
+  ["<="]: (...args: any[]) => {
+    for (let i = 0; i < args.length - 1; i++) {
+      if (args[i] > args[i + 1]) {
+        return false;
+      }
+    }
+    return true;
+  },
+  [">="]: (...args: any[]) => {
+    for (let i = 0; i < args.length - 1; i++) {
+      if (args[i] < args[i + 1]) {
+        return false;
+      }
+    }
+    return true;
+  },
+};
+
 /**
  * Compiles a ViwoScript AST into a JavaScript function.
  *
@@ -8,13 +43,12 @@ import { ScriptContext, ScriptError, ScriptValue } from "./types";
  * @returns A function that takes a ScriptContext and returns a Promise resolving to the result.
  */
 export function compile<T>(script: ScriptValue<T>): (ctx: ScriptContext) => T {
-  const ctxState = { tempIdx: 0 };
-  const code = compileStatements(script, ctxState, true);
-  const body = `\
-return function compiled(ctx) {
-${code}}`;
-  console.log(body);
-  return new Function("OPS", "ScriptError", body)(OPS, ScriptError);
+  return new Function(
+    "__ops__",
+    "__chained_compare__",
+    `return function compiled(__ctx__) {
+${compileValue(script, true)}}`,
+  )(OPS, chainedCompare);
 }
 
 const KEYWORDS = new Set([
@@ -70,8 +104,9 @@ const KEYWORDS = new Set([
   "arguments",
   "eval",
   // Internal variables
-  "ctx",
-  "OPS",
+  "__ctx__",
+  "__ops__",
+  "__chained_compare__",
 ]);
 
 function toJSName(name: string): string {
@@ -91,344 +126,209 @@ function toJSName(name: string): string {
   return safe;
 }
 
-interface CtxState {
-  tempIdx: number;
-}
-
-function genTemp(state: CtxState): string {
-  return `_t${state.tempIdx++}`;
-}
-
-function compileExpression(node: any, state: CtxState, topLevel = false): string {
-  if (node === undefined) {
-    return "null";
-  }
-  if (
-    node === null ||
-    typeof node === "number" ||
-    typeof node === "boolean" ||
-    typeof node === "string"
-  ) {
-    return JSON.stringify(node);
-  }
-  if (Array.isArray(node)) {
-    if (node.length === 0) return "[]";
-    const [op, ...args] = node;
-    if (typeof op === "string" && OPS[op]) {
-      return compileOpcodeCall(op, args, state, topLevel);
-    }
-    throw new Error(`Unknown opcode: ${op}`);
-  }
-  throw new Error(`Unknown node type: ${typeof node}`);
-}
-
-function compileStatements(node: any, state: CtxState, topLevel = false): string {
-  if (Array.isArray(node)) {
-    const [op, ...args] = node;
-    switch (op) {
-      case "seq":
-        return compileSeq(args, state, topLevel);
-      case "if":
-        return compileIf(args, state);
-      case "while":
-        return compileWhile(args, state);
-      case "for":
-        return compileFor(args, state);
-      case "let":
-        return compileLet(args, state);
-      case "set":
-        return compileSet(args, state);
-      case "break":
-        return compileBreak(args, state);
-      case "return":
-        return compileReturn(args, state);
-      case "throw":
-        return compileThrow(args, state);
-      case "try":
-        return compileTry(args, state);
-    }
-  }
-
-  // Default: compile as expression
-  return `${topLevel ? "return " : ""}${compileExpression(node, state)}`;
-}
-
-function compileSeq(args: any[], state: CtxState, topLevel = false): string {
-  if (args.length === 0) return "null";
-  let code = "";
-  for (let i = 0; i < args.length; i++) {
-    const result = compileStatements(args[i], state, topLevel && i === args.length - 1);
-    code += result + "\n";
-  }
-  return code;
-}
-
-function compileIf(args: any[], state: CtxState): string {
-  const [cond, thenBranch, elseBranch] = args;
-  const condExpr = compileExpression(cond, state);
-  const thenCode = compileStatements(thenBranch, state);
-  const elseCode = elseBranch ? compileStatements(elseBranch, state) : "";
-
-  const resultVar = genTemp(state);
-
-  return `\
-let ${resultVar} = null;
-if (${condExpr}) {
-${resultVar} = ${thenCode};} else {
-${resultVar} = ${elseCode};}`;
-}
-
-function compileWhile(args: any[], state: CtxState): string {
-  return `\
-while (${compileExpression(args[0], state)}) {
-${compileStatements(args[1], state)}}`;
-}
-
-function compileFor(args: any[], state: CtxState): string {
-  const [varName, listExpr, body] = args;
-  const listExprRes = compileExpression(listExpr, state);
-  const loopVar = toJSName(varName);
-  const bodyCode = compileStatements(body, state);
-  return `\
-for (const ${loopVar} of ${listExprRes}) {
-${bodyCode}}`;
-}
-
-function compileLet(args: any[], state: CtxState): string {
-  const [name, val] = args;
-  const jsName = toJSName(name);
-  const valExpr = compileExpression(val, state);
-  return `let ${jsName} = ${valExpr};`;
-}
-
-function compileSet(args: any[], state: CtxState): string {
-  const [name, val] = args;
-  const jsName = toJSName(name);
-  const valExpr = compileExpression(val, state);
-  return `${jsName} = ${valExpr};`;
-}
-
-function compileBreak(_args: any[], _state: CtxState): string {
-  return "break;";
-}
-
-function compileReturn(args: any[], state: CtxState): string {
-  const [val] = args;
-  if (val) {
-    const valExpr = compileExpression(val, state);
-    return `return ${valExpr};`;
-  }
-  return "return null;";
-}
-
-function compileThrow(args: any[], state: CtxState): string {
-  const [msg] = args;
-  const msgExpr = compileExpression(msg, state);
-  return `throw new ScriptError(${msgExpr});`;
-}
-
-function compileTry(args: any[], state: CtxState): string {
-  const [tryBlock, errorVar, catchBlock] = args;
-  return `\
-try {
-${compileStatements(tryBlock, state)}
-} catch (${errorVar}) {
-${compileStatements(catchBlock, state)}
-}`;
-}
-
-function compileLambda([params, body]: any[]): string {
-  return `(${(params as string[]).map((name) => toJSName(name)).join(", ")}) => {
-${compileStatements(body, { tempIdx: 0 }, true)}}`;
-}
-
-function compileObjNew(args: any[], state: CtxState): string {
-  const props = [];
-  for (const arg of args) {
-    const keyExpr = compileExpression(arg[0], state);
-    const valExpr = compileExpression(arg[1], state);
-    props.push(`[${keyExpr}]: ${valExpr}`);
-  }
-  return `({ ${props.join(", ")} })`;
-}
-
 function compileChainedComparison(argExprs: string[], op: string): string {
-  if (argExprs.length < 2) {
-    return "true"; // Or error?
-  }
-  const parts: string[] = [];
-  // TODO: This duplicates expression evaluation which is VERY dangerous.
-  // We should evaluate each expression only once.
-  for (let i = 0; i < argExprs.length - 1; i++) {
-    parts.push(`(${argExprs[i]} ${op} ${argExprs[i + 1]})`);
-  }
-  return `(${parts.join(" && ")})`;
+  return argExprs.length < 2
+    ? "true"
+    : argExprs.length === 2
+      ? `(${argExprs[0]} ${op} ${argExprs[1]})`
+      : `__chained_compare__["${op}"](${argExprs.join(", ")})`;
 }
 
-function compileOpcodeCall(op: string, args: any[], state: CtxState, topLevel = false): string {
-  if (op === "quote") {
-    return JSON.stringify(args[0]);
+function compileValue(node: any, shouldReturn = false): string {
+  const prefix = shouldReturn ? "return " : "";
+  if (!Array.isArray(node)) {
+    if (
+      node === null ||
+      node === undefined ||
+      typeof node === "number" ||
+      typeof node === "boolean" ||
+      typeof node === "string"
+    ) {
+      return `${prefix}${JSON.stringify(node ?? null)}`;
+    }
+    throw new Error(`Unknown node type ${typeof node}`);
   }
-
+  const [op, ...args] = node;
   switch (op) {
     case "seq":
-      return compileSeq(args, state, topLevel);
+      if (args.length === 0) return "null";
+      let code = "";
+      for (let i = 0; i < args.length; i++) {
+        const result = compileValue(args[i], shouldReturn && i === args.length - 1);
+        code += result + "\n";
+      }
+      return code;
     case "if":
-      return compileIf(args, state);
+      return `if (${compileValue(args[0])}) {
+${compileValue(args[1], shouldReturn)}}${
+        args[2]
+          ? ` else {
+${compileValue(args[2], shouldReturn)}}`
+          : shouldReturn
+            ? `else {
+return null}`
+            : ""
+      }`;
     case "while":
-      return compileWhile(args, state);
+      return `while (${compileValue(args[0])}) {
+${compileValue(args[1])}}`;
     case "for":
-      return compileFor(args, state);
+      return `for (const ${toJSName(args[0])} of ${compileValue(args[1])}) {
+${compileValue(args[2])}}`;
     case "let":
-      return compileLet(args, state);
+      return `let ${toJSName(args[0])} = ${compileValue(args[1])};`;
     case "set":
-      return compileSet(args, state);
+      return `${toJSName(args[0])} = ${compileValue(args[1])};`;
     case "break":
-      return compileBreak(args, state);
+      return "break;";
     case "return":
-      return compileReturn(args, state);
+      return `return ${args[0] ? compileValue(args[0]) : "null"};`;
     case "throw":
-      return compileThrow(args, state);
+      return `throw ${compileValue(args[0])};`;
     case "try":
-      return compileTry(args, state);
+      return `try {
+${compileValue(args[0], shouldReturn)}
+} catch (${args[1]}) {
+${compileValue(args[2], shouldReturn)}
+}`;
     case "var":
-      return toJSName(args[0]);
+      return `${prefix}${toJSName(args[0])}`;
     case "lambda":
-      return compileLambda(args);
+      return `(${(args[0] as string[]).map((name) => toJSName(name)).join(", ")}) => {
+${compileValue(args[1], true)}}`;
     case "quote":
-      return JSON.stringify(args[0]);
+      return `${prefix}${JSON.stringify(args[0])}`;
     case "list.new":
-      const compiledArgs = args.map((a) => compileExpression(a, state));
-      return `[${compiledArgs.join(", ")}]`;
+      const compiledArgs = args.map((a) => compileValue(a));
+      return `${prefix}[${compiledArgs.join(", ")}]`;
     case "obj.new":
-      return compileObjNew(args, state);
+      const props = [];
+      for (const arg of args) {
+        const keyExpr = compileValue(arg[0]);
+        const valExpr = compileValue(arg[1]);
+        props.push(`[${keyExpr}]: ${valExpr}`);
+      }
+      return `${prefix}({ ${props.join(", ")} })`;
   }
-  const argExprs = args.map((a) => compileExpression(a, state));
-
+  const exprs = args.map((a) => compileValue(a));
   switch (op) {
     case "apply":
-      return `(${argExprs[0]})(${argExprs.slice(1).join(", ")})`;
+      return `${prefix}(${exprs[0]})(${exprs.slice(1).join(", ")})`;
     case "+":
-      return `(${argExprs.join(" + ")})`;
+      return `${prefix}(${exprs.join(" + ")})`;
     case "-":
-      return `(${argExprs.join(" - ")})`;
+      return `${prefix}(${exprs.join(" - ")})`;
     case "*":
-      return `(${argExprs.join(" * ")})`;
+      return `${prefix}(${exprs.join(" * ")})`;
     case "/":
-      return `(${argExprs.join(" / ")})`;
+      return `${prefix}(${exprs.join(" / ")})`;
     case "%":
-      return `(${argExprs.join(" % ")})`;
+      return `${prefix}(${exprs.join(" % ")})`;
     case "^":
-      return `(${argExprs.join(" ** ")})`;
+      return `${prefix}(${exprs.join(" ** ")})`;
     case "==":
-      return `(${argExprs.join(" === ")})`;
+      return `${prefix}(${exprs.join(" === ")})`;
     case "!=":
-      return `(${argExprs.join(" !== ")})`;
+      return `${prefix}(${exprs.join(" !== ")})`;
     case "<":
-      return compileChainedComparison(argExprs, "<");
+      return `${prefix}${compileChainedComparison(exprs, "<")}`;
     case ">":
-      return compileChainedComparison(argExprs, ">");
+      return `${prefix}${compileChainedComparison(exprs, ">")}`;
     case "<=":
-      return compileChainedComparison(argExprs, "<=");
+      return `${prefix}${compileChainedComparison(exprs, "<=")}`;
     case ">=":
-      return compileChainedComparison(argExprs, ">=");
+      return `${prefix}${compileChainedComparison(exprs, ">=")}`;
     case "and":
-      return `(${argExprs.join(" && ")})`;
+      return `${prefix}(${exprs.join(" && ")})`;
     case "or":
-      return `(${argExprs.join(" || ")})`;
+      return `${prefix}(${exprs.join(" || ")})`;
     case "not":
-      return `!${argExprs[0]}`;
-    case "obj.get":
-      return `((${argExprs[0]})[${argExprs[1]}] ?? ${args[2] ? argExprs[2] : "null"})`;
-    case "obj.set":
-      return `((${argExprs[0]})[${argExprs[1]}] = ${argExprs[2]})`;
-    case "obj.has":
-      return `(${argExprs[1]} in ${argExprs[0]})`;
-    case "obj.del":
-      return `(delete ${argExprs[0]}[${argExprs[1]}])`;
+      return `${prefix}!${exprs[0]}`;
     case "log":
-      return `console.log(${argExprs.join(", ")})`;
+      return `${prefix}console.log(${exprs.join(", ")})`;
     case "str.concat":
-      return `("" + ${argExprs.join(" + ")}`;
+      return `${prefix}("" + ${exprs.join(" + ")}`;
     case "this":
-      return "ctx.this";
+      return `${prefix}__ctx__.this`;
     case "caller":
-      return "ctx.caller";
+      return `${prefix}__ctx__.caller`;
 
     // List Opcodes
     case "list.len":
-      return `${argExprs[0]}.length`;
+      return `${prefix}${exprs[0]}.length`;
     case "list.empty":
-      return `(${argExprs[0]}.length === 0)`;
+      return `${prefix}(${exprs[0]}.length === 0)`;
     case "list.get":
-      return `${argExprs[0]}[${argExprs[1]}]`;
+      return `${prefix}${exprs[0]}[${exprs[1]}]`;
     case "list.set":
-      return `(${argExprs[0]}[${argExprs[1]}] = ${argExprs[2]})`;
+      return `${prefix}(${exprs[0]}[${exprs[1]}] = ${exprs[2]})`;
     case "list.push":
-      return `${argExprs[0]}.push(${argExprs[1]})`;
+      return `${prefix}${exprs[0]}.push(${exprs[1]})`;
     case "list.pop":
-      return `${argExprs[0]}.pop()`;
+      return `${prefix}${exprs[0]}.pop()`;
     case "list.unshift":
-      return `${argExprs[0]}.unshift(${argExprs[1]})`;
+      return `${prefix}${exprs[0]}.unshift(${exprs[1]})`;
     case "list.shift":
-      return `${argExprs[0]}.shift()`;
+      return `${prefix}${exprs[0]}.shift()`;
     case "list.slice":
-      return `${argExprs[0]}.slice(${argExprs[1]}${args[2] ? `, ${argExprs[2]}` : ""})`;
+      return `${prefix}${exprs[0]}.slice(${exprs[1]}${args[2] ? `, ${exprs[2]}` : ""})`;
     case "list.splice": {
       // remaining args are items // args[0] is list, args[1] is start, args[2] is deleteCount // list.splice(list, start, deleteCount, ...items)
-      const items = argExprs.slice(3);
-      return `${argExprs[0]}.splice(${argExprs[1]}, ${argExprs[2]}${
+      const items = exprs.slice(3);
+      return `${prefix}${exprs[0]}.splice(${exprs[1]}, ${exprs[2]}${
         items.length > 0 ? ", " + items.join(", ") : ""
       })`;
     }
     case "list.concat":
-      return `[].concat(${argExprs.join(", ")})`;
+      return `${prefix}[].concat(${exprs.join(", ")})`;
     case "list.includes":
-      return `${argExprs[0]}.includes(${argExprs[1]})`;
+      return `${prefix}${exprs[0]}.includes(${exprs[1]})`;
     case "list.reverse":
-      return `${argExprs[0]}.reverse()`;
+      return `${prefix}${exprs[0]}.reverse()`;
     case "list.sort":
-      return `${argExprs[0]}.sort()`;
-    case "list.join":
-      return `${argExprs[0]}.join(${argExprs[1]})`;
+      return `${prefix}${exprs[0]}.sort()`;
 
     // Object Opcodes
+    case "obj.get":
+      return `${prefix}((${exprs[0]})[${exprs[1]}] ?? ${args[2] ? exprs[2] : "null"})`;
+    case "obj.set":
+      return `${prefix}((${exprs[0]})[${exprs[1]}] = ${exprs[2]})`;
+    case "obj.has":
+      return `${prefix}(${exprs[1]} in ${exprs[0]})`;
+    case "obj.del":
+      return `${prefix}(delete ${exprs[0]}[${exprs[1]}])`;
     case "obj.keys":
-      return `Object.getOwnPropertyNames(${argExprs[0]})`;
+      return `${prefix}Object.getOwnPropertyNames(${exprs[0]})`;
     case "obj.values":
-      return `Object.getOwnPropertyNames(${argExprs[0]}).map(k => ${argExprs[0]}[k])`;
+      return `${prefix}Object.getOwnPropertyNames(${exprs[0]}).map(k => ${exprs[0]}[k])`;
     case "obj.entries":
-      return `Object.getOwnPropertyNames(${argExprs[0]}).map(k => [k, ${argExprs[0]}[k]])`;
+      return `${prefix}Object.getOwnPropertyNames(${exprs[0]}).map(k => [k, ${exprs[0]}[k]])`;
     case "obj.merge":
-      return `Object.assign({}, ${argExprs.join(", ")})`;
+      return `${prefix}Object.assign({}, ${exprs.join(", ")})`;
 
     // String Opcodes
     case "str.len":
-      return `${argExprs[0]}.length`;
+      return `${prefix}${exprs[0]}.length`;
     case "str.split":
-      return `${argExprs[0]}.split(${argExprs[1]})`;
+      return `${prefix}${exprs[0]}.split(${exprs[1]})`;
     case "str.slice":
-      return `${argExprs[0]}.slice(${argExprs[1]}, ${args[2] ? argExprs[2] : "undefined"})`;
+      return `${prefix}${exprs[0]}.slice(${exprs[1]}, ${args[2] ? exprs[2] : "undefined"})`;
     case "str.upper":
-      return `${argExprs[0]}.toUpperCase()`;
+      return `${prefix}${exprs[0]}.toUpperCase()`;
     case "str.lower":
-      return `${argExprs[0]}.toLowerCase()`;
+      return `${prefix}${exprs[0]}.toLowerCase()`;
     case "str.trim":
-      return `${argExprs[0]}.trim()`;
+      return `${prefix}${exprs[0]}.trim()`;
     case "str.replace":
-      return `${argExprs[0]}.replace(${argExprs[1]}, ${args[2] ? argExprs[2] : "undefined"})`;
+      return `${prefix}${exprs[0]}.replace(${exprs[1]}, ${args[2] ? exprs[2] : "undefined"})`;
     case "str.includes":
-      return `${argExprs[0]}.includes(${argExprs[1]})`;
+      return `${prefix}${exprs[0]}.includes(${exprs[1]})`;
     case "str.join":
-      return `${argExprs[0]}.join(${argExprs[1]})`;
+      return `${prefix}${exprs[0]}.join(${exprs[1]})`;
   }
-
   const def = OPS[op];
   if (!def) throw new ScriptError("Unknown opcode: " + op);
-
-  if (def.metadata.lazy) {
-    return `OPS[${JSON.stringify(op)}].handler(${JSON.stringify(args)}, ctx)`;
-  }
-
-  return `OPS[${JSON.stringify(op)}].handler([${argExprs.join(", ")}], ctx)`;
+  return `__ops__[${JSON.stringify(op)}].handler(${
+    def.metadata.lazy ? JSON.stringify(args) : `[${exprs.join(", ")}]`
+  }, __ctx__)`;
 }

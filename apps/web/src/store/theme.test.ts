@@ -153,10 +153,6 @@ describe("Theme Store", () => {
   describe("Theme Migration", () => {
     beforeEach(() => {
       if (global.localStorage) {
-        console.log(
-          "theme.test.ts beforeEach: getItem('foo') =",
-          global.localStorage.getItem("foo"),
-        );
         global.localStorage.removeItem("viwo_theme");
         global.localStorage.removeItem("viwo_themes");
         global.localStorage.removeItem("viwo_active_theme_id");

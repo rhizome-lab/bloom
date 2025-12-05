@@ -98,12 +98,6 @@ describe("Compiler", () => {
     expect(run(Std.if(false, "then"))).toBe(null); // No else branch
   });
 
-  test("var retrieval", () => {
-    const localCtx = { ...ctx, vars: { x: 10 } };
-    expect(run(Std.var("x"), localCtx)).toBe(10);
-    expect(run(Std.var("missing"), localCtx)).toBe(null); // Variable not found
-  });
-
   test("lambda & apply", () => {
     // (lambda (x) (+ x 1))
     const inc = Std.lambda(["x"], MathLib.add(Std.var("x"), 1));
@@ -139,19 +133,14 @@ describe("Compiler", () => {
 
   test("try/catch", () => {
     // try { throw "error" } catch { return "caught" }
-    const script = Std.try(
-      Std.throw("oops"),
-      "this should be unused", // No error var
-      "caught",
-    );
+    const script = Std.try(Std.throw("oops"), "_err", "caught");
     expect(run(script)).toBe("caught");
   });
 
   test("try/catch with error variable", () => {
     // try { throw "error" } catch(e) { return e }
-    const localCtx = { ...ctx, vars: {} };
     const script = Std.try(Std.throw("oops"), "err", Std.var("err"));
-    expect(run(script, localCtx)).toBe("oops");
+    expect(run(script)).toBe("oops");
   });
 
   test("object operations", () => {

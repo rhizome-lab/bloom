@@ -238,7 +238,6 @@
         "@tsconfig/strictest": "^2.0.8",
         "@viwo/core": "workspace:*",
         "@viwo/scripting": "workspace:*",
-        "@viwo/shared": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "^1.3.3",
@@ -266,7 +265,6 @@
       "dependencies": {
         "@viwo/core": "workspace:*",
         "@viwo/scripting": "workspace:*",
-        "@viwo/shared": "workspace:*",
       },
       "devDependencies": {
         "@tsconfig/strictest": "^2.0.8",
