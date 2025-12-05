@@ -1,4 +1,4 @@
-import { OpcodeHandler, OpcodeMetadata } from "./interpreter";
+import { OpcodeHandler, OpcodeMetadata } from "./types";
 
 declare const RAW_MARKER: unique symbol;
 export type ScriptRaw<T> = { [RAW_MARKER]: T };

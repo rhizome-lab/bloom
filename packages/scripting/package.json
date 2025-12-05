@@ -12,8 +12,7 @@
     "typecheck": "tsgo --noEmit",
     "test": "bun test",
     "lint": "oxlint",
-    "format": "oxfmt",
-    "generate:types": "bun scripts/generate-types.ts"
+    "format": "oxfmt"
   },
   "dependencies": {
     "@viwo/shared": "workspace:*",

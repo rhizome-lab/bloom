@@ -23,6 +23,9 @@ jobs:
       - name: Check READMEs and Docs
         run: bun run check:readmes
 
+      - name: Check Unused Code
+        run: bun run check:unused
+
       - name: Lint
         run: bun run lint
 
