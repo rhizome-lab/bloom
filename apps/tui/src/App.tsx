@@ -25,6 +25,7 @@ const App = () => {
   const [mode, setMode] = useState<Mode>("GAME");
   const [editingScript, setEditingScript] = useState<{
     id: number;
+    verb: string;
     content: string;
   } | null>(null);
 
@@ -109,28 +110,26 @@ const App = () => {
       const command = parts[0];
       const args = parts.slice(1).map((arg) => arg.replace(/^"(.*)"$/, "$1"));
 
-      if (command === "edit" && args.length > 0) {
+      if (command === "edit" && args.length >= 2) {
         const scriptId = parseInt(args[0]!);
+        const verbName = args[1]!;
 
-        // In a real scenario, we might need an RPC call to get source if not available.
-        // For this task, let's assume we can edit if we have the entity and it has a 'source' property,
-        // or we just start with empty/mock for testing if not found.
+        const openEditor = (initialContent: string) => {
+          setEditingScript({ id: scriptId, verb: verbName, content: initialContent });
+          setMode("EDITOR");
+          setQuery("");
+        };
 
-        // Check if we have the entity in our local state
-        const entity = clientState.entities.get(scriptId);
-        let content = "";
-        if (entity && typeof entity["source"] === "string") {
-          content = entity["source"];
-        } else {
-          // If not found, maybe we can't edit it yet without fetching.
-          // But for the sake of the task, let's allow opening an empty buffer or mock.
-          // Ideally we should request it.
-          addLog(`Opening editor for ${scriptId}...`, "info");
-        }
-
-        setEditingScript({ id: scriptId, content });
-        setMode("EDITOR");
-        setQuery("");
+        addLog(`Fetching verb '${verbName}' on entity ${scriptId}...`, "info");
+        clientRef.current
+          .getVerb(scriptId, verbName)
+          .then((source) => {
+            openEditor(source);
+          })
+          .catch((e) => {
+            addLog(`Failed to fetch verb: ${e.message}. Starting empty.`, "error");
+            openEditor("");
+          });
         return;
       }
 
@@ -141,15 +140,26 @@ const App = () => {
 
   const handleSaveScript = (content: string) => {
     if (editingScript && clientRef.current) {
-      // Send update command/RPC
-      // Assuming there's a way to update source, e.g. 'program <id> <source>' or similar RPC.
-      // For now, let's just log it and maybe try a command if one exists, or just update local state.
-      // The viwo protocol usually uses 'program' command or similar.
-      // Let's assume 'program <id> <content>'
-      clientRef.current.execute("program", [editingScript.id.toString(), content]);
-      addLog(`Saved script ${editingScript.id}`, "info");
-      setMode("GAME");
-      setEditingScript(null);
+      clientRef.current
+        .updateVerb(editingScript.id, editingScript.verb, content)
+        .then(() => {
+          addLog(`Saved verb '${editingScript.verb}' on ${editingScript.id}`, "info");
+          setMode("GAME");
+          setEditingScript(null);
+        })
+        .catch((e) => {
+          addLog(`Failed to save: ${e.message}`, "error");
+          // Don't exit editor on error?
+          // For now, let's just log and keep editor open or close?
+          // User might lose work if we close.
+          // But existing logic closed it.
+          // Let's keep it simple: log error, don't close?
+          // The original code passed `onSave` which called `handleSaveScript`.
+          // `Editor` component usually handles save and exit?
+          // If we don't clear editingScript/mode, `Editor` stays open?
+          // Let's assume onSave implies "Save and Close" for TUI.
+          // But if it fails, we should probably stay open.
+        });
     }
   };
 

@@ -39,7 +39,6 @@
 - [ ] **Interpreter**: Refactor `OpcodeHandler` to avoid recursion when calling lambdas. _Status: Postponed_.
 - [ ] **Security**: Ensure kernel restrictions are actually restrictive (subset) in `packages/core/src/runtime/lib/kernel.ts`.
 - [ ] **Auth**: Implement proper authentication checks in `packages/core/src/index.ts`.
-- [ ] **TUI**: Fetch script content properly in `apps/tui/src/App.tsx`.
 - [ ] **Core**: Solve transactional updates for multiple entities with capabilities in `packages/core/src/runtime/lib/core.ts`.
 - [ ] **Core**: Add capability-based permissions for verbs
 - [ ] **Core**: Consider splitting permissions for net.http into multiple capabilities

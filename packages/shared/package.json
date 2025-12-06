@@ -8,7 +8,7 @@
     "./index.css": "./src/index.css"
   },
   "scripts": {
-    "typecheck": "tsgo --noEmit",
+    "check:types": "tsgo --noEmit",
     "test": "bun test",
     "lint": "oxlint",
     "format": "oxfmt"

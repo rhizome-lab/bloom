@@ -6,8 +6,18 @@ import {
   updateEntity,
   createCapability,
   getEntities,
+  getVerb,
+  addVerb,
+  updateVerb,
 } from "./repo";
-import { createScriptContext, evaluate, getOpcodeMetadata, compile } from "@viwo/scripting";
+import {
+  createScriptContext,
+  evaluate,
+  getOpcodeMetadata,
+  compile,
+  transpile,
+  decompile,
+} from "@viwo/scripting";
 import * as CoreLib from "./runtime/lib/core";
 import * as KernelLib from "./runtime/lib/kernel";
 import { GameOpcodes, registerGameLibrary } from "./runtime/opcodes";
@@ -366,6 +376,77 @@ export async function handleJsonRpcRequest(
           entities: getEntities(params.ids),
         },
       };
+    }
+
+    case "get_verb": {
+      const params = req.params as { entityId: number; name: string };
+      if (!params || typeof params.entityId !== "number" || typeof params.name !== "string") {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32602, message: "Invalid params: entityId and name required" },
+        };
+      }
+
+      const verb = getVerb(params.entityId, params.name);
+      if (!verb) {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32000, message: "Verb not found" },
+        };
+      }
+
+      try {
+        const source = decompile(verb.code);
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          result: { source },
+        };
+      } catch (e: any) {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32000, message: `Decompilation failed: ${e.message}` },
+        };
+      }
+    }
+    case "update_verb": {
+      const params = req.params as { entityId: number; name: string; source: string };
+      if (
+        !params ||
+        typeof params.entityId !== "number" ||
+        typeof params.name !== "string" ||
+        typeof params.source !== "string"
+      ) {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32602, message: "Invalid params: entityId, name, source required" },
+        };
+      }
+
+      try {
+        const code = transpile(params.source);
+        const existing = getVerb(params.entityId, params.name);
+        if (existing) {
+          updateVerb(existing.id, code);
+        } else {
+          addVerb(params.entityId, params.name, code);
+        }
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          result: { status: "ok" },
+        };
+      } catch (e: any) {
+        return {
+          jsonrpc: "2.0",
+          id: req.id,
+          error: { code: -32000, message: `Compilation failed: ${e.message}` },
+        };
+      }
     }
     case "plugin_rpc": {
       const params = req.params as { method: string; params: any };

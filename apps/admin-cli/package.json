@@ -6,7 +6,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
-    "typecheck": "tsgo --noEmit",
+    "check:types": "tsgo --noEmit",
     "lint": "oxlint",
     "format": "oxfmt"
   },
@@ -15,4 +15,3 @@
     "bun-types": "latest"
   }
 }
-

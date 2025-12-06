@@ -7,7 +7,7 @@
   },
   "type": "module",
   "scripts": {
-    "typecheck": "tsgo --noEmit",
+    "check:types": "tsgo --noEmit",
     "lint": "oxlint",
     "format": "oxfmt",
     "test": "bun test"

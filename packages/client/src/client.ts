@@ -187,6 +187,28 @@ export class ViwoClient {
   }
 
   /**
+   * Fetches a specific verb source code from an entity.
+   * @param entityId - The ID of the entity.
+   * @param name - The name of the verb.
+   * @returns A promise that resolves with the source string.
+   */
+  public async getVerb(entityId: number, name: string): Promise<string> {
+    const response = await this.sendRequest("get_verb", { entityId, name });
+    return response.source;
+  }
+
+  /**
+   * Updates a verb's source code on an entity.
+   * @param entityId - The ID of the entity.
+   * @param name - The name of the verb.
+   * @param source - The new source code.
+   * @returns A promise that resolves when the update is complete.
+   */
+  public async updateVerb(entityId: number, name: string, source: string): Promise<void> {
+    await this.sendRequest("update_verb", { entityId, name, source });
+  }
+
+  /**
    * Fetches specific entities by ID from the server.
    * @param ids - The IDs of the entities to fetch.
    * @returns A promise that resolves with the entities.

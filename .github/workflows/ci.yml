@@ -36,7 +36,7 @@ jobs:
         run: bun run format --check
 
       - name: Typecheck
-        run: bun run typecheck
+        run: bun run check:types
 
       - name: Run Unit Tests
         run: bun test

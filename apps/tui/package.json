@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "bun run src/index.tsx",
     "start": "bun run src/index.tsx",
-    "typecheck": "tsgo --noEmit",
+    "check:types": "tsgo --noEmit",
     "test": "bun test",
     "lint": "oxlint",
     "format": "oxfmt"

@@ -55,12 +55,6 @@ The TUI uses `ink` for rendering. When developing, you can use standard React pa
 - **Text**: Use `<Text>` for displaying text.
 - **Input**: Use `ink-text-input` for user input.
 
-To run the TUI with type checking:
-
-```bash
-bun run typecheck
-```
-
 ## Script Editor
 
 The TUI includes a powerful script editor that allows you to modify entity scripts directly from the terminal.

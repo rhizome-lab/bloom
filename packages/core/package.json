@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/dev.ts",
-    "typecheck": "tsgo --noEmit",
+    "check:types": "tsgo --noEmit",
     "test": "bun test",
     "db:wipe": "rm -f world.sqlite",
     "lint": "oxlint",

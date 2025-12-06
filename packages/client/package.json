@@ -7,7 +7,7 @@
   },
   "types": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsgo --noEmit",
+    "check:types": "tsgo --noEmit",
     "lint": "oxlint",
     "format": "oxfmt"
   },
