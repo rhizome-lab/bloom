@@ -211,4 +211,139 @@ describe("Compiler", () => {
     );
     expect(run(script)).toBe(2);
   });
+
+  test("list.find", () => {
+    // find element > 2: [1, 2, 3, 4] -> 3
+    const script = List.listFind(
+      List.listNew(1, 2, 3, 4),
+      Std.lambda(["x"], BooleanLib.gt(Std.var("x"), 2)),
+    );
+    expect(run(script)).toBe(3);
+  });
+
+  test("list.map", () => {
+    // map x -> x * 2: [1, 2, 3] -> [2, 4, 6]
+    const script = List.listMap(
+      List.listNew(1, 2, 3),
+      Std.lambda(["x"], MathLib.mul(Std.var("x"), 2)),
+    );
+    expect(run(script)).toEqual([2, 4, 6]);
+  });
+
+  test("list.filter", () => {
+    // filter x > 1: [1, 2, 3] -> [2, 3]
+    const script = List.listFilter(
+      List.listNew(1, 2, 3),
+      Std.lambda(["x"], BooleanLib.gt(Std.var("x"), 1)),
+    );
+    expect(run(script)).toEqual([2, 3]);
+  });
+
+  test("list.reduce", () => {
+    // reduce (acc, x) -> acc + x, 0: [1, 2, 3] -> 6
+    const script = List.listReduce(
+      List.listNew(1, 2, 3),
+      Std.lambda(["acc", "x"], MathLib.add(Std.var("acc"), Std.var("x"))),
+      0,
+    );
+    expect(run(script)).toBe(6);
+  });
+
+  test("list.flatMap", () => {
+    // flatMap x -> [x, x]: [1, 2] -> [1, 1, 2, 2]
+    const script = List.listFlatMap(
+      List.listNew(1, 2),
+      Std.lambda(["x"], List.listNew(Std.var("x"), Std.var("x"))),
+    );
+    expect(run(script)).toEqual([1, 1, 2, 2]);
+  });
+
+  test("random", () => {
+    // Check that random returns a number
+    const r1 = run(MathLib.random()); // 0-1
+    expect(typeof r1).toBe("number");
+    expect(r1).toBeGreaterThanOrEqual(0);
+    expect(r1).toBeLessThan(1);
+
+    // random(max)
+    const r2 = run(MathLib.random(10)); // 0-10 int
+    expect(typeof r2).toBe("number");
+    expect(Number.isInteger(r2)).toBe(true);
+    expect(r2).toBeGreaterThanOrEqual(0);
+    expect(r2).toBeLessThanOrEqual(10);
+
+    // random(min, max)
+    const r3 = run(MathLib.random(5, 10)); // 5-10 int
+    expect(typeof r3).toBe("number");
+    expect(Number.isInteger(r3)).toBe(true);
+    expect(r3).toBeGreaterThanOrEqual(5);
+    expect(r3).toBeLessThanOrEqual(10);
+  });
+
+  test("obj.map", () => {
+    // map {a: 1, b: 2} x -> x * 2 -> {a: 2, b: 4}
+    const script = ObjectLib.objMap(
+      ObjectLib.objNew(["a", 1], ["b", 2]),
+      Std.lambda(["v", "k"], MathLib.mul(Std.var("v"), 2)),
+    );
+    expect(run(script)).toEqual({ a: 2, b: 4 });
+  });
+
+  test("obj.filter", () => {
+    // filter {a: 1, b: 2} v > 1 -> {b: 2}
+    const script = ObjectLib.objFilter(
+      ObjectLib.objNew(["a", 1], ["b", 2]),
+      Std.lambda(["v", "k"], BooleanLib.gt(Std.var("v"), 1)),
+    );
+    expect(run(script)).toEqual({ b: 2 });
+  });
+
+  test("obj.reduce", () => {
+    // reduce {a: 1, b: 2} (acc, v) -> acc + v, 0 -> 3
+    const script = ObjectLib.objReduce(
+      ObjectLib.objNew(["a", 1], ["b", 2]),
+      Std.lambda(["acc", "v"], MathLib.add(Std.var("acc"), Std.var("v"))),
+      0,
+    );
+    expect(run(script)).toBe(3);
+  });
+
+  test("obj.flatMap", () => {
+    // flatMap {a: 1} v -> { [k]: v*2 } -> {a: 2}
+    // Actually flatMap calls lambda(v, k) which returns an object to merge.
+    // lambda(v, k) -> objNew(k, v*2)
+    const script = ObjectLib.objFlatMap(
+      ObjectLib.objNew(["a", 1]),
+      Std.lambda(["v", "k"], ObjectLib.objNew([Std.var("k"), MathLib.mul(Std.var("v"), 2)])),
+    );
+    expect(run(script)).toEqual({ a: 2 });
+  });
+
+  test("typeof", () => {
+    // typeof(1) -> "number"
+    // We need to construct the op manually as it might not be in a lib file helper?
+    // Let's assume there is no BooleanLib.typeof helper yet (it was missing from compiler, implies likely missing from library definitions verification?)
+    // Wait, \`typeof\` is likely an operator, usually in \`std\` or \`boolean\` or \`type\` lib.
+    // The check script found it in \`src/lib/*.ts\` definitions.
+    // I should check where \`typeof\` is defined. It's likely in \`std.ts\` or \`core.ts\`?
+    // For now, I'll use the manual op construction: ["typeof", 1]
+    expect(run(["typeof", 1])).toBe("number");
+    expect(run(["typeof", "s"])).toBe("string");
+    expect(run(["typeof", true])).toBe("boolean");
+    expect(run(["typeof", List.listNew()])).toBe("array");
+    expect(run(["typeof", null])).toBe("null");
+    expect(run(["typeof", ObjectLib.objNew()])).toBe("object");
+  });
+
+  test("json", () => {
+    const obj = ObjectLib.objNew(["a", 1]);
+    const str = run(["json.stringify", obj]);
+    expect(str).toBe('{"a":1}');
+
+    const parsed = run(["json.parse", str]);
+    expect(parsed).toEqual({ a: 1 });
+
+    // Invalid json
+    expect(run(["json.parse", "{invalid"])).toBe(null);
+  });
 });

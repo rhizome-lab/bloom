@@ -253,6 +253,16 @@ ${compileValue(args[1], true)}}`;
     case "caller":
       return `${prefix}__ctx__.caller`;
 
+    // System Opcodes
+    case "arg":
+      return `${prefix}(__ctx__.args?.[${exprs[0]}] ?? null)`;
+    case "args":
+      return `${prefix}[...(__ctx__.args ?? [])]`;
+    case "warn":
+      return `${prefix}__ctx__.warnings.push(String(${exprs[0]}))`;
+    case "send":
+      return `${prefix}(__ctx__.send?.(${exprs[0]}, ${exprs[1]}) || null)`;
+
     // Math Opcodes
     case "math.floor":
       return `${prefix}Math.floor(${exprs[0]})`;
@@ -297,6 +307,22 @@ ${compileValue(args[1], true)}}`;
     case "math.sign":
       return `${prefix}Math.sign(${exprs[0]})`;
 
+    case "random": {
+      // Inline implementation of random using IIFE to handle variable arguments and integer checks
+      const argsArray = `[${exprs.join(", ")}]`;
+      return `${prefix}(() => {
+        const args = ${argsArray};
+        if (args.length === 0) return Math.random();
+        let min = 0, max = 1;
+        if (args.length === 1) max = args[0];
+        else [min, max] = args;
+        if (min > max) throw new Error("random: min must be less than or equal to max");
+        const roll = Math.random() * (max - min + 1) + min;
+        const shouldFloor = Number.isInteger(min) && Number.isInteger(max);
+        return shouldFloor ? Math.floor(roll) : roll;
+      })()`;
+    }
+
     // List Opcodes
     case "list.len":
       return `${prefix}${exprs[0]}.length`;
@@ -317,12 +343,21 @@ ${compileValue(args[1], true)}}`;
     case "list.slice":
       return `${prefix}${exprs[0]}.slice(${exprs[1]}${args[2] ? `, ${exprs[2]}` : ""})`;
     case "list.splice": {
-      // remaining args are items // args[0] is list, args[1] is start, args[2] is deleteCount // list.splice(list, start, deleteCount, ...items)
       const items = exprs.slice(3);
       return `${prefix}${exprs[0]}.splice(${exprs[1]}, ${exprs[2]}${
         items.length > 0 ? ", " + items.join(", ") : ""
       })`;
     }
+    case "list.find":
+      return `${prefix}(${exprs[0]}.find((item) => (${exprs[1]})(item)) ?? null)`;
+    case "list.map":
+      return `${prefix}${exprs[0]}.map((item) => (${exprs[1]})(item))`;
+    case "list.filter":
+      return `${prefix}${exprs[0]}.filter((item) => (${exprs[1]})(item))`;
+    case "list.reduce":
+      return `${prefix}${exprs[0]}.reduce((acc, item) => (${exprs[1]})(acc, item), ${exprs[2]})`;
+    case "list.flatMap":
+      return `${prefix}${exprs[0]}.flatMap((item) => (${exprs[1]})(item))`;
     case "list.concat":
       return `${prefix}[].concat(${exprs.join(", ")})`;
     case "list.includes":
@@ -349,6 +384,29 @@ ${compileValue(args[1], true)}}`;
       return `${prefix}Object.getOwnPropertyNames(${exprs[0]}).map(k => [k, ${exprs[0]}[k]])`;
     case "obj.merge":
       return `${prefix}Object.assign({}, ${exprs.join(", ")})`;
+    case "obj.map":
+      return `${prefix}Object.fromEntries(Object.entries(${exprs[0]}).map(([k, v]) => [k, (${exprs[1]})(v, k)]))`;
+    case "obj.filter":
+      return `${prefix}Object.fromEntries(Object.entries(${exprs[0]}).filter(([k, v]) => (${exprs[1]})(v, k)))`;
+    case "obj.reduce":
+      return `${prefix}Object.entries(${exprs[0]}).reduce((acc, [k, v]) => (${exprs[1]})(acc, v, k), ${exprs[2]})`;
+    case "obj.flatMap":
+      return `${prefix}Object.entries(${exprs[0]}).reduce((acc, [k, v]) => {
+        const res = (${exprs[1]})(v, k);
+        if (res && typeof res === 'object' && !Array.isArray(res)) Object.assign(acc, res);
+        return acc;
+      }, {})`;
+
+    // JSON Opcodes
+    case "json.stringify":
+      return `${prefix}JSON.stringify(${exprs[0]})`;
+    case "json.parse":
+      // Need to handle try-catch for parse? The lib opcode wraps in try-catch returning null.
+      // We can use an IIFE or ternary if we want to be safe, or just call JSON.parse directly if we trust input.
+      // The lib implementation: try { return JSON.parse(str); } catch { return null; }
+      return `${prefix}(() => { try { return JSON.parse(${exprs[0]}); } catch { return null; } })()`;
+    case "typeof":
+      return `${prefix}((val) => Array.isArray(val) ? "array" : val === null ? "null" : typeof val)(${exprs[0]})`;
 
     // String Opcodes
     case "str.len":
@@ -369,6 +427,34 @@ ${compileValue(args[1], true)}}`;
       return `${prefix}${exprs[0]}.includes(${exprs[1]})`;
     case "str.join":
       return `${prefix}${exprs[0]}.join(${exprs[1]})`;
+
+    // Time Opcodes
+    case "time.now":
+      return `${prefix}new Date().toISOString()`;
+    case "time.format":
+      return `${prefix}new Date(${exprs[0]}).toISOString()`;
+    case "time.parse":
+      return `${prefix}new Date(${exprs[0]}).toISOString()`;
+    case "time.from_timestamp":
+      return `${prefix}new Date(${exprs[0]}).toISOString()`;
+    case "time.to_timestamp":
+      return `${prefix}new Date(${exprs[0]}).getTime()`;
+    case "time.offset":
+      const [amount, unit, base] = exprs;
+      return `${prefix}(() => {
+        const d = new Date(${base} !== undefined ? ${base} : new Date().toISOString());
+        const amt = ${amount};
+        switch (${unit}) {
+          case "year": case "years": d.setFullYear(d.getFullYear() + amt); break;
+          case "month": case "months": d.setMonth(d.getMonth() + amt); break;
+          case "day": case "days": d.setDate(d.getDate() + amt); break;
+          case "hour": case "hours": d.setHours(d.getHours() + amt); break;
+          case "minute": case "minutes": d.setMinutes(d.getMinutes() + amt); break;
+          case "second": case "seconds": d.setSeconds(d.getSeconds() + amt); break;
+          default: throw new Error("time.offset: unknown unit " + ${unit});
+        }
+        return d.toISOString();
+      })()`;
   }
   const def = OPS[op];
   if (!def) throw new ScriptError("Unknown opcode: " + op);

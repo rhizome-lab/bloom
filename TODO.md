@@ -44,3 +44,4 @@
 - [ ] **Core**: Add capability-based permissions for verbs
 - [ ] **Core**: Consider splitting permissions for net.http into multiple capabilities
 - [ ] **Plugins**: Add capability-based permissions to opcodes defined by plugins
+- [ ] **Scripting**: Add async support to compiler

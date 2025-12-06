@@ -14,7 +14,7 @@ function getDefinedOpcodes(): Set<string> {
     const content = fs.readFileSync(path.join(LIB_DIR, file), "utf-8");
 
     // Simplified regex that looks for the function call and the string literal
-    const opcodeRegex = /define(?:Full)?Opcode(?:<.*?>)?\(\s*(["'`])(.+?)\1/g;
+    const opcodeRegex = /define(?:Full)?Opcode(?:<[\s\S]*?>)?\(\s*(["'`])(.+?)\1/g;
 
     let match;
     while ((match = opcodeRegex.exec(content)) !== null) {
