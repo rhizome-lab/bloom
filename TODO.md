@@ -40,7 +40,6 @@
 - [ ] **Auth**: Implement proper authentication checks in `packages/core/src/index.ts`.
 - [ ] **TUI**: Fetch script content properly in `apps/tui/src/App.tsx`.
 - [ ] **Web**: Batch retrieve items in `apps/web/src/components/ItemEditor.tsx`.
-- [ ] **Web**: Implement ErrorView in `apps/web/src/components/GameLog.tsx`.
 - [ ] **Core**: Solve transactional updates for multiple entities with capabilities in `packages/core/src/runtime/lib/core.ts`.
 - [ ] **Core**: Add capability-based permissions for verbs
 - [ ] **Core**: Consider splitting permissions for net.http into multiple capabilities

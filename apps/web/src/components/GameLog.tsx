@@ -29,6 +29,9 @@ export default function GameLog() {
       <For each={gameStore.state.messages}>
         {(msg) => {
           switch (msg.type) {
+            case "error":
+              // fallthrough to message view, which handles error type styling
+              return <MessageView text={msg.text} type={msg.type} />;
             case "message":
               return <MessageView text={msg.text} type={msg.type} />;
             default:
