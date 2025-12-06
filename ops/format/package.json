@@ -1,0 +1,6 @@
+{
+  "name": "@viwo/op-format",
+  "scripts": {
+    "check": "bun --cwd ../.. check:format"
+  }
+}

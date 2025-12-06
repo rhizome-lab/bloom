@@ -1,0 +1,6 @@
+{
+  "name": "@viwo/op-types",
+  "scripts": {
+    "check": "bun --cwd ../.. check:types"
+  }
+}

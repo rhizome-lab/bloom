@@ -1,0 +1,6 @@
+{
+  "name": "@viwo/op-lint",
+  "scripts": {
+    "check": "bun --cwd ../.. check:lint"
+  }
+}

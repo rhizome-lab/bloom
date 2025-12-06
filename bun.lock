@@ -129,6 +129,30 @@
         "vue": "^3.0.0",
       },
     },
+    "ops/circular": {
+      "name": "@viwo/op-circular",
+    },
+    "ops/format": {
+      "name": "@viwo/op-format",
+    },
+    "ops/lint": {
+      "name": "@viwo/op-lint",
+    },
+    "ops/opcodes": {
+      "name": "@viwo/op-opcodes",
+    },
+    "ops/readmes": {
+      "name": "@viwo/op-readmes",
+    },
+    "ops/test": {
+      "name": "@viwo/op-test",
+    },
+    "ops/types": {
+      "name": "@viwo/op-types",
+    },
+    "ops/unused": {
+      "name": "@viwo/op-unused",
+    },
     "packages/client": {
       "name": "@viwo/client",
       "version": "0.0.0",
@@ -882,6 +906,22 @@
     "@viwo/discord-bot": ["@viwo/discord-bot@workspace:apps/discord-bot"],
 
     "@viwo/docs": ["@viwo/docs@workspace:docs"],
+
+    "@viwo/op-circular": ["@viwo/op-circular@workspace:ops/circular"],
+
+    "@viwo/op-format": ["@viwo/op-format@workspace:ops/format"],
+
+    "@viwo/op-lint": ["@viwo/op-lint@workspace:ops/lint"],
+
+    "@viwo/op-opcodes": ["@viwo/op-opcodes@workspace:ops/opcodes"],
+
+    "@viwo/op-readmes": ["@viwo/op-readmes@workspace:ops/readmes"],
+
+    "@viwo/op-test": ["@viwo/op-test@workspace:ops/test"],
+
+    "@viwo/op-types": ["@viwo/op-types@workspace:ops/types"],
+
+    "@viwo/op-unused": ["@viwo/op-unused@workspace:ops/unused"],
 
     "@viwo/playground": ["@viwo/playground@workspace:apps/playground"],
 

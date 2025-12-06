@@ -17,6 +17,7 @@
   },
   "private": true,
   "scripts": {
+    "commit": "bun generate:types && bun format && git add -A && git commit",
     "dev:server": "bun --filter @viwo/server dev",
     "dev:core": "bun --filter @viwo/core dev",
     "dev:web": "bun --filter @viwo/web dev",
@@ -24,7 +25,7 @@
     "dev:cli": "bun --filter @viwo/admin-cli dev",
     "dev:tui": "bun --filter @viwo/tui dev",
     "db:wipe": "bun --filter @viwo/core db:wipe",
-    "viwo-admin": "bun --filter @viwo/admin-cli start",
+    "admin": "bun --filter @viwo/admin-cli start",
     "lint": "oxlint",
     "format": "oxfmt",
     "build:docs": "bun --filter @viwo/docs build && bun --filter @viwo/playground build && cp -r apps/playground/dist docs/.vitepress/dist/playground",
@@ -32,18 +33,21 @@
     "preview:docs": "bun --filter @viwo/docs preview",
     "generate:types": "bun --filter '*' generate:types",
     "benchmark": "bun packages/core/src/benchmark_compiler.ts",
+    "check:test": "bun test --only-failures",
+    "check:lint": "bun lint",
+    "check:format": "bun format --check",
     "check:types": "bun --filter '*' check:types",
     "check:opcodes": "bun --filter @viwo/scripting check:opcodes",
     "check:readmes": "bun scripts/check-readmes.ts",
     "check:unused": "knip",
     "check:circular": "madge --circular --extensions ts,tsx,js,jsx apps packages plugins",
-    "commit": "bun generate:types && bun format && git add -A && git commit",
-    "ci:check": "bun check:readmes && bun check:unused && bun check:opcodes && bun format --check && bun lint && bun check:types && bun test --only-failures && bun check:circular"
+    "check": "bun --filter '@viwo/op-*' check"
   },
   "workspaces": [
     "apps/*",
     "packages/*",
     "plugins/*",
-    "docs"
+    "docs",
+    "ops/*"
   ]
 }

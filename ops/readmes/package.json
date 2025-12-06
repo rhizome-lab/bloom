@@ -1,0 +1,6 @@
+{
+  "name": "@viwo/op-readmes",
+  "scripts": {
+    "check": "bun --cwd ../.. check:readmes"
+  }
+}

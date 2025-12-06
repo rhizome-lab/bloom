@@ -1,0 +1,6 @@
+{
+  "name": "@viwo/op-test",
+  "scripts": {
+    "check": "bun --cwd ../.. check:test"
+  }
+}
