@@ -16,7 +16,9 @@ export function seed() {
     return;
   }
 
-  console.log("Seeding database...");
+  if (process.env.NODE_ENV !== "test") {
+    console.log("Seeding database...");
+  }
 
   // 1. Create The Void (Root Zone)
   const voidId = createEntity({
@@ -442,8 +444,6 @@ export function seed() {
     transpile(extractVerb(verbsPath, "status_check")),
   );
 
-  console.log("Seeding complete!");
-
   // Color Library
   const colorLibId = createEntity({
     name: "Color Library", // Or a system object
@@ -666,8 +666,6 @@ export function seed() {
 
   addVerb(combatManagerId, "test", transpile(extractVerb(verbsPath, "combat_test")));
 
-  addVerb(combatManagerId, "test", transpile(extractVerb(verbsPath, "combat_test")));
-
   // 11. Quest Engine Seeds
   const questBaseId = createEntity({
     name: "Quest Base",
@@ -739,5 +737,7 @@ export function seed() {
     adjectives: ["food:drink"],
   });
 
-  console.log("Database seeded successfully.");
+  if (process.env.NODE_ENV !== "test") {
+    console.log("Seeding complete!");
+  }
 }

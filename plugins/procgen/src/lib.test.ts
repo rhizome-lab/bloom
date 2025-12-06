@@ -1,6 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import * as ProcGenLib from "./lib";
-import { createScriptContext, evaluate, ListLib, StdLib, unsafeAsAwaited } from "@viwo/scripting";
+import {
+  createScriptContext,
+  evaluate,
+  ListLib,
+  registerLibrary,
+  StdLib,
+  unsafeAsAwaited,
+} from "@viwo/scripting";
+
+registerLibrary(StdLib);
+registerLibrary(ListLib);
+registerLibrary(ProcGenLib);
 
 describe("procgen", () => {
   const ctx = createScriptContext({ this: { id: 1 }, caller: { id: 1 } });

@@ -400,6 +400,13 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
     return StdLib.while(cond, body);
   }
 
+  if (ts.isConditionalExpression(node)) {
+    const cond = transpileNode(node.condition, scope);
+    const whenTrue = transpileNode(node.whenTrue, scope);
+    const whenFalse = transpileNode(node.whenFalse, scope);
+    return StdLib.if(cond, whenTrue, whenFalse);
+  }
+
   if (ts.isTryStatement(node)) {
     const tryBlock = transpileNode(node.tryBlock, scope);
     const catchClause = node.catchClause;

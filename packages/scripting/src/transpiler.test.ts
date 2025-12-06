@@ -140,6 +140,7 @@ describe("transpiler", () => {
   });
 
   test("control flow", () => {
+    expect(transpile("true ? 1 : 2")).toEqual(Std.if(true, 1, 2));
     expect(transpile("if (true) 1 else 2")).toEqual(Std.if(true, 1, 2));
     expect(transpile("if (true) { 1; }")).toEqual(Std.if(true, Std.seq(1)));
     expect(transpile("while (true) { 1; }")).toEqual(Std.while(true, Std.seq(1)));

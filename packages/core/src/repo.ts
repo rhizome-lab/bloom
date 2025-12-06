@@ -176,9 +176,13 @@ export function getVerb(entityId: number, name: string): Verb | null {
  * @param code - The S-expression code for the verb.
  */
 export function addVerb(entityId: number, name: string, code: ScriptValue<unknown>) {
-  db.query<unknown, [entityId: number, name: string, code: string]>(
-    "INSERT INTO verbs (entity_id, name, code) VALUES (?, ?, ?)",
-  ).run(entityId, name, JSON.stringify(code));
+  try {
+    db.query<unknown, [entityId: number, name: string, code: string]>(
+      "INSERT INTO verbs (entity_id, name, code) VALUES (?, ?, ?)",
+    ).run(entityId, name, JSON.stringify(code));
+  } catch {
+    throw new Error(`Verb '${name}' already exists on entity ${entityId}`);
+  }
 }
 
 /**
