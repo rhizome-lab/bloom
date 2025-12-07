@@ -21,12 +21,12 @@ The compiler generates a synchronous JavaScript function that takes a `ScriptCon
 
 ### Control Flow
 
-| Opcode                     | JavaScript Output                  | Notes                                                        |
-| :------------------------- | :--------------------------------- | :----------------------------------------------------------- |
-| `["seq", ...]`             | `(() => { ... })()`                | Wrapped in an IIFE to ensure it returns the last value.      |
-| `["if", cond, then, else]` | `cond ? then : else`               | Uses ternary operator for expression-like behavior.          |
-| `["while", cond, body]`    | `while (cond) { body }`            | Wrapped in a helper IIFE to return the last evaluated value. |
-| `["for", var, list, body]` | `for (const var of list) { body }` | Wrapped in a helper IIFE to return the last evaluated value. |
+| Opcode                     | JavaScript Output                  | Notes                                  |
+| :------------------------- | :--------------------------------- | :------------------------------------- |
+| `["seq", ...]`             | `stmt1; stmt2; ...`                | Compiles to a sequence of statements.  |
+| `["if", cond, then, else]` | `if (cond) { ... } else { ... }`   | Compiles to native if/else statements. |
+| `["while", cond, body]`    | `while (cond) { body }`            | Compiles to native while loop.         |
+| `["for", var, list, body]` | `for (const var of list) { body }` | Compiles to native for-of loop.        |
 
 ### Variables
 
