@@ -71,7 +71,7 @@ export const caller = defineFullOpcode<[], Entity>("std.caller", {
 
 // Control Flow
 /** Executes a sequence of steps and returns the result of the last step. */
-const seq_ = defineFullOpcode<unknown[], any, true>("std.seq", {
+const seq_ = defineFullOpcode<[...steps: unknown[]], any, true>("std.seq", {
   handler: ([...args], ctx) => {
     if (args.length === 0) {
       return null;
@@ -135,7 +135,11 @@ export const seq = seq_ as { [Key in keyof typeof seq_]: (typeof seq_)[Key] } & 
 };
 
 /** Conditional execution. */
-const if_ = defineFullOpcode<[boolean, unknown, unknown?], any, true>("std.if", {
+const if_ = defineFullOpcode<
+  [condition: boolean, thenBranch: unknown, elseBranch?: unknown],
+  any,
+  true
+>("std.if", {
   handler: ([cond, thenBranch, elseBranch], ctx) => {
     const runBranch = (conditionResult: boolean) => {
       const snapshot = enterScope(ctx);
@@ -206,7 +210,7 @@ const if_ = defineFullOpcode<[boolean, unknown, unknown?], any, true>("std.if", 
 export { if_ as if };
 
 /** Repeats a body while a condition is true. */
-const while_ = defineFullOpcode<[boolean, unknown], any, true>("std.while", {
+const while_ = defineFullOpcode<[condition: boolean, body: unknown], any, true>("std.while", {
   handler: ([cond, body], ctx) => {
     const runBodyAsync = () => {
       const snapshot = enterScope(ctx);
@@ -323,99 +327,100 @@ const while_ = defineFullOpcode<[boolean, unknown], any, true>("std.while", {
 export { while_ as while };
 
 /** Iterates over a list. */
-const for_ = defineFullOpcode<[ScriptRaw<string>, readonly unknown[], unknown], any, true>(
-  "std.for",
-  {
-    handler: ([varName, listExpr, body], ctx) => {
-      const runLoop = (list: any[]) => {
-        if (!Array.isArray(list)) {
-          return null;
-        }
-        let idx = 0;
-        const next = (): any => {
-          while (idx < list.length) {
-            const item = list[idx];
-            idx += 1;
+const for_ = defineFullOpcode<
+  [varName: ScriptRaw<string>, list: readonly unknown[], body: unknown],
+  any,
+  true
+>("std.for", {
+  handler: ([varName, listExpr, body], ctx) => {
+    const runLoop = (list: any[]) => {
+      if (!Array.isArray(list)) {
+        return null;
+      }
+      let idx = 0;
+      const next = (): any => {
+        while (idx < list.length) {
+          const item = list[idx];
+          idx += 1;
 
-            // Create a new scope for the iteration
-            const snapshot = enterScope(ctx);
-            // Explicitly fork for the loop variable because enterScope sets cow=true,
-            // but we want to define the loop var in THIS new scope immediately.
-            if (ctx.cow) {
-              ctx.vars = Object.create(ctx.vars);
-              ctx.cow = false;
-            }
-            ctx.vars[varName] = item;
-
-            try {
-              const result = evaluate(body, ctx);
-              if (result instanceof Promise) {
-                return result.then(
-                  () => {
-                    exitScope(ctx, snapshot);
-                    return next();
-                  },
-                  (error) => {
-                    exitScope(ctx, snapshot);
-                    if (error instanceof BreakSignal) {
-                      return null;
-                    }
-                    if (error instanceof ContinueSignal) {
-                      return next();
-                    }
-                    throw error;
-                  },
-                );
-              }
-              exitScope(ctx, snapshot);
-            } catch (error) {
-              exitScope(ctx, snapshot);
-              if (error instanceof BreakSignal) {
-                return null;
-              }
-              if (error instanceof ContinueSignal) {
-                return next();
-              }
-              throw error;
-            }
+          // Create a new scope for the iteration
+          const snapshot = enterScope(ctx);
+          // Explicitly fork for the loop variable because enterScope sets cow=true,
+          // but we want to define the loop var in THIS new scope immediately.
+          if (ctx.cow) {
+            ctx.vars = Object.create(ctx.vars);
+            ctx.cow = false;
           }
-          return null;
-        };
+          ctx.vars[varName] = item;
 
-        return next();
+          try {
+            const result = evaluate(body, ctx);
+            if (result instanceof Promise) {
+              return result.then(
+                () => {
+                  exitScope(ctx, snapshot);
+                  return next();
+                },
+                (error) => {
+                  exitScope(ctx, snapshot);
+                  if (error instanceof BreakSignal) {
+                    return null;
+                  }
+                  if (error instanceof ContinueSignal) {
+                    return next();
+                  }
+                  throw error;
+                },
+              );
+            }
+            exitScope(ctx, snapshot);
+          } catch (error) {
+            exitScope(ctx, snapshot);
+            if (error instanceof BreakSignal) {
+              return null;
+            }
+            if (error instanceof ContinueSignal) {
+              return next();
+            }
+            throw error;
+          }
+        }
+        return null;
       };
 
-      const listResult = evaluate(listExpr, ctx);
-      if (listResult instanceof Promise) {
-        return listResult.then((res) => runLoop(res as any[]));
-      }
-      return runLoop(listResult as any[]);
-    },
-    metadata: {
-      category: "logic",
-      description: "Iterates over a list, executing the body for each item.",
-      label: "For Loop",
-      layout: "control-flow",
-      lazy: true,
-      parameters: [
-        { description: "The variable name.", name: "var", type: "string" },
-        { description: "The list to iterate over.", name: "list", type: "any[]" },
-        {
-          description: "The code block to execute.",
-          name: "block",
-          optional: false,
-          type: "unknown",
-        },
-      ],
-      returnType: "any",
-      slots: [
-        { name: "Var", type: "string" },
-        { name: "List", type: "block" },
-        { name: "Do", type: "block" },
-      ],
-    },
+      return next();
+    };
+
+    const listResult = evaluate(listExpr, ctx);
+    if (listResult instanceof Promise) {
+      return listResult.then((res) => runLoop(res as any[]));
+    }
+    return runLoop(listResult as any[]);
   },
-);
+  metadata: {
+    category: "logic",
+    description: "Iterates over a list, executing the body for each item.",
+    label: "For Loop",
+    layout: "control-flow",
+    lazy: true,
+    parameters: [
+      { description: "The variable name.", name: "var", type: "string" },
+      { description: "The list to iterate over.", name: "list", type: "any[]" },
+      {
+        description: "The code block to execute.",
+        name: "block",
+        optional: false,
+        type: "unknown",
+      },
+    ],
+    returnType: "any",
+    slots: [
+      { name: "Var", type: "string" },
+      { name: "List", type: "block" },
+      { name: "Do", type: "block" },
+    ],
+  },
+});
 export { for_ as for };
 
 /** Breaks out of the current loop. */
@@ -455,7 +460,7 @@ export { continue_ as continue };
 /**
  * Returns from the current function.
  */
-const return_ = defineFullOpcode<[unknown?], never>("std.return", {
+const return_ = defineFullOpcode<[value?: unknown], never>("std.return", {
   handler: ([value], _ctx) => {
     throw new ReturnSignal(value);
   },
@@ -480,7 +485,7 @@ export { return_ as return };
 
 // Data Structures
 /** Converts a value to a JSON string. */
-export const jsonStringify = defineFullOpcode<[unknown], string>("json.stringify", {
+export const jsonStringify = defineFullOpcode<[value: unknown], string>("json.stringify", {
   handler: ([val], _ctx) => JSON.stringify(val),
   metadata: {
     category: "data",
@@ -493,7 +498,7 @@ export const jsonStringify = defineFullOpcode<[unknown], string>("json.stringify
 });
 
 /** Parses a JSON string into a value. */
-export const jsonParse = defineFullOpcode<[string], unknown>("json.parse", {
+export const jsonParse = defineFullOpcode<[json: string], unknown>("json.parse", {
   handler: ([str], _ctx) => JSON.parse(str),
   metadata: {
     category: "data",
@@ -507,7 +512,7 @@ export const jsonParse = defineFullOpcode<[string], unknown>("json.parse", {
 
 /** Returns the type of a value. */
 const typeof_ = defineFullOpcode<
-  [unknown],
+  [value: unknown],
   "string" | "number" | "boolean" | "object" | "null" | "array"
 >("std.typeof", {
   handler: ([val], _ctx) =>
@@ -536,7 +541,7 @@ export { typeof_ as typeof };
 
 // Variables
 /** Defines a local variable in the current scope. */
-const let_ = defineFullOpcode<[string, unknown], any>("std.let", {
+const let_ = defineFullOpcode<[name: string, value: unknown], any>("std.let", {
   handler: ([name, value], ctx) => {
     ctx.vars = ctx.vars ?? {};
     if (ctx.cow) {
@@ -564,7 +569,7 @@ const let_ = defineFullOpcode<[string, unknown], any>("std.let", {
 export { let_ as let };
 
 /** Retrieves a local variable from the current scope. */
-const var_ = defineFullOpcode<[string], any>("std.var", {
+const var_ = defineFullOpcode<[name: string], any>("std.var", {
   handler: ([name], ctx) => ctx.vars?.[name] ?? null,
   metadata: {
     category: "data",
@@ -580,7 +585,7 @@ export { var_ as var };
 /**
  * Updates the value of an existing variable.
  */
-const set_ = defineFullOpcode<[string, unknown], any>("std.set", {
+const set_ = defineFullOpcode<[name: string, value: unknown], any>("std.set", {
   handler: ([name, value], ctx) => {
     if (ctx.vars) {
       setVar(ctx, name, value);
@@ -606,7 +611,7 @@ export { set_ as set };
 
 // Numbers
 /** Parses a string into an integer. */
-export const int = defineFullOpcode<[string, number?], number>("std.int", {
+export const int = defineFullOpcode<[value: string, radix?: number], number>("std.int", {
   handler: ([str, radix], _ctx) => parseInt(str, radix),
   metadata: {
     category: "data",
@@ -630,7 +635,7 @@ export const int = defineFullOpcode<[string, number?], number>("std.int", {
 });
 
 /** Parses a string into a float. */
-export const float = defineFullOpcode<[string], number>("std.float", {
+export const float = defineFullOpcode<[value: string], number>("std.float", {
   handler: ([str], _ctx) => parseFloat(str),
   metadata: {
     category: "data",
@@ -643,7 +648,7 @@ export const float = defineFullOpcode<[string], number>("std.float", {
 });
 
 /** Converts a value to a string. */
-export const string = defineFullOpcode<[unknown], string>("std.string", {
+export const string = defineFullOpcode<[value: unknown], string>("std.string", {
   handler: ([val], _ctx) => String(val),
   metadata: {
     category: "data",
@@ -656,7 +661,7 @@ export const string = defineFullOpcode<[unknown], string>("std.string", {
 });
 
 /** Converts a value to a boolean. */
-export const boolean = defineFullOpcode<[unknown], boolean>("std.boolean", {
+export const boolean = defineFullOpcode<[value: unknown], boolean>("std.boolean", {
   handler: ([val], _ctx) => Boolean(val),
   metadata: {
     category: "data",
@@ -669,7 +674,7 @@ export const boolean = defineFullOpcode<[unknown], boolean>("std.boolean", {
 });
 
 /** Converts a value to a number. */
-export const number = defineFullOpcode<[unknown], number>("std.number", {
+export const number = defineFullOpcode<[value: unknown], number>("std.number", {
   handler: ([val], _ctx) => Number(val),
   metadata: {
     category: "data",
@@ -683,7 +688,7 @@ export const number = defineFullOpcode<[unknown], number>("std.number", {
 
 // System
 /** Logs a message to the console/client. */
-export const log = defineFullOpcode<[unknown, ...unknown[]], null>("std.log", {
+export const log = defineFullOpcode<[message: unknown, ...args: unknown[]], null>("std.log", {
   handler: ([...args], _ctx) => {
     console.log(...args);
     return null;
@@ -702,7 +707,7 @@ export const log = defineFullOpcode<[unknown, ...unknown[]], null>("std.log", {
 });
 
 /** Retrieves a specific argument passed to the script. */
-export const arg = defineFullOpcode<[number], any>("std.arg", {
+export const arg = defineFullOpcode<[index: number], any>("std.arg", {
   handler: ([index], ctx) => ctx.args?.[index] ?? null,
   metadata: {
     category: "data",
@@ -730,7 +735,7 @@ export const args = defineFullOpcode<[], any[]>("std.args", {
 });
 
 /** Sends a warning message to the client. */
-export const warn = defineFullOpcode<[unknown], void>("std.warn", {
+export const warn = defineFullOpcode<[message: unknown], void>("std.warn", {
   handler: ([msg], ctx) => {
     ctx.warnings.push(String(msg));
   },
@@ -745,7 +750,7 @@ export const warn = defineFullOpcode<[unknown], void>("std.warn", {
 });
 
 /** Throws an error, stopping script execution. */
-const throw_ = defineFullOpcode<[unknown], never>("std.throw", {
+const throw_ = defineFullOpcode<[message: unknown], never>("std.throw", {
   handler: ([msg], _ctx) => {
     throw new ScriptError(msg as string);
   },
@@ -760,7 +765,11 @@ const throw_ = defineFullOpcode<[unknown], never>("std.throw", {
 });
 export { throw_ as throw };
 
-const try_ = defineFullOpcode<[unknown, string, unknown], any, true>("std.try", {
+const try_ = defineFullOpcode<
+  [tryBlock: unknown, errorVar: string, catchBlock: unknown],
+  any,
+  true
+>("std.try", {
   handler: ([tryBlock, errorVar, catchBlock], ctx) => {
     const snapshot = enterScope(ctx);
     try {
@@ -816,35 +825,36 @@ const try_ = defineFullOpcode<[unknown, string, unknown], any, true>("std.try", 
 export { try_ as try };
 
 /** Creates a lambda (anonymous function). */
-export const lambda = defineFullOpcode<[ScriptRaw<readonly string[]>, unknown], any, true>(
-  "std.lambda",
-  {
-    handler: ([argNames, body], ctx) => ({
-      args: argNames,
-      body,
-      closure: ctx.vars,
-      type: "lambda",
-    }),
-    metadata: {
-      category: "func",
-      description: "Creates a lambda (anonymous function).",
-      label: "Lambda",
-      lazy: true,
-      parameters: [
-        { description: "The arguments.", name: "args", type: "unknown[]" },
-        { description: "The function body.", name: "body", type: "unknown" },
-      ],
-      returnType: "any",
-      slots: [
-        { name: "Args", type: "block" },
-        { name: "Body", type: "block" },
-      ],
-    },
+export const lambda = defineFullOpcode<
+  [args: ScriptRaw<readonly string[]>, body: unknown],
+  any,
+  true
+>("std.lambda", {
+  handler: ([argNames, body], ctx) => ({
+    args: argNames,
+    body,
+    closure: ctx.vars,
+    type: "lambda",
+  }),
+  metadata: {
+    category: "func",
+    description: "Creates a lambda (anonymous function).",
+    label: "Lambda",
+    lazy: true,
+    parameters: [
+      { description: "The arguments.", name: "args", type: "unknown[]" },
+      { description: "The function body.", name: "body", type: "unknown" },
+    ],
+    returnType: "any",
+    slots: [
+      { name: "Args", type: "block" },
+      { name: "Body", type: "block" },
+    ],
   },
-);
+});
 
 /** Calls a lambda function. */
-export const apply = defineFullOpcode<[unknown, ...unknown[]], any>("std.apply", {
+export const apply = defineFullOpcode<[lambda: unknown, ...args: unknown[]], any>("std.apply", {
   handler: ([func, ...evaluatedArgs], ctx) => {
     if (!func) {
       throw new ScriptError("apply: func not found");
@@ -892,7 +902,7 @@ export const apply = defineFullOpcode<[unknown, ...unknown[]], any>("std.apply",
 });
 
 /** Sends a message to the client. */
-export const send = defineFullOpcode<[string, unknown], null>("send", {
+export const send = defineFullOpcode<[type: string, payload: unknown], null>("send", {
   handler: ([type, payload], ctx) => {
     ctx.send?.(type, payload);
     return null;
@@ -917,7 +927,7 @@ export const send = defineFullOpcode<[string, unknown], null>("send", {
  * Returns the argument as is, without evaluation.
  * Used for passing arrays as values to opcodes.
  */
-export const quote = defineFullOpcode<[ScriptRaw<unknown>], any, true>("std.quote", {
+export const quote = defineFullOpcode<[value: ScriptRaw<unknown>], any, true>("std.quote", {
   handler: ([value], _ctx) => value,
   metadata: {
     category: "data",

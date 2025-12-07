@@ -39,13 +39,13 @@ export interface HttpResponse {
 
 export const netHttpFetch = defineFullOpcode<
   [
-    Capability | null,
-    string,
-    {
+    cap: Capability | null,
+    url: string,
+    options?: {
       readonly method?: string;
       readonly headers?: Record<string, string>;
       readonly body?: string;
-    }?,
+    },
   ],
   Promise<HttpResponse>
 >("net.http.fetch", {
@@ -109,7 +109,7 @@ export const netHttpFetch = defineFullOpcode<
   },
 });
 
-export const netHttpResponseText = defineFullOpcode<[HttpResponse], string>(
+export const netHttpResponseText = defineFullOpcode<[response: HttpResponse], string>(
   "net.http.response_text",
   {
     handler: async ([response], _ctx) => {
@@ -129,28 +129,31 @@ export const netHttpResponseText = defineFullOpcode<[HttpResponse], string>(
   },
 );
 
-export const netHttpResponseJson = defineFullOpcode<[HttpResponse], any>("net.http.response_json", {
-  handler: async ([response], _ctx) => {
-    if (!response || !response.__response) {
-      throw new ScriptError("net.http.response_json: invalid response object");
-    }
-    try {
-      return await (response as HttpResponse).__response.json();
-    } catch {
-      throw new ScriptError("net.http.response_json: failed to parse JSON");
-    }
+export const netHttpResponseJson = defineFullOpcode<[response: HttpResponse], any>(
+  "net.http.response_json",
+  {
+    handler: async ([response], _ctx) => {
+      if (!response || !response.__response) {
+        throw new ScriptError("net.http.response_json: invalid response object");
+      }
+      try {
+        return await (response as HttpResponse).__response.json();
+      } catch {
+        throw new ScriptError("net.http.response_json: failed to parse JSON");
+      }
+    },
+    metadata: {
+      category: "net",
+      description: "Get response body as JSON",
+      label: "Response JSON",
+      parameters: [{ description: "The response object.", name: "response", type: "object" }],
+      returnType: "any",
+      slots: [{ name: "Response", type: "block" }],
+    },
   },
-  metadata: {
-    category: "net",
-    description: "Get response body as JSON",
-    label: "Response JSON",
-    parameters: [{ description: "The response object.", name: "response", type: "object" }],
-    returnType: "any",
-    slots: [{ name: "Response", type: "block" }],
-  },
-});
+);
 
-export const netHttpResponseBytes = defineFullOpcode<[HttpResponse], number[]>(
+export const netHttpResponseBytes = defineFullOpcode<[response: HttpResponse], number[]>(
   "net.http.response_bytes",
   {
     handler: async ([response], _ctx) => {

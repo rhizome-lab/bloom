@@ -14,7 +14,7 @@ export const timeNow = defineFullOpcode<[], string>("time.now", {
 });
 
 /** Formats a timestamp string. */
-export const timeFormat = defineFullOpcode<[string, string?], string>("time.format", {
+export const timeFormat = defineFullOpcode<[time: string, format?: string], string>("time.format", {
   handler: ([timestamp], _ctx) => new Date(timestamp).toISOString(),
   metadata: {
     category: "time",
@@ -38,7 +38,7 @@ export const timeFormat = defineFullOpcode<[string, string?], string>("time.form
 });
 
 /** Parses a datetime string and returns it in ISO 8601 format. */
-export const timeParse = defineFullOpcode<[string], string>("time.parse", {
+export const timeParse = defineFullOpcode<[time: string], string>("time.parse", {
   handler: ([datetime], _ctx) => new Date(datetime).toISOString(),
   metadata: {
     category: "time",
@@ -58,27 +58,30 @@ export const timeParse = defineFullOpcode<[string], string>("time.parse", {
 });
 
 /** Converts a numeric timestamp (ms since epoch) to an ISO 8601 string. */
-export const timeFromTimestamp = defineFullOpcode<[number], string>("time.from_timestamp", {
-  handler: ([timestamp], _ctx) => new Date(timestamp).toISOString(),
-  metadata: {
-    category: "time",
-    description: "Converts a numeric timestamp (ms since epoch) to an ISO 8601 string.",
-    label: "From Timestamp",
-    parameters: [
-      {
-        description: "The timestamp in milliseconds.",
-        name: "timestamp",
-        optional: false,
-        type: "number",
-      },
-    ],
-    returnType: "string",
-    slots: [{ name: "Timestamp", type: "number" }],
+export const timeFromTimestamp = defineFullOpcode<[timestamp: number], string>(
+  "time.from_timestamp",
+  {
+    handler: ([timestamp], _ctx) => new Date(timestamp).toISOString(),
+    metadata: {
+      category: "time",
+      description: "Converts a numeric timestamp (ms since epoch) to an ISO 8601 string.",
+      label: "From Timestamp",
+      parameters: [
+        {
+          description: "The timestamp in milliseconds.",
+          name: "timestamp",
+          optional: false,
+          type: "number",
+        },
+      ],
+      returnType: "string",
+      slots: [{ name: "Timestamp", type: "number" }],
+    },
   },
-});
+);
 
 /** Converts an ISO 8601 string to a numeric timestamp (ms since epoch). */
-export const timeToTimestamp = defineFullOpcode<[string], number>("time.to_timestamp", {
+export const timeToTimestamp = defineFullOpcode<[time: string], number>("time.to_timestamp", {
   handler: ([datetime], _ctx) => new Date(datetime).getTime(),
   metadata: {
     category: "time",
@@ -93,8 +96,8 @@ export const timeToTimestamp = defineFullOpcode<[string], number>("time.to_times
 /** Adds an offset to a timestamp. */
 export const timeOffset = defineFullOpcode<
   [
-    number,
-    (
+    amount: number,
+    unit:
       | "day"
       | "days"
       | "hour"
@@ -106,9 +109,8 @@ export const timeOffset = defineFullOpcode<
       | "second"
       | "seconds"
       | "year"
-      | "years"
-    ),
-    string?,
+      | "years",
+    base?: string,
   ],
   string
 >("time.offset", {

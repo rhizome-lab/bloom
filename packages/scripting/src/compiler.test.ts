@@ -135,7 +135,7 @@ describe("Compiler", () => {
   test("try/catch with error variable", () => {
     // try { throw "error" } catch(e) { return e }
     const script = StdLib.try(StdLib.throw("oops"), "err", StdLib.var("err"));
-    expect(run(script)).toBe("oops");
+    expect((run(script) as Error).message).toContain("oops");
   });
 
   test("object operations", () => {

@@ -10,7 +10,7 @@ let noise2D = createNoise2D(() => prng.float());
  * Seeds the procedural generation system.
  * This affects both `procgen.noise` and `procgen.random`.
  */
-export const seed = defineFullOpcode<[number], void>("procgen.seed", {
+export const seed = defineFullOpcode<[seed: number], void>("procgen.seed", {
   handler: ([seedVal], _ctx) => {
     prng = new Xoroshiro128Plus(seedVal);
     // Re-create noise generator to use the new PRNG state effectively
@@ -31,7 +31,7 @@ export const seed = defineFullOpcode<[number], void>("procgen.seed", {
  * Generates 2D Simplex noise.
  * Returns a value between -1 and 1.
  */
-export const noise = defineFullOpcode<[cx: number, cy: number], number>("procgen.noise", {
+export const noise = defineFullOpcode<[xCoord: number, yCoord: number], number>("procgen.noise", {
   handler: ([cx, cy], _ctx) => noise2D(cx, cy),
   metadata: {
     category: "procgen",

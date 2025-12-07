@@ -48,7 +48,6 @@
 - [ ] **Database**: Recursive CTEs for retrieving prototype chain
 - [ ] **Style**: Convert `apps/web/src/components/ThemeEditor.tsx` to BEM in `packages/shared/src/index.css`
 - [ ] **Scripting**: Figure out what to do with the duplication of `procgen.random` vs Std `random` opcodes
-- [ ] **Scripting**: Convert ALL generic parameter lists of `defineFullOpcode` usages to named tuples.
 - [ ] **Seed**: Fix hotel seed - floors and rooms should be 'ephemeral' - that is, they should be destroyed when a: no longer in use and b: not modified.
 - [ ] **Seed**: Make sure mailbox uses capability based permissions.
 - [ ] **Decompiler**: Return the last element in the body in `packages/scripting/src/decompiler.ts`. See `packages/scripting/src/compiler.ts` for a similar implementation.

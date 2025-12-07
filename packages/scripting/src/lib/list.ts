@@ -8,7 +8,7 @@ import {
 import { executeLambda } from "../interpreter";
 
 /** Creates a new list. */
-const listNew_ = defineFullOpcode<[...unknown[]], any[]>("list.new", {
+const listNew_ = defineFullOpcode<[...items: unknown[]], any[]>("list.new", {
   handler: ([...args], _ctx) => args,
   metadata: {
     category: "list",
@@ -34,7 +34,7 @@ export const listNew = listNew_ as { [Key in keyof typeof listNew_]: (typeof lis
 };
 
 /** Returns the length of a list. */
-export const listLen = defineFullOpcode<[readonly unknown[]], number>("list.len", {
+export const listLen = defineFullOpcode<[list: readonly unknown[]], number>("list.len", {
   handler: ([list], _ctx) => list.length,
   metadata: {
     category: "list",
@@ -54,7 +54,7 @@ export const listLen = defineFullOpcode<[readonly unknown[]], number>("list.len"
 });
 
 /** Checks if a list is empty. */
-export const listEmpty = defineFullOpcode<[readonly unknown[]], boolean>("list.empty", {
+export const listEmpty = defineFullOpcode<[list: readonly unknown[]], boolean>("list.empty", {
   handler: ([list], _ctx) => list.length === 0,
   metadata: {
     category: "list",
@@ -74,7 +74,7 @@ export const listEmpty = defineFullOpcode<[readonly unknown[]], boolean>("list.e
 });
 
 /** Retrieves an item from a list at a specific index. */
-const listGet_ = defineFullOpcode<[readonly unknown[], number], any>("list.get", {
+const listGet_ = defineFullOpcode<[list: readonly unknown[], index: number], any>("list.get", {
   handler: ([list, index], _ctx) => list[index],
   metadata: {
     category: "list",
@@ -100,29 +100,32 @@ export const listGet = listGet_ as { [Key in keyof typeof listGet_]: (typeof lis
 };
 
 /** Sets an item in a list at a specific index. */
-const listSet_ = defineFullOpcode<[unknown[], number, unknown], any>("list.set", {
-  handler: ([list, index, val], _ctx) => {
-    list[index] = val;
-    return val;
+const listSet_ = defineFullOpcode<[list: unknown[], index: number, value: unknown], any>(
+  "list.set",
+  {
+    handler: ([list, index, val], _ctx) => {
+      list[index] = val;
+      return val;
+    },
+    metadata: {
+      category: "list",
+      description: "Sets the item at the specified index.",
+      genericParameters: ["Type"],
+      label: "Shift Item",
+      parameters: [
+        { description: "The list to modify.", name: "list", type: "Type[]" },
+        { description: "The index to set.", name: "index", type: "number" },
+        { description: "The new value.", name: "value", type: "Type" },
+      ],
+      returnType: "Type",
+      slots: [
+        { name: "List", type: "block" },
+        { name: "Index", type: "number" },
+        { name: "Value", type: "block" },
+      ],
+    },
   },
-  metadata: {
-    category: "list",
-    description: "Sets the item at the specified index.",
-    genericParameters: ["Type"],
-    label: "Shift Item",
-    parameters: [
-      { description: "The list to modify.", name: "list", type: "Type[]" },
-      { description: "The index to set.", name: "index", type: "number" },
-      { description: "The new value.", name: "value", type: "Type" },
-    ],
-    returnType: "Type",
-    slots: [
-      { name: "List", type: "block" },
-      { name: "Index", type: "number" },
-      { name: "Value", type: "block" },
-    ],
-  },
-});
+);
 export const listSet = listSet_ as { [Key in keyof typeof listSet_]: (typeof listSet_)[Key] } & {
   <Type>(
     list: ScriptValue<Type[]>,
@@ -132,7 +135,7 @@ export const listSet = listSet_ as { [Key in keyof typeof listSet_]: (typeof lis
 };
 
 /** Adds an item to the end of a list. */
-const listPush_ = defineFullOpcode<[unknown[], unknown], number>("list.push", {
+const listPush_ = defineFullOpcode<[list: unknown[], value: unknown], number>("list.push", {
   handler: ([list, val], _ctx) => {
     list.push(val);
     return list.length;
@@ -160,7 +163,7 @@ export const listPush = listPush_ as {
 };
 
 /** Removes and returns the last item of a list. */
-const listPop_ = defineFullOpcode<[unknown[]], any>("list.pop", {
+const listPop_ = defineFullOpcode<[list: unknown[]], any>("list.pop", {
   handler: ([list], _ctx) => list.pop(),
   metadata: {
     category: "list",
@@ -179,7 +182,7 @@ export const listPop = listPop_ as {
 };
 
 /** Adds an item to the beginning of a list. */
-const listUnshift_ = defineFullOpcode<[unknown[], unknown], number>("list.unshift", {
+const listUnshift_ = defineFullOpcode<[list: unknown[], value: unknown], number>("list.unshift", {
   handler: ([list, val], _ctx) => {
     list.unshift(val);
     return list.length;
@@ -207,7 +210,7 @@ export const listUnshift = listUnshift_ as {
 };
 
 /** Removes and returns the first item of a list. */
-const listShift_ = defineFullOpcode<[unknown[]], any>("list.shift", {
+const listShift_ = defineFullOpcode<[list: unknown[]], any>("list.shift", {
   handler: ([list], _ctx) => list.shift(),
   metadata: {
     category: "list",
@@ -226,26 +229,29 @@ export const listShift = listShift_ as {
 };
 
 /** Returns a shallow copy of a portion of a list. */
-const listSlice_ = defineFullOpcode<[readonly unknown[], number, number?], any[]>("list.slice", {
-  handler: ([list, start, end], _ctx) => list.slice(start, end),
-  metadata: {
-    category: "list",
-    description: "Returns a shallow copy of a portion of the list.",
-    genericParameters: ["Type"],
-    label: "Slice List",
-    parameters: [
-      { description: "The list to slice.", name: "list", type: "readonly Type[]" },
-      { description: "The start index.", name: "start", type: "number" },
-      { description: "The end index (exclusive).", name: "end", optional: true, type: "number" },
-    ],
-    returnType: "Type[]",
-    slots: [
-      { name: "List", type: "block" },
-      { name: "Start", type: "number" },
-      { default: null, name: "End", type: "number" },
-    ],
+const listSlice_ = defineFullOpcode<[list: readonly unknown[], start: number, end?: number], any[]>(
+  "list.slice",
+  {
+    handler: ([list, start, end], _ctx) => list.slice(start, end),
+    metadata: {
+      category: "list",
+      description: "Returns a shallow copy of a portion of the list.",
+      genericParameters: ["Type"],
+      label: "Slice List",
+      parameters: [
+        { description: "The list to slice.", name: "list", type: "readonly Type[]" },
+        { description: "The start index.", name: "start", type: "number" },
+        { description: "The end index (exclusive).", name: "end", optional: true, type: "number" },
+      ],
+      returnType: "Type[]",
+      slots: [
+        { name: "List", type: "block" },
+        { name: "Start", type: "number" },
+        { default: null, name: "End", type: "number" },
+      ],
+    },
   },
-});
+);
 export const listSlice = listSlice_ as {
   [Key in keyof typeof listSlice_]: (typeof listSlice_)[Key];
 } & {
@@ -257,38 +263,38 @@ export const listSlice = listSlice_ as {
 };
 
 /** Changes the contents of a list by removing or replacing existing elements and/or adding new elements. */
-const listSplice_ = defineFullOpcode<[unknown[], number, number, ...unknown[]], any[]>(
-  "list.splice",
-  {
-    handler: ([list, start, deleteCount, ...items], _ctx) =>
-      list.splice(start, deleteCount, ...items),
-    metadata: {
-      category: "list",
-      description:
-        "Changes the contents of a list by removing or replacing existing elements and/or adding new elements.",
-      genericParameters: ["Type"],
-      label: "Splice List",
-      parameters: [
-        { description: "The list to modify.", name: "list", type: "Type[]" },
-        { description: "The start index.", name: "start", type: "number" },
-        {
-          description: "The number of items to remove.",
-          name: "deleteCount",
-          optional: false,
-          type: "number",
-        },
-        { description: "The items to add.", name: "...items", type: "Type[]" },
-      ],
-      returnType: "Type[]",
-      slots: [
-        { name: "List", type: "block" },
-        { name: "Start", type: "number" },
-        { name: "Delete Count", type: "number" },
-        { name: "Items", type: "block" }, // Variadic
-      ],
-    },
+const listSplice_ = defineFullOpcode<
+  [list: unknown[], start: number, deleteCount: number, ...items: unknown[]],
+  any[]
+>("list.splice", {
+  handler: ([list, start, deleteCount, ...items], _ctx) =>
+    list.splice(start, deleteCount, ...items),
+  metadata: {
+    category: "list",
+    description:
+      "Changes the contents of a list by removing or replacing existing elements and/or adding new elements.",
+    genericParameters: ["Type"],
+    label: "Splice List",
+    parameters: [
+      { description: "The list to modify.", name: "list", type: "Type[]" },
+      { description: "The start index.", name: "start", type: "number" },
+      {
+        description: "The number of items to remove.",
+        name: "deleteCount",
+        optional: false,
+        type: "number",
+      },
+      { description: "The items to add.", name: "...items", type: "Type[]" },
+    ],
+    returnType: "Type[]",
+    slots: [
+      { name: "List", type: "block" },
+      { name: "Start", type: "number" },
+      { name: "Delete Count", type: "number" },
+      { name: "Items", type: "block" }, // Variadic
+    ],
   },
-);
+});
 export const listSplice = listSplice_ as {
   [Key in keyof typeof listSplice_]: (typeof listSplice_)[Key];
 } & {
@@ -301,7 +307,7 @@ export const listSplice = listSplice_ as {
 };
 
 /** Merges two or more lists. */
-const listConcat_ = defineFullOpcode<(readonly unknown[])[], any[]>("list.concat", {
+const listConcat_ = defineFullOpcode<[...lists: (readonly unknown[])[]], any[]>("list.concat", {
   handler: (lists, _ctx) => lists.flat(),
   metadata: {
     category: "list",
@@ -327,29 +333,32 @@ export const listConcat = listConcat_ as {
 };
 
 /** Determines whether a list includes a certain value. */
-const listIncludes_ = defineFullOpcode<[readonly unknown[], unknown], boolean>("list.includes", {
-  handler: ([list, val], _ctx) => list.includes(val),
-  metadata: {
-    category: "list",
-    description: "Determines whether a list includes a certain value.",
-    genericParameters: ["Type"],
-    label: "List Includes",
-    parameters: [
-      {
-        description: "The list to check.",
-        name: "list",
-        optional: false,
-        type: "readonly Type[]",
-      },
-      { description: "The value to search for.", name: "value", type: "Type" },
-    ],
-    returnType: "boolean",
-    slots: [
-      { name: "List", type: "block" },
-      { name: "Value", type: "block" },
-    ],
+const listIncludes_ = defineFullOpcode<[list: readonly unknown[], value: unknown], boolean>(
+  "list.includes",
+  {
+    handler: ([list, val], _ctx) => list.includes(val),
+    metadata: {
+      category: "list",
+      description: "Determines whether a list includes a certain value.",
+      genericParameters: ["Type"],
+      label: "List Includes",
+      parameters: [
+        {
+          description: "The list to check.",
+          name: "list",
+          optional: false,
+          type: "readonly Type[]",
+        },
+        { description: "The value to search for.", name: "value", type: "Type" },
+      ],
+      returnType: "boolean",
+      slots: [
+        { name: "List", type: "block" },
+        { name: "Value", type: "block" },
+      ],
+    },
   },
-});
+);
 export const listIncludes = listIncludes_ as {
   [Key in keyof typeof listIncludes_]: (typeof listIncludes_)[Key];
 } & {
@@ -360,7 +369,7 @@ export const listIncludes = listIncludes_ as {
 };
 
 /** Reverses a list. */
-const listReverse_ = defineFullOpcode<[readonly unknown[]], any[]>("list.reverse", {
+const listReverse_ = defineFullOpcode<[list: readonly unknown[]], any[]>("list.reverse", {
   handler: ([list], _ctx) => list.toReversed(),
   metadata: {
     category: "list",
@@ -379,7 +388,7 @@ export const listReverse = listReverse_ as {
 };
 
 /** Sorts the elements of a list. */
-const listSort_ = defineFullOpcode<[readonly unknown[]], any[]>("list.sort", {
+const listSort_ = defineFullOpcode<[list: readonly unknown[]], any[]>("list.sort", {
   handler: ([list], _ctx) => list.toSorted(),
   metadata: {
     category: "list",
@@ -398,7 +407,7 @@ export const listSort = listSort_ as {
 };
 
 /** Returns the first element in the provided list that satisfies the provided testing function. */
-const listFind_ = defineFullOpcode<[readonly unknown[], unknown], any>("list.find", {
+const listFind_ = defineFullOpcode<[list: readonly unknown[], lambda: unknown], any>("list.find", {
   handler: ([list, func], ctx) => {
     if (!func || (func as any).type !== "lambda") {
       throw new ScriptError("list.find: expected lambda");
@@ -446,7 +455,7 @@ export const listFind = listFind_ as {
 };
 
 /** Creates a new list populated with the results of calling a provided function on each element in the calling list. */
-const listMap_ = defineFullOpcode<[readonly unknown[], unknown], any[]>("list.map", {
+const listMap_ = defineFullOpcode<[list: readonly unknown[], lambda: unknown], any[]>("list.map", {
   handler: ([list, func], ctx) => {
     if (!func || (func as any).type !== "lambda") {
       throw new ScriptError("list.map: expected lambda");
@@ -496,50 +505,53 @@ export const listMap = listMap_ as {
 };
 
 /** Creates a shallow copy of a portion of a given list, filtered down to just the elements from the given list that pass the test implemented by the provided function. */
-const listFilter_ = defineFullOpcode<[readonly unknown[], unknown], any[]>("list.filter", {
-  handler: ([list, func], ctx) => {
-    if (!func || (func as any).type !== "lambda") {
-      throw new ScriptError("list.filter: expected lambda");
-    }
-    const result: unknown[] = [];
-    let idx = 0;
-    const next = (): unknown[] | Promise<unknown[]> => {
-      for (; idx < list.length; idx += 1) {
-        const item = list[idx];
-        const res = executeLambda(func as any, [item], ctx);
-        if (res instanceof Promise) {
-          return res.then((res) => {
-            if (res) {
-              result.push(item);
-            }
-            return next();
-          });
-        }
-        if (res) {
-          result.push(item);
-        }
+const listFilter_ = defineFullOpcode<[list: readonly unknown[], lambda: unknown], any[]>(
+  "list.filter",
+  {
+    handler: ([list, func], ctx) => {
+      if (!func || (func as any).type !== "lambda") {
+        throw new ScriptError("list.filter: expected lambda");
       }
-      return result;
-    };
-    return next();
+      const result: unknown[] = [];
+      let idx = 0;
+      const next = (): unknown[] | Promise<unknown[]> => {
+        for (; idx < list.length; idx += 1) {
+          const item = list[idx];
+          const res = executeLambda(func as any, [item], ctx);
+          if (res instanceof Promise) {
+            return res.then((res) => {
+              if (res) {
+                result.push(item);
+              }
+              return next();
+            });
+          }
+          if (res) {
+            result.push(item);
+          }
+        }
+        return result;
+      };
+      return next();
+    },
+    metadata: {
+      category: "list",
+      description:
+        "Creates a shallow copy of a portion of a given list, filtered down to just the elements from the given list that pass the test implemented by the provided function.",
+      genericParameters: ["Type"],
+      label: "Filter List",
+      parameters: [
+        { description: "The list to filter.", name: "list", type: "Type[]" },
+        { description: "The testing function.", name: "lambda", type: "(item: Type) => boolean" },
+      ],
+      returnType: "Type[]",
+      slots: [
+        { name: "List", type: "block" },
+        { name: "Lambda", type: "block" },
+      ],
+    },
   },
-  metadata: {
-    category: "list",
-    description:
-      "Creates a shallow copy of a portion of a given list, filtered down to just the elements from the given list that pass the test implemented by the provided function.",
-    genericParameters: ["Type"],
-    label: "Filter List",
-    parameters: [
-      { description: "The list to filter.", name: "list", type: "Type[]" },
-      { description: "The testing function.", name: "lambda", type: "(item: Type) => boolean" },
-    ],
-    returnType: "Type[]",
-    slots: [
-      { name: "List", type: "block" },
-      { name: "Lambda", type: "block" },
-    ],
-  },
-});
+);
 export const listFilter = listFilter_ as {
   [Key in keyof typeof listFilter_]: (typeof listFilter_)[Key];
 } & {
@@ -550,7 +562,10 @@ export const listFilter = listFilter_ as {
 };
 
 /** Executes a user-supplied "reducer" callback function on each element of the list, in order, passing in the return value from the calculation on the preceding element. */
-const listReduce_ = defineFullOpcode<[readonly unknown[], unknown, unknown], any>("list.reduce", {
+const listReduce_ = defineFullOpcode<
+  [list: readonly unknown[], lambda: unknown, init: unknown],
+  any
+>("list.reduce", {
   handler: ([list, func, init], ctx) => {
     if (!func || (func as any).type !== "lambda") {
       throw new ScriptError("list.reduce: expected lambda");
@@ -612,54 +627,57 @@ export const listReduce = listReduce_ as {
 };
 
 /** Creates a new list by applying a given callback function to each element of the list, and then flattening the result by one level. */
-const listFlatMap_ = defineFullOpcode<[readonly unknown[], unknown], any[]>("list.flatMap", {
-  handler: ([list, func], ctx) => {
-    if (!func || (func as any).type !== "lambda") {
-      throw new ScriptError("list.flatMap: expected lambda");
-    }
-    const result: unknown[] = [];
-    let idx = 0;
-    const next = (): unknown[] | Promise<unknown[]> => {
-      for (; idx < list.length; idx += 1) {
-        const item = list[idx];
-        const res = executeLambda(func as any, [item], ctx);
-        if (res instanceof Promise) {
-          return res.then((res) => {
-            if (Array.isArray(res)) {
-              result.push(...res);
-            } else {
-              result.push(res);
-            }
-            return next();
-          });
-        }
-        if (Array.isArray(res)) {
-          result.push(...res);
-        } else {
-          result.push(res);
-        }
+const listFlatMap_ = defineFullOpcode<[list: readonly unknown[], lambda: unknown], any[]>(
+  "list.flatMap",
+  {
+    handler: ([list, func], ctx) => {
+      if (!func || (func as any).type !== "lambda") {
+        throw new ScriptError("list.flatMap: expected lambda");
       }
-      return result;
-    };
-    return next();
+      const result: unknown[] = [];
+      let idx = 0;
+      const next = (): unknown[] | Promise<unknown[]> => {
+        for (; idx < list.length; idx += 1) {
+          const item = list[idx];
+          const res = executeLambda(func as any, [item], ctx);
+          if (res instanceof Promise) {
+            return res.then((res) => {
+              if (Array.isArray(res)) {
+                result.push(...res);
+              } else {
+                result.push(res);
+              }
+              return next();
+            });
+          }
+          if (Array.isArray(res)) {
+            result.push(...res);
+          } else {
+            result.push(res);
+          }
+        }
+        return result;
+      };
+      return next();
+    },
+    metadata: {
+      category: "list",
+      description:
+        "Creates a new list by applying a given callback function to each element of the list, and then flattening the result by one level.",
+      genericParameters: ["Type", "Result"],
+      label: "FlatMap List",
+      parameters: [
+        { description: "The list to map.", name: "list", type: "readonly Type[]" },
+        { description: "The mapping function.", name: "lambda", type: "(item: Type) => Result[]" },
+      ],
+      returnType: "Result[]",
+      slots: [
+        { name: "List", type: "block" },
+        { name: "Lambda", type: "block" },
+      ],
+    },
   },
-  metadata: {
-    category: "list",
-    description:
-      "Creates a new list by applying a given callback function to each element of the list, and then flattening the result by one level.",
-    genericParameters: ["Type", "Result"],
-    label: "FlatMap List",
-    parameters: [
-      { description: "The list to map.", name: "list", type: "readonly Type[]" },
-      { description: "The mapping function.", name: "lambda", type: "(item: Type) => Result[]" },
-    ],
-    returnType: "Result[]",
-    slots: [
-      { name: "List", type: "block" },
-      { name: "Lambda", type: "block" },
-    ],
-  },
-});
+);
 export const listFlatMap = listFlatMap_ as {
   [Key in keyof typeof listFlatMap_]: (typeof listFlatMap_)[Key];
 } & {

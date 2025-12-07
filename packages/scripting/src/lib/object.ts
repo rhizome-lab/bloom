@@ -63,7 +63,7 @@ export const objNew = defineFullOpcode<
 });
 
 /** Returns an array of a given object's own enumerable property names. */
-export const objKeys = defineFullOpcode<[object], string[]>("obj.keys", {
+export const objKeys = defineFullOpcode<[target: object], string[]>("obj.keys", {
   handler: ([obj], _ctx) => Object.getOwnPropertyNames(obj),
   metadata: {
     category: "object",
@@ -77,7 +77,7 @@ export const objKeys = defineFullOpcode<[object], string[]>("obj.keys", {
 });
 
 /** Returns an array of a given object's own enumerable property values. */
-export const objValues = defineFullOpcode<[object], any[]>("obj.values", {
+export const objValues = defineFullOpcode<[target: object], any[]>("obj.values", {
   handler: ([obj], _ctx) => Object.getOwnPropertyNames(obj).map((key) => (obj as any)[key]),
   metadata: {
     category: "object",
@@ -91,7 +91,7 @@ export const objValues = defineFullOpcode<[object], any[]>("obj.values", {
 });
 
 /** Returns an array of a given object's own enumerable string-keyed property [key, value] pairs. */
-export const objEntries = defineFullOpcode<[object], [string, any][]>("obj.entries", {
+export const objEntries = defineFullOpcode<[target: object], [string, any][]>("obj.entries", {
   handler: ([obj], _ctx) => Object.getOwnPropertyNames(obj).map((key) => [key, (obj as any)[key]]),
   metadata: {
     category: "object",
@@ -113,70 +113,76 @@ export const objEntries = defineFullOpcode<[object], [string, any][]>("obj.entri
 });
 
 /** Retrieves a property from an object. */
-export const objGet = defineFullOpcode<[object, string, unknown?], any>("obj.get", {
-  handler: ([obj, key, defVal], _ctx) => {
-    if (!Object.hasOwn(obj, key)) {
-      if (defVal !== undefined) {
-        return defVal;
+export const objGet = defineFullOpcode<[target: object, key: string, defVal?: unknown], any>(
+  "obj.get",
+  {
+    handler: ([obj, key, defVal], _ctx) => {
+      if (!Object.hasOwn(obj, key)) {
+        if (defVal !== undefined) {
+          return defVal;
+        }
+        throw new ScriptError(`obj.get: key '${key}' not found`);
       }
-      throw new ScriptError(`obj.get: key '${key}' not found`);
-    }
-    return (obj as any)[key];
+      return (obj as any)[key];
+    },
+    metadata: {
+      category: "object",
+      description: "Retrieves a property from an object.",
+      genericParameters: ["Type", "Key extends keyof Type = keyof Type"],
+      label: "Get",
+      parameters: [
+        { description: "The object to query.", name: "object", type: "Type" },
+        { description: "The property key.", name: "key", type: "Key" },
+        {
+          description: "The default value if the key is missing.",
+          name: "default",
+          optional: true,
+          type: "Type[Key]",
+        },
+      ],
+      returnType: "Type[Key]",
+      slots: [
+        { name: "Object", type: "block" },
+        { name: "Key", type: "string" },
+        { default: null, name: "Default", type: "block" },
+      ],
+    },
   },
-  metadata: {
-    category: "object",
-    description: "Retrieves a property from an object.",
-    genericParameters: ["Type", "Key extends keyof Type = keyof Type"],
-    label: "Get",
-    parameters: [
-      { description: "The object to query.", name: "object", type: "Type" },
-      { description: "The property key.", name: "key", type: "Key" },
-      {
-        description: "The default value if the key is missing.",
-        name: "default",
-        optional: true,
-        type: "Type[Key]",
-      },
-    ],
-    returnType: "Type[Key]",
-    slots: [
-      { name: "Object", type: "block" },
-      { name: "Key", type: "string" },
-      { default: null, name: "Default", type: "block" },
-    ],
-  },
-});
+);
 
 /** Sets a property on an object. Returns the entire object. */
-export const objSet = defineFullOpcode<[object, string, unknown], any>("obj.set", {
-  handler: ([obj, key, val], _ctx) => {
-    if (DISALLOWED_KEYS.has(key)) {
-      throw new ScriptError(`obj.set: disallowed key '${key}'`);
-    }
-    (obj as any)[key] = val;
-    return obj;
+export const objSet = defineFullOpcode<[target: object, key: string, value: unknown], any>(
+  "obj.set",
+  {
+    handler: ([obj, key, val], _ctx) => {
+      if (DISALLOWED_KEYS.has(key)) {
+        throw new ScriptError(`obj.set: disallowed key '${key}'`);
+      }
+      (obj as any)[key] = val;
+      return obj;
+    },
+    metadata: {
+      category: "object",
+      description: "Sets a property on an object. Returns the entire object.",
+      genericParameters: ["Type", "Key extends keyof Type = keyof Type"],
+      label: "Set",
+      parameters: [
+        { description: "The object to modify.", name: "object", type: "Type" },
+        { description: "The property key.", name: "key", type: "Key" },
+        { description: "The new value.", name: "value", type: "Type[Key]" },
+      ],
+      returnType: "Type",
+      slots: [
+        { name: "Object", type: "block" },
+        { name: "Key", type: "string" },
+        { name: "Value", type: "block" },
+      ],
+    },
   },
-  metadata: {
-    category: "object",
-    description: "Sets a property on an object. Returns the entire object.",
-    genericParameters: ["Type", "Key extends keyof Type = keyof Type"],
-    label: "Set",
-    parameters: [
-      { description: "The object to modify.", name: "object", type: "Type" },
-      { description: "The property key.", name: "key", type: "Key" },
-      { description: "The new value.", name: "value", type: "Type[Key]" },
-    ],
-    returnType: "Type",
-    slots: [
-      { name: "Object", type: "block" },
-      { name: "Key", type: "string" },
-      { name: "Value", type: "block" },
-    ],
-  },
-});
+);
 
 /** Checks if an object has a specific property. */
-export const objHas = defineFullOpcode<[object, string], boolean>("obj.has", {
+export const objHas = defineFullOpcode<[target: object, key: string], boolean>("obj.has", {
   handler: ([obj, key], _ctx) => Object.hasOwn(obj, key),
   metadata: {
     category: "object",
@@ -196,7 +202,7 @@ export const objHas = defineFullOpcode<[object, string], boolean>("obj.has", {
 });
 
 /** Deletes a property from an object. */
-export const objDel = defineFullOpcode<[object, string], boolean>("obj.del", {
+export const objDel = defineFullOpcode<[target: object, key: string], boolean>("obj.del", {
   handler: ([obj, key], _ctx) => {
     if (Object.hasOwn(obj, key)) {
       delete (obj as any)[key];
@@ -222,23 +228,26 @@ export const objDel = defineFullOpcode<[object, string], boolean>("obj.del", {
 });
 
 /** Merges multiple objects into a new object. */
-export const objMerge = defineFullOpcode<[object, object, ...object[]], any>("obj.merge", {
-  handler: ([...objs], _ctx) => Object.assign({}, ...objs),
-  metadata: {
-    category: "object",
-    description: "Merges multiple objects into a new object.",
-    genericParameters: ["Ts extends object[]"],
-    label: "Merge",
-    parameters: [{ description: "The objects to merge.", name: "...objects", type: "Ts" }],
-    returnType: "UnionToIntersection<Ts[number]>",
-    slots: [
-      { name: "Objects", type: "block" }, // Variadic
-    ],
+export const objMerge = defineFullOpcode<[first: object, second: object, ...rest: object[]], any>(
+  "obj.merge",
+  {
+    handler: ([...objs], _ctx) => Object.assign({}, ...objs),
+    metadata: {
+      category: "object",
+      description: "Merges multiple objects into a new object.",
+      genericParameters: ["Ts extends object[]"],
+      label: "Merge",
+      parameters: [{ description: "The objects to merge.", name: "...objects", type: "Ts" }],
+      returnType: "UnionToIntersection<Ts[number]>",
+      slots: [
+        { name: "Objects", type: "block" }, // Variadic
+      ],
+    },
   },
-});
+);
 
 /** Creates a new object with the same keys as the original, but with values transformed by a function. */
-export const objMap = defineFullOpcode<[object, unknown], any>("obj.map", {
+export const objMap = defineFullOpcode<[target: object, lambda: unknown], any>("obj.map", {
   handler: ([obj, func], ctx) => {
     if (!func || (func as any).type !== "lambda") {
       throw new ScriptError(`obj.map: expected lambda, got ${JSON.stringify(func)}`);
@@ -285,7 +294,7 @@ export const objMap = defineFullOpcode<[object, unknown], any>("obj.map", {
 });
 
 /** Creates a new object with a subset of properties that pass the test implemented by the provided function. */
-export const objFilter = defineFullOpcode<[object, unknown], any>("obj.filter", {
+export const objFilter = defineFullOpcode<[target: object, lambda: unknown], any>("obj.filter", {
   handler: ([obj, func], ctx) => {
     if (!func || (func as any).type !== "lambda") {
       return {};
@@ -336,52 +345,55 @@ export const objFilter = defineFullOpcode<[object, unknown], any>("obj.filter", 
 });
 
 /** Executes a user-supplied "reducer" callback function on each entry of the object. */
-export const objReduce = defineFullOpcode<[object, unknown, unknown], any>("obj.reduce", {
-  handler: ([obj, func, init], ctx) => {
-    let acc = init;
-    if (!func || (func as any).type !== "lambda") {
-      return acc;
-    }
-    const entries = Object.entries(obj);
-    let idx = 0;
-    const next = (): any | Promise<any> => {
-      for (; idx < entries.length; idx += 1) {
-        const [key, val] = entries[idx]!;
-        const res = executeLambda(func as any, [acc, val, key], ctx);
-        if (res instanceof Promise) {
-          return res.then((res) => {
-            acc = res;
-            return next();
-          });
-        }
-        acc = res;
+export const objReduce = defineFullOpcode<[target: object, lambda: unknown, init: unknown], any>(
+  "obj.reduce",
+  {
+    handler: ([obj, func, init], ctx) => {
+      let acc = init;
+      if (!func || (func as any).type !== "lambda") {
+        return acc;
       }
-      return acc;
-    };
-    return next();
+      const entries = Object.entries(obj);
+      let idx = 0;
+      const next = (): any | Promise<any> => {
+        for (; idx < entries.length; idx += 1) {
+          const [key, val] = entries[idx]!;
+          const res = executeLambda(func as any, [acc, val, key], ctx);
+          if (res instanceof Promise) {
+            return res.then((res) => {
+              acc = res;
+              return next();
+            });
+          }
+          acc = res;
+        }
+        return acc;
+      };
+      return next();
+    },
+    metadata: {
+      category: "object",
+      description:
+        "Executes a user-supplied 'reducer' callback function on each entry of the object.",
+      genericParameters: ["Acc"],
+      label: "Reduce Object",
+      parameters: [
+        { description: "The object to reduce.", name: "object", type: "object" },
+        { description: "The reducer function.", name: "lambda", type: "unknown" },
+        { description: "The initial value.", name: "init", type: "Acc" },
+      ],
+      returnType: "Acc",
+      slots: [
+        { name: "Object", type: "block" },
+        { name: "Lambda", type: "block" },
+        { name: "Init", type: "block" },
+      ],
+    },
   },
-  metadata: {
-    category: "object",
-    description:
-      "Executes a user-supplied 'reducer' callback function on each entry of the object.",
-    genericParameters: ["Acc"],
-    label: "Reduce Object",
-    parameters: [
-      { description: "The object to reduce.", name: "object", type: "object" },
-      { description: "The reducer function.", name: "lambda", type: "unknown" },
-      { description: "The initial value.", name: "init", type: "Acc" },
-    ],
-    returnType: "Acc",
-    slots: [
-      { name: "Object", type: "block" },
-      { name: "Lambda", type: "block" },
-      { name: "Init", type: "block" },
-    ],
-  },
-});
+);
 
 /** Creates a new object by applying a given callback function to each entry of the object, and then flattening the result. */
-export const objFlatMap = defineFullOpcode<[object, unknown], any>("obj.flatMap", {
+export const objFlatMap = defineFullOpcode<[target: object, lambda: unknown], any>("obj.flatMap", {
   handler: ([obj, func], ctx) => {
     if (!func || (func as any).type !== "lambda") {
       return {};
