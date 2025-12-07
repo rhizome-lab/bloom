@@ -201,7 +201,7 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
       }
       case ts.SyntaxKind.EqualsToken: {
         // Assignment
-        if (Array.isArray(left) && left[0] === "var") {
+        if (Array.isArray(left) && left[0] === "std.var") {
           return StdLib.set(left[1], right);
         }
         // Handle object property assignment?
@@ -259,7 +259,7 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
       // Let's implement strict semantics:
       // let tmp = i; i = i + 1; tmp
       const operand = transpileNode(node.operand, scope);
-      if (Array.isArray(operand) && operand[0] === "var") {
+      if (Array.isArray(operand) && operand[0] === "std.var") {
         // Optimization for simple vars:
         // (seq (let tmp (var x)) (set x (+ (var x) 1)) (var tmp))
         // But wait, if we are in a for loop incrementor, the return value is dropped.
@@ -583,11 +583,11 @@ function transpileArithmeticAssignment(op: ts.BinaryOperator, left: any, right: 
       break;
     }
     default: {
-      throw new Error("Unknown arithmetic assignment op");
+      throw new Error(`Unknown arithmetic assignment op: ${op}`);
     }
   }
 
-  if (Array.isArray(left) && left[0] === "var") {
+  if (Array.isArray(left) && left[0] === "std.var") {
     return StdLib.set(left[1], valueOp(left, right));
   }
 
@@ -604,18 +604,18 @@ function transpileArithmeticAssignment(op: ts.BinaryOperator, left: any, right: 
     );
   }
 
-  throw new Error("Invalid assignment target");
+  throw new Error(`Invalid assignment target: ${JSON.stringify(left)}`);
 }
 
 function transpileLogicalAssignment(op: ts.BinaryOperator, left: any, right: any): any {
   const assign = (target: any, val: any) => {
-    if (Array.isArray(target) && target[0] === "var") {
+    if (Array.isArray(target) && target[0] === "std.var") {
       return StdLib.set(target[1], val);
     }
     if (Array.isArray(target) && target[0] === "obj.get") {
       return ObjectLib.objSet(target[1], target[2], val);
     }
-    throw new Error("Invalid assignment target");
+    throw new Error(`Invalid assignment target: ${JSON.stringify(target)}`);
   };
 
   const buildLogic = (get: any, set: any) => {
@@ -630,12 +630,12 @@ function transpileLogicalAssignment(op: ts.BinaryOperator, left: any, right: any
         return StdLib.if(BooleanLib.neq(get, null), get, set);
       }
       default: {
-        throw new Error("Unknown logical assignment op");
+        throw new Error(`Unknown logical assignment op: ${op}`);
       }
     }
   };
 
-  if (Array.isArray(left) && left[0] === "var") {
+  if (Array.isArray(left) && left[0] === "std.var") {
     return buildLogic(left, assign(left, right));
   }
 
@@ -659,10 +659,10 @@ function isSimpleNode(node: any): boolean {
     return true;
   }
   if (Array.isArray(node)) {
-    if (node[0] === "var") {
+    if (node[0] === "std.var") {
       return true;
     }
-    if (node[0] === "this") {
+    if (node[0] === "std.this") {
       return true;
     }
   }

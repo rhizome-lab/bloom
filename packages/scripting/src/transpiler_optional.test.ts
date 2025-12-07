@@ -96,19 +96,19 @@ describe("transpiler optional chaining", () => {
     // I need to mock Math.random or use a regex match / structure match ignoring var names.
     // Or I can just check that it is an `if` containing a `seq` containing an `if`.
 
-    expect(result[0]).toBe("if");
+    expect(result[0]).toBe("std.if");
     expect(result[1]).toEqual(BooleanLib.neq(StdLib.var("a"), null));
 
     const { 2: inner } = result; // The then branch
-    expect(inner[0]).toBe("seq");
+    expect(inner[0]).toBe("std.seq");
     // let tmp = a.b
-    expect(inner[1][0]).toBe("let");
+    expect(inner[1][0]).toBe("std.let");
     expect(inner[1][2]).toEqual(ObjectLib.objGet(StdLib.var("a"), "b"));
     const [, [, tmpName]] = inner;
 
     // if (tmp != null, tmp.c, null)
     const { 2: innerIf } = inner;
-    expect(innerIf[0]).toBe("if");
+    expect(innerIf[0]).toBe("std.if");
     expect(innerIf[1]).toEqual(BooleanLib.neq(StdLib.var(tmpName), null));
     expect(innerIf[2]).toEqual(ObjectLib.objGet(StdLib.var(tmpName), "c"));
     expect(innerIf[3]).toBe(null);

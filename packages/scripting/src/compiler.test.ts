@@ -324,12 +324,12 @@ describe("Compiler", () => {
     // The check script found it in \`src/lib/*.ts\` definitions.
     // I should check where \`typeof\` is defined. It's likely in \`std.ts\` or \`core.ts\`?
     // For now, I'll use the manual op construction: ["typeof", 1]
-    expect(run(["typeof", 1])).toBe("number");
-    expect(run(["typeof", "s"])).toBe("string");
-    expect(run(["typeof", true])).toBe("boolean");
-    expect(run(["typeof", ListLib.listNew()])).toBe("array");
-    expect(run(["typeof", ObjectLib.objNew()])).toBe("object");
-    expect(run(["typeof", null])).toBe("null");
+    expect(run(["std.typeof", 1])).toBe("number");
+    expect(run(["std.typeof", "s"])).toBe("string");
+    expect(run(["std.typeof", true])).toBe("boolean");
+    expect(run(["std.typeof", ListLib.listNew()])).toBe("array");
+    expect(run(["std.typeof", ObjectLib.objNew()])).toBe("object");
+    expect(run(["std.typeof", null])).toBe("null");
   });
 
   test("json", () => {

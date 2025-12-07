@@ -195,18 +195,18 @@ function compileChainedComparison(argExprs: string[], op: string): string {
 }
 
 const SPECIAL_FORMS = new Set([
-  "seq",
-  "if",
-  "while",
-  "for",
-  "let",
-  "set",
-  "break",
-  "continue",
-  "try",
-  "var",
-  "lambda",
-  "quote",
+  "std.seq",
+  "std.if",
+  "std.while",
+  "std.for",
+  "std.let",
+  "std.set",
+  "std.break",
+  "std.continue",
+  "std.try",
+  "std.var",
+  "std.lambda",
+  "std.quote",
   "obj.new",
 ]);
 
@@ -228,7 +228,7 @@ function compileValue(node: any, ops: ScriptOps, shouldReturn = false): string {
 
   if (SPECIAL_FORMS.has(op)) {
     switch (op) {
-      case "seq": {
+      case "std.seq": {
         if (args.length === 0) {
           return "null";
         }
@@ -239,7 +239,7 @@ function compileValue(node: any, ops: ScriptOps, shouldReturn = false): string {
         }
         return code;
       }
-      case "if": {
+      case "std.if": {
         return `if (${compileValue(args[0], ops)}) {
 ${compileValue(args[1], ops, shouldReturn)}}${
           args[2]
@@ -251,41 +251,41 @@ return null}`
               : ""
         }`;
       }
-      case "while": {
+      case "std.while": {
         return `while (${compileValue(args[0], ops)}) {
 ${compileValue(args[1], ops)}}`;
       }
-      case "for": {
+      case "std.for": {
         return `for (const ${toJSName(args[0])} of ${compileValue(args[1], ops)}) {
 ${compileValue(args[2], ops)}}`;
       }
-      case "let": {
+      case "std.let": {
         return `let ${toJSName(args[0])} = ${compileValue(args[1], ops)};`;
       }
-      case "set": {
+      case "std.set": {
         return `${toJSName(args[0])} = ${compileValue(args[1], ops)};`;
       }
-      case "break": {
+      case "std.break": {
         return "break;";
       }
-      case "continue": {
+      case "std.continue": {
         return "continue;";
       }
-      case "try": {
+      case "std.try": {
         return `try {
 ${compileValue(args[0], ops, shouldReturn)}
 } catch (${args[1]}) {
 ${compileValue(args[2], ops, shouldReturn)}
 }`;
       }
-      case "var": {
+      case "std.var": {
         return `${prefix}${toJSName(args[0])}`;
       }
-      case "lambda": {
+      case "std.lambda": {
         return `(${(args[0] as string[]).map((name) => toJSName(name)).join(", ")}) => {
 ${compileValue(args[1], ops, true)}}`;
       }
-      case "quote": {
+      case "std.quote": {
         return `${prefix}${JSON.stringify(args[0])}`;
       }
       case "obj.new": {
@@ -303,16 +303,16 @@ ${compileValue(args[1], ops, true)}}`;
   const compiledArgs = args.map((arg: any) => compileValue(arg, ops));
 
   switch (op) {
-    case "return": {
+    case "std.return": {
       return `return ${compiledArgs[0] ?? "null"};`;
     }
-    case "throw": {
+    case "std.throw": {
       return `throw ${compiledArgs[0]};`;
     }
     case "list.new": {
       return `${prefix}[${compiledArgs.join(", ")}]`;
     }
-    case "apply": {
+    case "std.apply": {
       return `${prefix}(${compiledArgs[0]})(${compiledArgs.slice(1).join(", ")})`;
     }
     case "+": {
@@ -360,25 +360,25 @@ ${compileValue(args[1], ops, true)}}`;
     case "not": {
       return `${prefix}!${compiledArgs[0]}`;
     }
-    case "log": {
+    case "std.log": {
       return `${prefix}console.log(${compiledArgs.join(", ")})`;
     }
     case "str.concat": {
       return `${prefix}("" + ${compiledArgs.join(" + ")})`;
     }
-    case "this": {
+    case "std.this": {
       return `${prefix}__ctx__.this`;
     }
-    case "caller": {
+    case "std.caller": {
       return `${prefix}__ctx__.caller`;
     }
-    case "arg": {
+    case "std.arg": {
       return `${prefix}(__ctx__.args?.[${compiledArgs[0]}] ?? null)`;
     }
-    case "args": {
+    case "std.args": {
       return `${prefix}[...(__ctx__.args ?? [])]`;
     }
-    case "warn": {
+    case "std.warn": {
       return `${prefix}__ctx__.warnings.push(String(${compiledArgs[0]}))`;
     }
     case "send": {
@@ -560,7 +560,7 @@ ${compileValue(args[1], ops, true)}}`;
     case "json.parse": {
       return `${prefix}JSON.parse(${compiledArgs[0]})`;
     }
-    case "typeof": {
+    case "std.typeof": {
       return `${prefix}__helpers__.typeof(${compiledArgs[0]})`;
     }
     case "str.len": {
@@ -623,6 +623,12 @@ ${compileValue(args[1], ops, true)}}`;
     }
     case "std.number": {
       return `${prefix}Number(${compiledArgs[0]})`;
+    }
+    case "std.string": {
+      return `${prefix}String(${compiledArgs[0]})`;
+    }
+    case "std.boolean": {
+      return `${prefix}Boolean(${compiledArgs[0]})`;
     }
     default: {
       const def = ops[op];

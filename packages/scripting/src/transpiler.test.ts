@@ -75,7 +75,7 @@ describe("transpiler", () => {
 
   test("function calls", () => {
     expect(transpile("f(x)")).toEqual(["f", StdLib.var("x")]);
-    expect(transpile("log('msg')")).toEqual(StdLib.log("msg"));
+    expect(transpile("std.log('msg')")).toEqual(StdLib.log("msg"));
     expect(transpile("throw('err')")).toEqual(StdLib.throw("err"));
     expect(transpile("obj.get(o, 'k')")).toEqual(ObjectLib.objGet(StdLib.var("o"), "k"));
     expect(transpile("list.push(l, 1)")).toEqual(ListLib.listPush(StdLib.var("l"), 1));
@@ -90,12 +90,12 @@ describe("transpiler", () => {
 
   test("shadowing opcodes", () => {
     const code = `
-      let log = (msg) => { return msg; };
-      log("hello");
+      let send = (msg) => { return msg; };
+      send("hello");
     `;
     const expected = StdLib.seq(
-      StdLib.let("log", StdLib.lambda(["msg"], StdLib.seq(StdLib.var("msg")))),
-      StdLib.apply(StdLib.var("log"), "hello"),
+      StdLib.let("send", StdLib.lambda(["msg"], StdLib.seq(StdLib.var("msg")))),
+      StdLib.apply(StdLib.var("send"), "hello"),
     );
     expect(transpile(code)).toEqual(expected);
   });
@@ -106,7 +106,15 @@ describe("transpiler", () => {
       log("hello");
     `;
     // Should be treated as opcode call because log is not in scope (declare ignored)
-    expect(transpile(code)).toEqual(StdLib.log("hello"));
+    expect(transpile(code)).toEqual(["log", "hello"]);
+    const code2 = `
+      declare namespace MyLib {
+        function foo(x);
+      }
+      MyLib.foo(1);
+    `;
+    // Should be treated as opcode call ["MyLib.foo", 1]
+    expect(transpile(code2)).toEqual(["MyLib.foo", 1]);
   });
 
   test("declare namespace", () => {

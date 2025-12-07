@@ -5,14 +5,14 @@ import "../generated_types";
 import "../plugin_types";
 
 export function bot_sudo() {
-  const targetId = arg<number>(0);
-  const verb = arg<string>(1);
-  const argsList = arg<any[]>(2);
+  const targetId = std.arg<number>(0);
+  const verb = std.arg<string>(1);
+  const argsList = std.arg<any[]>(2);
   sudo(get_capability("sys.sudo", {})!, entity(targetId), verb, argsList);
 }
 
 export function system_get_available_verbs() {
-  const player = arg<Entity>(0);
+  const player = std.arg<Entity>(0);
   const verbsList: any[] = [];
   const seen: Record<string, boolean> = {};
 
@@ -54,8 +54,8 @@ export function system_get_available_verbs() {
 }
 
 export function entity_base_find() {
-  const query = arg<string>(0);
-  const locationId = caller()["location"] as number;
+  const query = std.arg<string>(0);
+  const locationId = std.caller()["location"] as number;
   const location = entity(locationId);
   list.find((location["contents"] as number[]) ?? [], (id: number) => {
     const props = resolve_props(entity(id));
@@ -64,8 +64,8 @@ export function entity_base_find() {
 }
 
 export function entity_base_find_exit() {
-  const query = arg<string>(0);
-  const locationId = caller()["location"] as number;
+  const query = std.arg<string>(0);
+  const locationId = std.caller()["location"] as number;
   const location = entity(locationId);
   list.find((location["exits"] as number[]) ?? [], (id: number) => {
     const props = resolve_props(entity(id));
@@ -74,7 +74,7 @@ export function entity_base_find_exit() {
 }
 
 export function entity_base_on_enter(this: Entity) {
-  const mover = arg<Entity>(0);
+  const mover = std.arg<Entity>(0);
   const cap = get_capability("entity.control", { target_id: this.id });
   if (cap) {
     const contents = (this["contents"] as number[]) ?? [];
@@ -87,7 +87,7 @@ export function entity_base_on_enter(this: Entity) {
 }
 
 export function entity_base_on_leave(this: Entity) {
-  const mover = arg<Entity>(0);
+  const mover = std.arg<Entity>(0);
   const cap = get_capability("entity.control", { target_id: this.id });
   if (cap) {
     const contents = (this["contents"] as number[]) ?? [];
@@ -100,13 +100,13 @@ export function entity_base_on_leave(this: Entity) {
 }
 
 export function entity_base_teleport() {
-  const destEntity = arg<Entity>(0);
+  const destEntity = std.arg<Entity>(0);
   if (!destEntity) {
     send("message", "Where do you want to teleport to?");
   } else {
     const destId = destEntity.id;
     if (destId) {
-      const mover = caller();
+      const mover = std.caller();
       let checkId: number | null = destId;
       let isRecursive = false;
       while (checkId) {
@@ -140,7 +140,7 @@ export function entity_base_teleport() {
         }
 
         send("room_id", { roomId: destId });
-        call(caller(), "look");
+        call(std.caller(), "look");
       }
     } else {
       send("message", "Invalid destination.");
@@ -149,14 +149,14 @@ export function entity_base_teleport() {
 }
 
 export function entity_base_go(this: Entity) {
-  const direction = arg<string>(0);
+  const direction = std.arg<string>(0);
   if (!direction) {
     send("message", "Where do you want to go?");
   } else {
     const exitId = call(this, "find_exit", direction);
     if (exitId) {
       const destId = resolve_props(entity(exitId))["destination"] as number;
-      call(caller(), "teleport", entity(destId));
+      call(std.caller(), "teleport", entity(destId));
     } else {
       send("message", "That way leads nowhere.");
     }
@@ -168,14 +168,14 @@ export function entity_base_say() {
 }
 
 export function entity_base_tell() {
-  const msg = arg<string>(0);
+  const msg = std.arg<string>(0);
   send("message", msg);
 }
 
 export function player_look() {
-  const argsList = args();
+  const argsList = std.args();
   if (list.empty(argsList)) {
-    const room = resolve_props(entity(caller()["location"] as number));
+    const room = resolve_props(entity(std.caller()["location"] as number));
     const contents = (room["contents"] as number[]) ?? [];
     const exits = (room["exits"] as number[]) ?? [];
     const resolvedContents = list.map(contents, (id: number) => resolve_props(entity(id)));
@@ -185,8 +185,8 @@ export function player_look() {
       entities: list.concat([room], list.concat(resolvedContents, resolvedExits)),
     });
   } else {
-    const targetName = arg(0);
-    const targetId = call(caller(), "find", targetName);
+    const targetName = std.arg(0);
+    const targetId = call(std.caller(), "find", targetName);
     if (targetId) {
       const target = resolve_props(entity(targetId));
       send("update", { entities: [target] });
@@ -197,7 +197,7 @@ export function player_look() {
 }
 
 export function player_inventory() {
-  const player = resolve_props(caller());
+  const player = resolve_props(std.caller());
   const contents = (player["contents"] as number[]) ?? [];
   const resolvedItems = list.map(contents, (id: number) => resolve_props(entity(id)));
   const finalList = list.concat([player], resolvedItems);
@@ -205,20 +205,20 @@ export function player_inventory() {
 }
 
 export function player_whoami() {
-  send("player_id", { playerId: caller().id });
+  send("player_id", { playerId: std.caller().id });
 }
 
 declare const ENTITY_BASE_ID_PLACEHOLDER: number;
 
 export function player_dig() {
-  const direction = arg(0);
-  const roomName = str.join(list.slice(args(), 1), " ");
+  const direction = std.arg(0);
+  const roomName = str.join(list.slice(std.args(), 1), " ");
   if (!direction) {
     send("message", "Where do you want to dig?");
   } else {
     const createCap = get_capability("sys.create", {});
     let controlCap = get_capability("entity.control", {
-      target_id: caller()["location"],
+      target_id: std.caller()["location"],
     });
     if (!controlCap) {
       controlCap = get_capability("entity.control", { "*": true });
@@ -231,7 +231,7 @@ export function player_dig() {
 
       const exitData: Record<string, any> = {};
       exitData["name"] = direction;
-      exitData["location"] = caller()["location"];
+      exitData["location"] = std.caller()["location"];
       exitData["direction"] = direction;
       exitData["destination"] = newRoomId;
       const exitId = create(createCap, exitData);
@@ -242,7 +242,7 @@ export function player_dig() {
 
       set_prototype(controlCap, entity(newRoomId), ENTITY_BASE_ID_PLACEHOLDER);
 
-      const currentRoom = entity(caller()["location"] as number);
+      const currentRoom = entity(std.caller()["location"] as number);
       const exits = (currentRoom["exits"] as number[]) ?? [];
       list.push(exits, exitId);
       currentRoom["exits"] = exits;
@@ -253,7 +253,7 @@ export function player_dig() {
       backExitData["name"] = "back";
       backExitData["location"] = newRoomId;
       backExitData["direction"] = "back";
-      backExitData["destination"] = caller()["location"];
+      backExitData["destination"] = std.caller()["location"];
       const backExitId = create(createCap, backExitData);
 
       const newRoom = entity(newRoomId);
@@ -280,7 +280,7 @@ export function player_dig() {
       }
 
       send("message", "You dig a new room.");
-      call(caller(), "teleport", entity(newRoomId));
+      call(std.caller(), "teleport", entity(newRoomId));
     } else {
       send("message", "You cannot dig here.");
     }
@@ -288,13 +288,13 @@ export function player_dig() {
 }
 
 export function player_create() {
-  const name = arg<string>(0);
+  const name = std.arg<string>(0);
   if (!name) {
     send("message", "What do you want to create?");
   } else {
     const createCap = get_capability("sys.create");
     let controlCap = get_capability("entity.control", {
-      target_id: caller()["location"],
+      target_id: std.caller()["location"],
     });
     if (!controlCap) {
       controlCap = get_capability("entity.control", { "*": true });
@@ -303,18 +303,18 @@ export function player_create() {
     if (createCap && controlCap) {
       const itemData: Record<string, any> = {};
       itemData["name"] = name;
-      itemData["location"] = caller()["location"];
+      itemData["location"] = std.caller()["location"];
       const itemId = create(createCap, itemData);
       set_prototype(controlCap, entity(itemId), ENTITY_BASE_ID_PLACEHOLDER);
 
-      const room = entity(caller()["location"] as number);
+      const room = entity(std.caller()["location"] as number);
       const contents = (room["contents"] as number[]) ?? [];
       list.push(contents, itemId);
       room["contents"] = contents;
       set_entity(controlCap, room);
 
       send("message", `You create ${name}.`);
-      call(caller(), "look");
+      call(std.caller(), "look");
       return itemId;
     }
     send("message", "You do not have permission to create here.");
@@ -323,9 +323,9 @@ export function player_create() {
 }
 
 export function player_set(this: Entity) {
-  const targetName = arg<string>(0);
-  const propName = arg<string>(1);
-  const value = arg<unknown>(2);
+  const targetName = std.arg<string>(0);
+  const propName = std.arg<string>(1);
+  const value = std.arg<unknown>(2);
   if (!targetName || !propName) {
     send("message", "Usage: set <target> <prop> <value>");
   } else {
@@ -358,7 +358,7 @@ export function watch_tell() {
 export function teleporter_teleport(this: Entity) {
   const destId = this["destination"];
   if (destId) {
-    call(caller(), "teleport", entity(destId as number));
+    call(std.caller(), "teleport", entity(destId as number));
     send("message", "Whoosh! You have been teleported.");
   } else {
     send("message", "The stone is dormant.");
@@ -425,7 +425,7 @@ export function mailbox_deposit() {
 }
 
 export function book_read(this: Entity) {
-  const index = arg<number>(0);
+  const index = std.arg<number>(0);
   if (index === null) {
     throw new Error("Please specify a chapter index (0-based).");
   }
@@ -434,13 +434,13 @@ export function book_read(this: Entity) {
   if (!chapter) {
     throw new Error("Chapter not found.");
   }
-  call(caller(), "tell", `Reading: ${chapter.title}\n\n${chapter.content}`);
+  call(std.caller(), "tell", `Reading: ${chapter.title}\n\n${chapter.content}`);
 }
 
 export function book_list_chapters(this: Entity) {
   const chapters = this["chapters"] as { title: string; content: string }[];
   call(
-    caller(),
+    std.caller(),
     "tell",
     `Chapters:\n${str.join(
       list.map(chapters, (chapter) => chapter.title),
@@ -450,8 +450,8 @@ export function book_list_chapters(this: Entity) {
 }
 
 export function book_add_chapter(this: Entity) {
-  const title = arg(0);
-  const content = arg(1);
+  const title = std.arg(0);
+  const content = std.arg(1);
   if (!title || !content) {
     throw new Error("Usage: add_chapter <title> <content>");
   }
@@ -461,11 +461,11 @@ export function book_add_chapter(this: Entity) {
   newChapter["content"] = content;
   list.push(chapters, newChapter);
   this["chapters"] = chapters;
-  call(caller(), "tell", "Chapter added.");
+  call(std.caller(), "tell", "Chapter added.");
 }
 
 export function book_search_chapters(this: Entity) {
-  const query = str.lower(arg(0));
+  const query = str.lower(std.arg(0));
   const chapters = this["chapters"] as { title: string; content: string }[];
   const results = list.filter(
     chapters,
@@ -474,7 +474,7 @@ export function book_search_chapters(this: Entity) {
       str.includes(str.lower(chapter.content), query),
   );
   call(
-    caller(),
+    std.caller(),
     "tell",
     `Found ${list.len(results)} matches:\n${str.join(
       list.map(results, (chapter) => chapter.title),
@@ -488,7 +488,7 @@ declare const HOTEL_ROOM_PROTO_ID_PLACEHOLDER: number;
 declare const WING_PROTO_ID_PLACEHOLDER: number;
 
 export function hotel_room_on_leave(this: Entity) {
-  const mover = arg<Entity>(0);
+  const mover = std.arg<Entity>(0);
   const cap = get_capability("entity.control", { target_id: this.id });
   if (cap) {
     const contents = (this["contents"] as number[]) ?? [];
@@ -508,12 +508,12 @@ export function hotel_room_on_leave(this: Entity) {
 }
 
 export function hotel_lobby_room_vacated() {
-  const roomNumber = arg<number>(0);
+  const roomNumber = std.arg<number>(0);
   send("message", `Room ${roomNumber} is now available.`);
 }
 
 export function hotel_room_leave_updated(this: Entity) {
-  const mover = arg<Entity>(0);
+  const mover = std.arg<Entity>(0);
   const cap = get_capability("entity.control", { target_id: this.id });
   if (cap) {
     const contents = (this["contents"] as number[]) ?? [];
@@ -543,14 +543,14 @@ export function hotel_room_leave_updated(this: Entity) {
 }
 
 export function elevator_push(this: Entity) {
-  const floor = arg(0);
+  const floor = std.arg(0);
   this["current_floor"] = floor;
   set_entity(get_capability("entity.control", { target_id: this.id })!, this);
-  call(caller(), "tell", `The elevator hums and moves to floor ${floor}.`);
+  call(std.caller(), "tell", `The elevator hums and moves to floor ${floor}.`);
 }
 
 export function elevator_go(this: Entity) {
-  const direction = arg<string>(0);
+  const direction = std.arg<string>(0);
   if (direction === "out") {
     const currentFloor = this["current_floor"];
     const floors = (this["floors"] as Record<string, number>) || {};
@@ -663,7 +663,7 @@ export function elevator_go(this: Entity) {
     }
 
     if (destId) {
-      call(caller(), "teleport", entity(destId));
+      call(std.caller(), "teleport", entity(destId));
       send("message", "You step out of the elevator.");
     }
   } else {
@@ -719,21 +719,21 @@ export function elevator_on_enter(this: Entity) {
 }
 
 export function wing_on_enter(this: Entity) {
-  const mover = arg<Entity>(0);
+  const mover = std.arg<Entity>(0);
   const cap = get_capability("entity.control", { target_id: this.id });
   if (cap) {
     const contents = (this["contents"] as number[]) ?? [];
     list.push(contents, mover.id);
     this["contents"] = contents;
     set_entity(cap, this);
-    call(caller(), "tell", "You enter the hallway. It smells of carpet cleaner.");
+    call(std.caller(), "tell", "You enter the hallway. It smells of carpet cleaner.");
   } else {
     send("message", "The wing is closed for cleaning.");
   }
 }
 
 export function wing_enter_room(this: Entity) {
-  const roomNumber = arg<number>(0);
+  const roomNumber = std.arg<number>(0);
   if (!roomNumber) {
     send("message", "Which room?");
     return;
@@ -812,23 +812,23 @@ export function wing_enter_room(this: Entity) {
   }
 
   if (roomId) {
-    call(caller(), "teleport", entity(roomId));
+    call(std.caller(), "teleport", entity(roomId));
   } else {
     send("message", "Room not found.");
   }
 }
 
 export function receptionist_on_hear() {
-  const speaker = arg<Entity>(0);
-  const message = arg<string>(1);
+  const speaker = std.arg<Entity>(0);
+  const message = std.arg<string>(1);
   if (str.includes(str.lower(message), "room")) {
     call(speaker, "tell", "We have lovely rooms available on all floors.");
   }
 }
 
 export function golem_on_hear() {
-  const speaker = arg<Entity>(0);
-  const message = arg<string>(1);
+  const speaker = std.arg<Entity>(0);
+  const message = std.arg<string>(1);
   if (str.includes(str.lower(message), "hello")) {
     call(speaker, "tell", "GREETINGS. I AM GOLEM.");
   }
@@ -947,7 +947,7 @@ export function director_start() {
 }
 
 export function combat_start(this: Entity) {
-  const participants = arg<Entity[]>(0);
+  const participants = std.arg<Entity[]>(0);
   if (!participants || list.len(participants) < 2) {
     return;
   }
@@ -975,7 +975,7 @@ export function combat_start(this: Entity) {
 }
 
 export function combat_next_turn(this: Entity) {
-  const sessionId = arg<number>(0);
+  const sessionId = std.arg<number>(0);
   const session = entity(sessionId);
   // Combat Manager needs control over the session it created
   const controlCap = get_capability("entity.control", { target_id: sessionId });
@@ -1021,11 +1021,11 @@ export function combat_next_turn(this: Entity) {
 }
 
 export function combat_apply_status(this: Entity) {
-  const target = arg<Entity>(0);
-  const effectEntity = arg<Entity>(1);
-  const duration = arg<number>(2); // optional
-  const magnitude = arg<number>(3); // optional
-  // const source = arg<Entity>(4); // optional - unused for now
+  const target = std.arg<Entity>(0);
+  const effectEntity = std.arg<Entity>(1);
+  const duration = std.arg<number>(2); // optional
+  const magnitude = std.arg<number>(3); // optional
+  // const source = std.arg<Entity>(4); // optional - unused for now
 
   if (!target || !effectEntity) {
     return;
@@ -1070,7 +1070,7 @@ export function combat_apply_status(this: Entity) {
 }
 
 export function combat_tick_status(this: Entity) {
-  const target = arg<Entity>(0);
+  const target = std.arg<Entity>(0);
   if (!target) {
     return true;
   }
@@ -1135,8 +1135,8 @@ export function effect_base_on_remove() {
 }
 
 export function combat_attack(this: Entity) {
-  const attacker = arg<Entity>(0);
-  const target = arg<Entity>(1);
+  const attacker = std.arg<Entity>(0);
+  const target = std.arg<Entity>(1);
 
   const attProps = resolve_props(attacker);
   const defProps = resolve_props(target);
@@ -1178,9 +1178,9 @@ export function combat_attack(this: Entity) {
 }
 
 export function combat_attack_elemental(this: Entity) {
-  const attacker = arg<Entity>(0);
-  const target = arg<Entity>(1);
-  const elementArg = arg<string>(2);
+  const attacker = std.arg<Entity>(0);
+  const target = std.arg<Entity>(1);
+  const elementArg = std.arg<string>(2);
 
   const attProps = resolve_props(attacker);
   const defProps = resolve_props(target);
@@ -1252,8 +1252,8 @@ export function combat_attack_elemental(this: Entity) {
 }
 
 export function combat_test(this: Entity) {
-  const warrior = arg<Entity>(0);
-  const orc = arg<Entity>(1);
+  const warrior = std.arg<Entity>(0);
+  const orc = std.arg<Entity>(1);
 
   if (!warrior || !orc) {
     send("message", "Usage: test <warrior> <orc>");
@@ -1281,8 +1281,8 @@ export function combat_test(this: Entity) {
 }
 
 export function poison_on_tick(this: Entity) {
-  const target = arg<Entity>(0);
-  const data = arg<Record<string, any>>(1);
+  const target = std.arg<Entity>(0);
+  const data = std.arg<Record<string, any>>(1);
 
   const magnitude = (data["magnitude"] as number) ?? 5;
 
@@ -1309,8 +1309,8 @@ export function poison_on_tick(this: Entity) {
 }
 
 export function regen_on_tick(this: Entity) {
-  const target = arg<Entity>(0);
-  const data = arg<Record<string, any>>(1);
+  const target = std.arg<Entity>(0);
+  const data = std.arg<Record<string, any>>(1);
 
   const magnitude = (data["magnitude"] as number) ?? 5;
 
@@ -1338,8 +1338,8 @@ export function regen_on_tick(this: Entity) {
 }
 
 export function player_quest_start() {
-  const questId = arg<number>(0);
-  const player = caller();
+  const questId = std.arg<number>(0);
+  const player = std.caller();
 
   if (!questId) {
     send("message", "Quest ID required.");
@@ -1402,10 +1402,10 @@ export function player_quest_start() {
 }
 
 export function player_quest_update() {
-  const questId = arg<number>(0);
-  const taskId = arg<string>(1);
-  const status = arg<string>(2); // "active" or "completed"
-  const player = caller();
+  const questId = std.arg<number>(0);
+  const taskId = std.arg<string>(1);
+  const status = std.arg<string>(2); // "active" or "completed"
+  const player = std.caller();
 
   let controlCap = get_capability("entity.control", { target_id: player.id });
   if (!controlCap) {
@@ -1515,7 +1515,7 @@ export function player_quest_update() {
           // So 'quests' variable here is STALE after inner calls.
           // We must re-read 'player' state for checking siblings.
 
-          const freshPlayer = caller();
+          const freshPlayer = std.caller();
           const freshQuests = freshPlayer["quests"] as any;
           const freshQState = freshQuests[String(questId)];
 
@@ -1549,7 +1549,7 @@ export function player_quest_update() {
 }
 
 export function player_quest_log() {
-  const player = caller();
+  const player = std.caller();
   const quests = (player["quests"] as Record<string, any>) ?? {};
 
   if (list.len(obj.keys(quests)) === 0) {
@@ -1621,13 +1621,13 @@ export function quest_get_structure(this: Entity) {
 }
 
 export function quest_get_node(this: Entity) {
-  const nodeId = arg<string>(0);
+  const nodeId = std.arg<string>(0);
   const map = this["nodes_map"] as Record<string, any>;
   return map ? map[nodeId] : undefined;
 }
 export function quest_test(this: Entity) {
-  const player = arg<Entity>(0);
-  const questId = arg<number>(1);
+  const player = std.arg<Entity>(0);
+  const questId = std.arg<number>(1);
 
   if (!player || !questId) {
     send("message", "Usage: test <player> <quest_id>");

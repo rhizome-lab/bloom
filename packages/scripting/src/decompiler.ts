@@ -29,7 +29,7 @@ export function decompile(
 
     // --- Control Flow ---
 
-    if (opcode === "seq") {
+    if (opcode === "std.seq") {
       // seq is always a block statement if isStatement is true
       // If isStatement is false, it's an IIFE or block expression?
       // For simplicity, let's assume seq is mostly used as a block.
@@ -67,7 +67,7 @@ export function decompile(
         .join("\n")}\n${indent}})()`;
     }
 
-    if (opcode === "if") {
+    if (opcode === "std.if") {
       const [cond, thenBranch, elseBranch] = args;
       if (isStatement) {
         // If we should return, we need to return from both branches
@@ -96,7 +96,7 @@ export function decompile(
       )} : ${decompile(elseBranch || null, indentLevel, false)}`;
     }
 
-    if (opcode === "while") {
+    if (opcode === "std.while") {
       const [cond, body] = args;
       // While is a statement. If used as expression, it returns null (or last result).
       // TS while doesn't return.
@@ -114,7 +114,7 @@ export function decompile(
       )}; } })()`;
     }
 
-    if (opcode === "for") {
+    if (opcode === "std.for") {
       const [varName, list, body] = args;
       if (isStatement) {
         const bodyCode = decompile(body, indentLevel + 1, true);
@@ -135,7 +135,7 @@ export function decompile(
 
     // --- Variables ---
 
-    if (opcode === "let") {
+    if (opcode === "std.let") {
       const [name, val] = args;
       // let returns the value.
       if (isStatement) {
@@ -150,14 +150,14 @@ export function decompile(
       )}; return ${name}; })()`;
     }
 
-    if (opcode === "set") {
+    if (opcode === "std.set") {
       const [name, val] = args;
       // Assignment is an expression in JS.
       const expr = `${name} = ${decompile(val, indentLevel, false)}`;
       return shouldReturn ? `return ${expr}` : expr;
     }
 
-    if (opcode === "var") {
+    if (opcode === "std.var") {
       const [name] = args;
       const expr = String(name);
       return shouldReturn ? `return ${expr}` : expr;
@@ -165,14 +165,14 @@ export function decompile(
 
     // --- Functions ---
 
-    if (opcode === "lambda") {
+    if (opcode === "std.lambda") {
       const [params, body] = args;
       // Lambda is an expression.
       // (args) => { ... }
       // If body is a seq, it will be decompiled as a block (if we pass isStatement=true? No, lambda body is a block).
 
       // Check if body is a sequence
-      const bodyIsSeq = Array.isArray(body) && body[0] === "seq";
+      const bodyIsSeq = Array.isArray(body) && body[0] === "std.seq";
 
       if (bodyIsSeq) {
         // Decompile seq contents as statements
@@ -196,7 +196,7 @@ export function decompile(
         : `(${params.join(", ")}) => ${bodyCode}`;
     }
 
-    if (opcode === "apply") {
+    if (opcode === "std.apply") {
       const [func, ...funcArgs] = args;
       const expr = `${decompile(func, indentLevel, false)}(${funcArgs
         .map((arg) => decompile(arg, indentLevel, false))
@@ -327,24 +327,23 @@ export function decompile(
 
     // --- Standard Library ---
 
-    if (opcode === "log") {
+    if (opcode === "std.log") {
       const expr = `console.log(${args
         .map((arg) => decompile(arg, indentLevel, false))
         .join(", ")})`;
       return shouldReturn ? `return ${expr}` : expr;
     }
 
-    if (opcode === "new_return") {
-      // Explicit return opcode if we add it
+    if (opcode === "std.return") {
       const expr = args[0] ? decompile(args[0], indentLevel, false) : "null";
       return `return ${expr}`;
     }
 
-    if (opcode === "throw") {
+    if (opcode === "std.throw") {
       return `throw ${decompile(args[0], indentLevel, false)}`;
     }
 
-    if (opcode === "try") {
+    if (opcode === "std.try") {
       const [tryBlock, errVar, catchBlock] = args;
       // try/catch handles returns recursively
       const tryCode = decompile(tryBlock, indentLevel + 1, true, shouldReturn);

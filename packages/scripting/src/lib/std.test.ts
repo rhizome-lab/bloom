@@ -4,8 +4,8 @@ import * as ListLib from "../lib/list";
 import * as MathLib from "../lib/math";
 import * as StdLib from "../lib/std";
 import { createOpcodeRegistry, createScriptContext, evaluate } from "../interpreter";
+import { expect, mock } from "bun:test";
 import { createLibraryTester } from "./test-utils";
-import { expect } from "bun:test";
 
 const TEST_OPS = createOpcodeRegistry(StdLib, ListLib, MathLib, BooleanLib);
 
@@ -18,7 +18,7 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
   });
 
   // Values
-  test("this", () => {
+  test("std.this", () => {
     expect(evaluate(StdLib.this(), ctx)).toEqual({ id: 2 });
   });
 
@@ -41,22 +41,22 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     expect(evaluate(StdLib.number(false), ctx)).toBe(0);
   });
 
-  test("caller", () => {
+  test("std.caller", () => {
     expect(evaluate(StdLib.caller(), ctx)).toEqual({ id: 1 });
   });
 
   // Control Flow
-  test("seq", () => {
+  test("std.seq", () => {
     expect(evaluate(StdLib.seq(1, 2, 3), ctx)).toBe(3);
   });
 
-  test("if", () => {
+  test("std.if", () => {
     expect(evaluate(StdLib.if(true, 1, 2), ctx)).toBe(1);
     expect(evaluate(StdLib.if(false, 1, 2), ctx)).toBe(2);
     expect(evaluate(StdLib.if(false, 1), ctx)).toBe(null);
   });
 
-  test("while", () => {
+  test("std.while", () => {
     const localCtx = { ...ctx, locals: {} };
     evaluate(StdLib.let("i", 0), localCtx);
     evaluate(
@@ -69,7 +69,7 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     expect(evaluate(StdLib.var("i"), localCtx)).toBe(3);
   });
 
-  test("for", () => {
+  test("std.for", () => {
     const localCtx = { ...ctx, locals: {} };
     evaluate(StdLib.let("sum", 0), localCtx);
     evaluate(
@@ -83,7 +83,7 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     expect(evaluate(StdLib.var("sum"), localCtx)).toBe(6);
   });
 
-  test("break", () => {
+  test("std.break", () => {
     const localCtx = { ...ctx, locals: {} };
     evaluate(StdLib.let("i", 0), localCtx);
     evaluate(
@@ -96,7 +96,7 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     expect(evaluate(StdLib.var("i"), localCtx)).toBe(1);
   });
 
-  test("continue", () => {
+  test("std.continue", () => {
     const localCtx = { ...ctx, locals: {} };
     evaluate(StdLib.let("i", 0), localCtx);
     evaluate(StdLib.let("sum", 0), localCtx);
@@ -146,7 +146,7 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     expect(evaluate(StdLib.var("sum"), localCtx)).toBe(3);
   });
 
-  test("return", () => {
+  test("std.return", () => {
     const localCtx = { ...ctx, locals: {} };
     expect(evaluate(StdLib.return("val"), localCtx) as any).toBe("val");
   });
@@ -164,19 +164,19 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
   });
 
   // Variables
-  test("let", () => {
+  test("std.let", () => {
     const localCtx = { ...ctx, locals: {} };
     expect(evaluate(StdLib.let("x", 10), localCtx)).toBe(10);
     expect(localCtx.vars?.["x"]).toBe(10);
   });
 
-  test("var", () => {
+  test("std.var", () => {
     const localCtx = { ...ctx, locals: {}, vars: { x: 10 } };
     expect(evaluate(StdLib.var("x"), localCtx)).toBe(10);
     expect(evaluate(StdLib.var("y"), localCtx)).toBe(null);
   });
 
-  test("set", () => {
+  test("std.set", () => {
     const localCtx = { ...ctx, locals: {}, vars: { x: 10 } };
     expect(evaluate(StdLib.set("x", 20), localCtx)).toBe(20);
     expect(localCtx.vars?.x).toBe(20);
@@ -184,7 +184,7 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
 
   // Arithmetic
 
-  test("typeof", () => {
+  test("std.typeof", () => {
     expect(evaluate(StdLib.typeof(1), ctx)).toBe("number");
     expect(evaluate(StdLib.typeof("s"), ctx)).toBe("string");
     expect(evaluate(StdLib.typeof(true), ctx)).toBe("boolean");
@@ -193,43 +193,62 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     expect(evaluate(StdLib.typeof(null), ctx)).toBe("null");
   });
 
-  // System
-  test("log", () => {
-    // Mock console.log? Or just ensure it runs without error
-    evaluate(StdLib.log("hello"), ctx);
+  test("std.string", () => {
+    expect(evaluate(StdLib.string(123), ctx)).toBe("123");
+    expect(evaluate(StdLib.string(true), ctx)).toBe("true");
+    expect(evaluate(StdLib.string(null), ctx)).toBe("null");
   });
 
-  test("arg", () => {
+  test("std.boolean", () => {
+    expect(evaluate(StdLib.boolean(1), ctx)).toBe(true);
+    expect(evaluate(StdLib.boolean(0), ctx)).toBe(false);
+    expect(evaluate(StdLib.boolean("true"), ctx)).toBe(true);
+    expect(evaluate(StdLib.boolean(""), ctx)).toBe(false);
+    expect(evaluate(StdLib.boolean(null), ctx)).toBe(false);
+  });
+
+  // System
+  test("std.log", () => {
+    const originalConsoleLog = console.log;
+    const mockConsoleLog = mock(() => {});
+    console.log = mockConsoleLog;
+    // Mock console.log? Or just ensure it runs without error
+    evaluate(StdLib.log("hello"), ctx);
+    console.log = originalConsoleLog;
+    expect(mockConsoleLog).toHaveBeenCalledWith("hello");
+  });
+
+  test("std.arg", () => {
     expect(evaluate(StdLib.arg(0), ctx)).toBe(10);
     expect(evaluate(StdLib.arg(1), ctx)).toBe("a");
     expect(evaluate(StdLib.arg(2), ctx)).toBe(null);
   });
 
-  test("args", () => {
+  test("std.args", () => {
     expect(evaluate(StdLib.args(), ctx)).toEqual([10, "a"]);
   });
 
-  test("warn", () => {
+  test("std.warn", () => {
     evaluate(StdLib.warn("warning"), ctx);
     expect(ctx.warnings).toContain("warning");
   });
 
-  test("throw", () => {
+  test("std.throw", () => {
     expect(() => evaluate(StdLib.throw("error"), ctx)).toThrow("error");
   });
 
-  test("try", () => {
+  test("std.try", () => {
     expect(evaluate(StdLib.try(StdLib.throw("oops"), "err", StdLib.var("err")), ctx)).toBe("oops");
 
     expect(evaluate(StdLib.try(123, "err", 456), ctx)).toBe(123);
   });
 
-  test("lambda", () => {
+  test("std.lambda", () => {
     const l = evaluate(StdLib.lambda(["x"], StdLib.var("x")), ctx);
     expect(l.type).toBe("lambda");
   });
 
-  test("apply", () => {
+  test("std.apply", () => {
     const l = evaluate(StdLib.lambda(["x"], StdLib.var("x")), ctx);
     expect(evaluate(StdLib.apply(l, 123), ctx)).toBe(123);
   });
@@ -239,7 +258,7 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     evaluate(StdLib.send("message", "hello"), ctx);
   });
 
-  test("quote", () => {
+  test("std.quote", () => {
     expect(evaluate(StdLib.quote([1, 2, 3]), ctx)).toEqual([1, 2, 3]);
     expect(evaluate(StdLib.quote("hello"), ctx)).toBe("hello");
   });

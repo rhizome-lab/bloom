@@ -311,146 +311,12 @@ declare global {
    */
   function or(left: unknown, right: unknown, ...args: unknown[]): boolean;
   /**
-   * Calls a lambda function with the provided arguments.
-   *
-   * @param lambda The lambda to execute.
-   * @param args The arguments.
-   */
-  function apply(lambda: unknown, ...args: unknown[]): any;
-  /**
-   * Retrieves a specific argument passed to the script.
-   *
-   * @param index The index of the argument.
-   */
-  function arg<Type>(index: number): Type;
-  /**
-   * Get all arguments
-   */
-  function args(): any[];
-  /**
-   * Breaks out of the current loop.
-   */
-  function break_(): never;
-  /**
-   * Current caller
-   */
-  function caller(): Entity;
-  /**
-   * Skips the rest of the current loop iteration.
-   */
-  function continue_(): never;
-  /**
-   * Iterates over a list, executing the body for each item.
-   *
-   * @param var The variable name.
-   * @param list The list to iterate over.
-   * @param block The code block to execute.
-   */
-  function for_(var_: string, list: any[], block: unknown): any;
-  /**
-   * Conditionally executes a branch based on a boolean condition.
-   *
-   * @param condition The condition to check.
-   * @param then The code to execute if true.
-   * @param else The code to execute if false.
-   */
-  function if_<Type>(condition: unknown, then: Type, else_?: Type): Type;
-  /**
-   * Creates a lambda (anonymous function).
-   *
-   * @param args The arguments.
-   * @param body The function body.
-   */
-  function lambda(args: unknown[], body: unknown): any;
-  /**
-   * Defines a local variable in the current scope.
-   *
-   * @param name The name of the variable.
-   * @param value The initial value.
-   */
-  function let_(name: string, value: unknown): any;
-  /**
-   * Logs a message to the console/client.
-   *
-   * @param message The message to log.
-   * @param args Additional arguments to log.
-   */
-  function log(message: unknown, ...args: unknown[]): null;
-  /**
-   * Returns the argument as is, without evaluation. Used for passing arrays as values to opcodes.
-   *
-   * @param value The value to quote.
-   */
-  function quote(value: any): any;
-  /**
-   * Returns from the current function, optionally returning a value.
-   *
-   * @param value The value to return.
-   */
-  function return_(value?: any): never;
-  /**
    * Sends a system message to the client.
    *
    * @param type The message type.
    * @param payload The message payload.
    */
   function send(type_: string, payload: unknown): null;
-  /**
-   * Executes a sequence of steps and returns the result of the last step.
-   *
-   * @param args The sequence of steps to execute.
-   */
-  function seq(...args: any[]): any;
-  /**
-   * Updates the value of an existing variable.
-   *
-   * @param name The variable name.
-   * @param value The value to set.
-   */
-  function set(name: string, value: unknown): any;
-  /**
-   * Current entity
-   */
-  function this_(): Entity;
-  /**
-   * Throws an error, stopping script execution.
-   *
-   * @param message The error message.
-   */
-  function throw_(message: string): never;
-  /**
-   * Executes a block of code and catches any errors.
-   *
-   * @param try The code to try executing.
-   * @param errorVar The name of the variable to store the error message.
-   * @param catch The code to execute if an error occurs.
-   */
-  function try_(try_: any, errorVar: string, catch_: any): any;
-  /**
-   * Returns the type of a value as a string.
-   *
-   * @param block The code block to execute.
-   */
-  function typeof_(block: unknown): string;
-  /**
-   * Retrieves a local variable from the current scope.
-   *
-   * @param name The variable name.
-   */
-  function var_(name: string): any;
-  /**
-   * Sends a warning message to the client.
-   *
-   * @param message The warning message.
-   */
-  function warn(message: string): void;
-  /**
-   * Repeats a body while a condition is true.
-   *
-   * @param condition The condition to check before each iteration.
-   * @param body The code to execute in each iteration.
-   */
-  function while_(condition: any, body: any): any;
   namespace math {
     /**
      * Returns the absolute value of a number.
@@ -957,11 +823,62 @@ declare global {
   }
   namespace std {
     /**
+     * Calls a lambda function with the provided arguments.
+     *
+     * @param lambda The lambda to execute.
+     * @param args The arguments.
+     */
+    function apply(lambda: unknown, ...args: unknown[]): any;
+    /**
+     * Retrieves a specific argument passed to the script.
+     *
+     * @param index The index of the argument.
+     */
+    function arg<Type>(index: number): Type;
+    /**
+     * Get all arguments
+     */
+    function args(): any[];
+    /**
+     * Converts a value to a boolean.
+     *
+     * @param value The value to convert.
+     */
+    function boolean(value: unknown): boolean;
+    /**
+     * Breaks out of the current loop.
+     */
+    function break_(): never;
+    /**
+     * Current caller
+     */
+    function caller(): Entity;
+    /**
+     * Skips the rest of the current loop iteration.
+     */
+    function continue_(): never;
+    /**
      * Parses a string into a floating-point number.
      *
      * @param string The string to parse.
      */
     function float(string: string): number;
+    /**
+     * Iterates over a list, executing the body for each item.
+     *
+     * @param var The variable name.
+     * @param list The list to iterate over.
+     * @param block The code block to execute.
+     */
+    function for_(var_: string, list: any[], block: unknown): any;
+    /**
+     * Conditionally executes a branch based on a boolean condition.
+     *
+     * @param condition The condition to check.
+     * @param then The code to execute if true.
+     * @param else The code to execute if false.
+     */
+    function if_<Type>(condition: unknown, then: Type, else_?: Type): Type;
     /**
      * Parses a string into an integer.
      *
@@ -970,11 +887,106 @@ declare global {
      */
     function int(string: string, radix?: number): number;
     /**
+     * Creates a lambda (anonymous function).
+     *
+     * @param args The arguments.
+     * @param body The function body.
+     */
+    function lambda(args: unknown[], body: unknown): any;
+    /**
+     * Defines a local variable in the current scope.
+     *
+     * @param name The name of the variable.
+     * @param value The initial value.
+     */
+    function let_(name: string, value: unknown): any;
+    /**
+     * Logs a message to the console/client.
+     *
+     * @param message The message to log.
+     * @param args Additional arguments to log.
+     */
+    function log(message: unknown, ...args: unknown[]): null;
+    /**
      * Converts a value to a number.
      *
      * @param value The value to convert.
      */
     function number(value: unknown): number;
+    /**
+     * Returns the argument as is, without evaluation. Used for passing arrays as values to opcodes.
+     *
+     * @param value The value to quote.
+     */
+    function quote(value: any): any;
+    /**
+     * Returns from the current function, optionally returning a value.
+     *
+     * @param value The value to return.
+     */
+    function return_(value?: any): never;
+    /**
+     * Executes a sequence of steps and returns the result of the last step.
+     *
+     * @param args The sequence of steps to execute.
+     */
+    function seq(...args: any[]): any;
+    /**
+     * Updates the value of an existing variable.
+     *
+     * @param name The variable name.
+     * @param value The value to set.
+     */
+    function set(name: string, value: unknown): any;
+    /**
+     * Converts a value to a string.
+     *
+     * @param value The value to convert.
+     */
+    function string(value: unknown): string;
+    /**
+     * Current entity
+     */
+    function this_(): Entity;
+    /**
+     * Throws an error, stopping script execution.
+     *
+     * @param message The error message.
+     */
+    function throw_(message: string): never;
+    /**
+     * Executes a block of code and catches any errors.
+     *
+     * @param try The code to try executing.
+     * @param errorVar The name of the variable to store the error message.
+     * @param catch The code to execute if an error occurs.
+     */
+    function try_(try_: any, errorVar: string, catch_: any): any;
+    /**
+     * Returns the type of a value as a string.
+     *
+     * @param block The code block to execute.
+     */
+    function typeof_(block: unknown): string;
+    /**
+     * Retrieves a local variable from the current scope.
+     *
+     * @param name The variable name.
+     */
+    function var_(name: string): any;
+    /**
+     * Sends a warning message to the client.
+     *
+     * @param message The warning message.
+     */
+    function warn(message: string): void;
+    /**
+     * Repeats a body while a condition is true.
+     *
+     * @param condition The condition to check before each iteration.
+     * @param body The code to execute in each iteration.
+     */
+    function while_(condition: any, body: any): any;
   }
   namespace json {
     /**
