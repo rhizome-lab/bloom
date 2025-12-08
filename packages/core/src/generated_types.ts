@@ -123,9 +123,10 @@ declare global {
    * Update entity properties (requires entity.control)
    *
    * @param capability Capability to use.
-   * @param entities The entities to update.
+   * @param target The entity to update.
+   * @param updates The properties to update.
    */
-  function set_entity(capability: Capability | null, ...entities: object[]): void;
+  function set_entity(capability: Capability | null, target: Entity, updates: object): Entity;
   /**
    * Set entity prototype (requires entity.control)
    *

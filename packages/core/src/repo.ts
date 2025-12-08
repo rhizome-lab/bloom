@@ -87,19 +87,48 @@ export function createEntity(props: object, prototypeId: number | null = null): 
  * @param id - The ID of the entity to update.
  * @param props - The properties to update (merged with existing).
  */
+/**
+ * Updates an existing entity.
+ * Only provided fields will be updated.
+ *
+ * @param id - The ID of the entity to update.
+ * @param props - The properties to update (merged with existing).
+ */
 export function updateEntity(...entities: readonly Entity[]) {
   if (entities.length === 0) {
     return;
   }
-  const params: (number | string)[] = [];
-  for (const { id, ...props } of entities) {
-    params.push(id, JSON.stringify(props));
-  }
-  db.query(
-    `INSERT INTO entities (id, props) VALUES ${entities
-      .map(() => "(?, ?)")
-      .join(", ")} ON CONFLICT (id) DO UPDATE SET props = excluded.props`,
-  ).run(...params);
+
+  const transaction = db.transaction(() => {
+    for (const { id, ...updates } of entities) {
+      // 1. Fetch current raw props (avoiding recursive CTE for speed and to avoid flattening)
+      const row = db
+        .query<{ props: string }, [number]>("SELECT props FROM entities WHERE id = ?")
+        .get(id);
+
+      let currentProps = {};
+      if (row) {
+        try {
+          currentProps = JSON.parse(row.props);
+        } catch {
+          // invalid json, ignore
+        }
+      }
+
+      // 2. Linear merge (Partial Update)
+      const newProps = { ...currentProps, ...updates };
+
+      // 3. Save
+      // We use INSERT OR REPLACE semantics regarding ID, but since we read first, we know it exists (or we seek to create it if we passed an ID).
+      // actually if the row didn't exist, currentProps is empty, acts as create.
+      db.query("INSERT OR REPLACE INTO entities (id, props) VALUES (?, ?)").run(
+        id,
+        JSON.stringify(newProps),
+      );
+    }
+  });
+
+  transaction();
 }
 
 /**

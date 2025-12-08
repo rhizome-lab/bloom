@@ -94,11 +94,25 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
   });
 
   test("set_entity", () => {
-    evaluate(
-      CoreLib.setEntity(KernelLib.getCapability("entity.control"), { id, name: "updated" }),
+    // Should return the merged entity object
+    const result = evaluate(
+      CoreLib.setEntity(KernelLib.getCapability("entity.control"), { id }, { name: "updated" }),
       ctx,
     );
+    // @ts-expect-error - dynamic prop
+    expect(result.name).toBe("updated");
+    expect(result.id).toBe(id);
+
+    // Should update in DB
     expect(getEntity(id)?.["name"]).toBe("updated");
+
+    // Should fail if id is in updates
+    expect(() =>
+      evaluate(
+        CoreLib.setEntity(KernelLib.getCapability("entity.control"), { id }, { id: 123 }),
+        ctx,
+      ),
+    ).toThrow();
   });
 
   test("get_prototype", () => {

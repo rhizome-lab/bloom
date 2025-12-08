@@ -219,42 +219,46 @@ export const entity = defineFullOpcode<[number], Entity>("entity", {
 });
 
 /** Updates one or more entities' properties transactionally. */
-export const setEntity = defineFullOpcode<[Capability | null, ...Entity[]], null>("set_entity", {
-  handler: ([capability, ...entities], ctx) => {
-    if (!capability) {
-      throw new ScriptError("set_entity: expected capability");
-    }
-    for (const entity of entities) {
-      if (!entity || typeof entity.id !== "number") {
+export const setEntity = defineFullOpcode<[Capability | null, Entity, object], Entity>(
+  "set_entity",
+  {
+    handler: ([capability, entity, updates], ctx) => {
+      if (!capability) {
+        throw new ScriptError("set_entity: expected capability");
+      }
+      if (!entity || typeof (entity as Entity).id !== "number") {
         throw new ScriptError(`set_entity: expected entity object, got ${JSON.stringify(entity)}`);
       }
-    }
-    for (const entity of entities) {
+      if ("id" in updates) {
+        throw new ScriptError("set_entity: cannot update 'id'");
+      }
       checkCapability(
         capability,
         ctx.this.id,
         "entity.control",
-        (params) => params["target_id"] === entity.id,
+        (params) => params["target_id"] === (entity as Entity).id,
       );
-    }
-    updateEntity(...entities);
-    return null;
+      updateEntity({ id: (entity as Entity).id, ...updates });
+      return { ...entity, ...updates };
+    },
+    metadata: {
+      category: "action",
+      description: "Update entity properties (requires entity.control)",
+      label: "Update Entity",
+      parameters: [
+        { description: "Capability to use.", name: "capability", type: "Capability | null" },
+        { description: "The entity to update.", name: "target", type: "Entity" },
+        { description: "The properties to update.", name: "updates", type: "object" },
+      ],
+      returnType: "Entity",
+      slots: [
+        { name: "Cap", type: "block" },
+        { name: "Entity", type: "block" },
+        { name: "Updates", type: "block" },
+      ],
+    },
   },
-  metadata: {
-    category: "action",
-    description: "Update entity properties (requires entity.control)",
-    label: "Update Entity",
-    parameters: [
-      { description: "Capability to use.", name: "capability", type: "Capability | null" },
-      { description: "The entities to update.", name: "...entities", type: "object[]" },
-    ],
-    returnType: "void",
-    slots: [
-      { name: "Cap", type: "block" },
-      { name: "Entities", type: "block" },
-    ],
-  },
-});
+);
 
 /**
  * Gets the prototype ID of an entity.
