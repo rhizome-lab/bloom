@@ -12,24 +12,33 @@ APIs and tools should be designed so that the _easiest_ way to do something is a
 
 These steps can be implemented immediately on top of the current engine to strictly enforce safety and improve DX.
 
+### Current Status (Dec 2025)
+
+- **Strict Type Generation**: In Progress. `generated_types.ts` is being generated with interfaces for Entities and Verbs.
+- **Typed Facade**: Aligned. `WrappedEntity` has been removed as it was an unnecessary abstraction. We are relying on `generated_types.ts` to expose `Capability` wrapper classes (like `EntityControl`) which map directly to opcodes.
+- **Standard Library**:
+  - ✅ `std.int`, `std.float`, `std.number` added for safe parsing.
+  - ✅ `std.random` refactored for clarity.
+  - ✅ `std.call_method` is **implemented**.
+
 ### 0. Language Agnosticism & The SDK Layer
 
 ViwoScript is designed to be language-agnostic. The strategies below distinguish between the **Kernel** (Opcodes, VM) which remains universal, and the **SDK** (Language-Specific Bindings) which provides the "Human/AI Friendly" surface area.
 
 - **Kernel:** Remains low-level, opcode-based, and secure. Validated by the engine.
-- **SDK:** Provides the "Typed Facade". For TypeScript, this means Classes. For Python/Lua, this would be their equivalent idiomatic structures.
+- **SDK:** Provides the "Typed Facade". For TypeScript, this means **Capability Classes**.
 - **Goal:** The AI/Human writes against the SDK. The SDK talks to the Kernel.
 
-### 1. The "Typed Facade" (e.g. TypeScript SDK)
+### 1. The "Typed Facade" (Capability Classes)
 
 Instead of exposing raw opcodes (`sys.create(cap, ...)`), we expose **Typed Capability Classes** to the scripting environment.
 
-- **Concept:** The runtime wraps the raw capabilities in language-specific classes (e.g., TS Classes).
+- **Concept:** The runtime provides classes that wrap specific capabilities.
 - **Benefit:**
   - **Discoverability:** `cap.` triggers autocomplete showing exactly what _this_ capability can do.
   - **Safety:** You cannot pass the wrong capability to the wrong opcode. The method _is_ the opcode.
-  - **Strictness:** The raw opcodes (`sys.destroy`, `sys.create`) are **removed** from the public global scope. They become internal primitives accessible only by the SDK classes.
-  - **No Engine Rewrite:** The primitives remain in the kernel, but are "Hidden" from user scripts.
+  - **Strictness:** The raw opcodes (`sys.destroy`, `sys.create`) are **deprecated** in user code, favoring the class methods.
+  - **Zero Overhead:** These classes are lightweight wrappers around the internal opcodes.
 
 ```typescript
 // Script view
