@@ -36,6 +36,7 @@ const BASE_PURE_OPS = [
     "std.if": StdLib.if,
     "std.quote": StdLib.quote,
     "std.seq": StdLib.seq,
+    "std.throw": StdLib.throw,
     "std.typeof": StdLib.typeof,
     "std.while": StdLib.while,
     // Exclude: print, log, warn, throw, time.now, random
@@ -59,6 +60,8 @@ const EXTENDED_PURE_OPS = createOpcodeRegistry(
   },
 );
 
+const CREATES_NEW_SCOPE = new Set(["std.for", "std.while", "std.if", "std.seq"]);
+
 /**
  * Optimizes a script by partially evaluating pure expressions with constant arguments.
  *
@@ -75,7 +78,6 @@ export function optimize<Type>(
   if (!Array.isArray(script) || typeof script[0] !== "string") {
     return script;
   }
-  console.log(script, isPureSubtree(script, isTopLevel));
   if (!isPureSubtree(script, isTopLevel)) {
     switch (script[0]) {
       case "std.quote":
@@ -98,13 +100,19 @@ export function optimize<Type>(
     const result = fn(ctx);
     // Quote the result back to AST
     return quote(result) as ScriptValue<Type>;
-  } catch {
+  } catch (error) {
+    console.error("Could not optimize script:", script);
+    console.error("Error:", error);
     // Failed to compile or run (e.g. type error, runtime error), keep original
     return script;
   }
 }
 
-function isPureSubtree(ast: ScriptValue<any>, isTopLevel: boolean): boolean {
+function isPureSubtree(
+  ast: ScriptValue<any>,
+  isTopLevel: boolean,
+  scope = new Map<string, true>(),
+): boolean {
   if (!Array.isArray(ast)) {
     return true;
   } // Primitive is pure
@@ -112,17 +120,33 @@ function isPureSubtree(ast: ScriptValue<any>, isTopLevel: boolean): boolean {
   if (typeof op !== "string") {
     return false;
   } // Invalid AST
-  if (op === "quote") {
-    return true;
+  switch (op) {
+    // The following opcodes have special forms, so their arguments can be ignored
+    case "std.quote": {
+      return true;
+    }
+    case "std.let": {
+      scope.set(args[0], true);
+      break;
+    }
+    case "std.set":
+    case "std.var": {
+      if (!scope.has(args[0])) {
+        // We found a set or var that doesn't reference a let we found
+        return false;
+      }
+      break;
+    }
   }
   // Check opcode
   // 1. Must be in PURE_OPS
   if (!(isTopLevel ? EXTENDED_PURE_OPS : PURE_OPS)[op]) {
     return false;
   }
+  const childScope = CREATES_NEW_SCOPE.has(op) ? new Map(scope) : scope;
   // Recursively check args
   for (const arg of args) {
-    if (!isPureSubtree(arg, isTopLevel)) {
+    if (!isPureSubtree(arg, isTopLevel, childScope)) {
       return false;
     }
   }
