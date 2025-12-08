@@ -933,10 +933,45 @@ export const quote = defineFullOpcode<[value: ScriptRaw<unknown>], any, true>("s
     category: "data",
     description:
       "Returns the argument as is, without evaluation. Used for passing arrays as values to opcodes.",
+    genericParameters: ["Type"],
     label: "Quote",
     lazy: true,
-    parameters: [{ description: "The value to quote.", name: "value", type: "any" }],
-    returnType: "any",
+    parameters: [{ description: "The value to quote.", name: "value", type: "Type" }],
+    returnType: "Type",
     slots: [{ name: "Value", type: "block" }],
   },
 });
+
+/** Calls a method on an object, preserving the `this` context. */
+export const callMethod = defineFullOpcode<[obj: any, method: string, ...args: any[]], any>(
+  "std.call_method",
+  {
+    handler: ([obj, method, ...args], _ctx) => {
+      if (obj === null || obj === undefined) {
+        throw new ScriptError(`Cannot call method '${method}' on ${obj}`);
+      }
+
+      const func = obj[method];
+      if (typeof func !== "function") {
+        throw new ScriptError(`Property '${method}' of ${String(obj)} is not a function`);
+      }
+
+      return func.call(obj, ...args, _ctx);
+    },
+    metadata: {
+      category: "logic",
+      description: "Calls a method on an object, preserving context.",
+      label: "Call Method",
+      parameters: [
+        { description: "The object.", name: "object", type: "any" },
+        { description: "The method name.", name: "method", type: "string" },
+        { description: "Arguments.", name: "...args", type: "any[]" },
+      ],
+      returnType: "any",
+      slots: [
+        { name: "Object", type: "block" },
+        { name: "Method", type: "string" },
+      ],
+    },
+  },
+);

@@ -347,6 +347,11 @@ ${compileValue(args[1], ops, true)}}`;
     case "std.apply": {
       return `${prefix}(${compiledArgs[0]})(${compiledArgs.slice(1).join(", ")})`;
     }
+    case "std.call_method": {
+      return `${prefix}(${compiledArgs[0]})[${compiledArgs[1]}](${compiledArgs
+        .slice(2)
+        .join(", ")})`;
+    }
     case "+": {
       return `${prefix}(${compiledArgs.join(" + ")})`;
     }

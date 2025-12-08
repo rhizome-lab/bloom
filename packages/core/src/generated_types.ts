@@ -844,6 +844,14 @@ declare global {
      */
     function break_(): never;
     /**
+     * Calls a method on an object, preserving context.
+     *
+     * @param object The object.
+     * @param method The method name.
+     * @param args Arguments.
+     */
+    function call_method(object: any, method: string, ...args: any[]): any;
+    /**
      * Current caller
      */
     function caller(): Entity;
@@ -912,7 +920,7 @@ declare global {
      *
      * @param value The value to quote.
      */
-    function quote(value: any): any;
+    function quote<Type>(value: Type): Type;
     /**
      * Returns from the current function, optionally returning a value.
      *

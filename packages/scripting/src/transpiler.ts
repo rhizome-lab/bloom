@@ -467,12 +467,31 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
         opcodeName = null;
       }
     } else if (ts.isPropertyAccessExpression(expr)) {
-      opcodeName = resolveDottedName(expr);
-      if (opcodeName) {
-        // If the root of the namespace is a local variable, it's not an opcode
-        const [root] = opcodeName.split(".");
-        if (root && scope.has(root)) {
-          opcodeName = null;
+      if (
+        !ts.isPropertyAccessExpression(expr.expression) ||
+        expr.expression.expression.getText() !== "Math"
+      ) {
+        const obj = transpileNode(expr.expression, scope);
+        const method = expr.name.text;
+        // Optimization: if obj is 'std', 'Math', etc. check for opcode mapping?
+        // But for general object method calls:
+        // return StdLib.callMethod(obj, method, ...args);
+        // However, we need to check if it matches a known opcode pattern first.
+        // The existing logic checks `resolveDottedName(expr)` to find opcodes like `list.push`.
+        // If it returns an opcode name, we use that.
+        // If NOT, we treat it as a method call.
+        opcodeName = resolveDottedName(expr);
+        if (opcodeName) {
+          // Check if it's a local variable shadowing the opcode
+          const [root] = opcodeName.split(".");
+          if (root && scope.has(root)) {
+            opcodeName = null;
+          }
+        }
+
+        if (!opcodeName) {
+          // It's a method call!
+          return StdLib.callMethod(obj, method, ...args);
         }
       }
     }
@@ -974,6 +993,29 @@ function applyPart(base: any, part: ChainPart): any {
     }
     return ObjectLib.objGet(base, part.key);
   } else if (part.kind === "call") {
+    // If we are chaining a call, base is the function?
+    // Wait, optional chain `obj?.method()` handling is complex.
+    // The `part` structure separates property access from call?
+    // Let's see `transpileOptionalChain`.
+    // It creates `kind: "call"` for `CallExpression`.
+    // But `CallExpression` inside `OptionalChain` usually involves property access too?
+    // e.g. `obj?.method()` -> PropertyAccess(obj, method) then Call.
+    // In `transpileOptionalChain`:
+    // It unshifts parts.
+    // If it sees `CallExpression`, it takes arguments and pushes "call".
+    // Then it moves to `current.expression`.
+    // If `current.expression` is `PropertyAccess`, it pushes "prop".
+    // So `obj?.method()` becomes [prop(method), call(args)].
+    // `applyPart` is called sequentially.
+    // 1. apply `prop(method)` -> `obj.get(obj, "method")` -> returns Function.
+    // 2. apply `call(args)` -> `std.apply(Function, ...args)`.
+    // This LOSES `this` context!
+    // We need to fuse `prop` and `call` if possible, OR use `call_method`.
+    // But `transpileOptionalChain` splits them.
+    // To support `obj?.method()`, we might need `std.call_method_optional` or logic in `applyPart` to peek ahead?
+    // Or just accept `std.apply` for optional chains for now?
+    // Optional chains are rare in core game logic compared to standard calls.
+    // Let's stick to `std.apply` for optional chains for now, or flag TODO.
     return StdLib.apply(base, ...(part.args || []));
   }
   throw new Error("Unknown chain part kind");

@@ -9,7 +9,6 @@ import {
   type Verb,
   createCapability,
   createEntity,
-  deleteEntity,
   getEntity,
   getPrototypeId,
   getVerb,
@@ -19,6 +18,9 @@ import {
 } from "../../repo";
 import { checkCapability, resolveProps } from "../utils";
 import type { Entity } from "@viwo/shared/jsonrpc";
+import { WrappedEntity } from "../wrappers";
+import { destroyEntityLogic } from "../logic";
+import { hydrate } from "../hydration";
 import { scheduler } from "../../scheduler";
 
 // Entity Interaction
@@ -64,19 +66,10 @@ export const create = defineFullOpcode<[Capability | null, object], number>("cre
 /** Destroys an entity. */
 export const destroy = defineFullOpcode<[Capability | null, Entity], null>("destroy", {
   handler: ([capability, target], ctx) => {
-    if (!capability) {
-      throw new ScriptError("destroy: expected capability");
-    }
     if (!target || typeof (target as Entity).id !== "number") {
       throw new ScriptError(`destroy: target must be an entity, got ${JSON.stringify(target)}`);
     }
-    checkCapability(
-      capability,
-      ctx.this.id,
-      "entity.control",
-      (params) => params["target_id"] === (target as Entity).id,
-    );
-    deleteEntity((target as Entity).id);
+    destroyEntityLogic(capability, (target as Entity).id, ctx);
     return null;
   },
   metadata: {
@@ -102,13 +95,14 @@ export const call = defineFullOpcode<[Entity, string, ...unknown[]], any>("call"
     if (!targetVerb) {
       throw new ScriptError(`call: verb '${verb}' not found on ${target.id}`);
     }
+    const hydratedArgs = callArgs.map(hydrate);
     return evaluate(
       targetVerb.code,
       createScriptContext({
-        args: callArgs,
+        args: hydratedArgs,
         caller: ctx.caller,
         ops: ctx.ops,
-        stack: [...(ctx.stack ?? []), { args: callArgs, name: verb }],
+        stack: [...(ctx.stack ?? []), { args: hydratedArgs, name: verb }],
         this: target,
         warnings: ctx.warnings,
         ...(ctx.send ? { send: ctx.send } : {}),
@@ -206,7 +200,7 @@ export const entity = defineFullOpcode<[number], Entity>("entity", {
     if (!entity) {
       throw new ScriptError(`entity: entity ${id} not found`);
     }
-    return entity;
+    return new WrappedEntity(entity);
   },
   metadata: {
     category: "world",
@@ -243,7 +237,8 @@ export const setEntity = defineFullOpcode<[Capability | null, Entity, object], E
         (params) => params["target_id"] === (entity as Entity).id,
       );
       updateEntity({ id: (entity as Entity).id, ...updates });
-      return { ...entity, ...updates };
+      updateEntity({ id: (entity as Entity).id, ...updates });
+      return new WrappedEntity({ ...entity, ...updates });
     },
     metadata: {
       category: "action",
@@ -331,7 +326,7 @@ export const setPrototype = defineFullOpcode<[Capability | null, Entity, number 
 
 /** Resolves all properties of an entity, including dynamic ones. */
 export const resolve_props = defineFullOpcode<[Entity], Entity>("resolve_props", {
-  handler: ([entity], ctx) => resolveProps(entity, ctx),
+  handler: ([entity], ctx) => new WrappedEntity(resolveProps(entity, ctx)),
   metadata: {
     category: "data",
     description: "Resolve entity properties",
