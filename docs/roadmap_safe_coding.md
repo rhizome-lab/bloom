@@ -66,9 +66,10 @@ export class EntityControl {
 - **Action:** Auto-generate TypeScript definitions (`.d.ts`) for every available verb and capability in the system.
 - **Result:** The user (or AI) gets red squiggles immediately if they try to call `entity.jump()` on an entity that doesn't have a `jump` verb.
 
-### 4. Static Analysis Linter
+### 4. Hidden Opcodes (Deprecated Raw Opcodes)
 
-- **Action:** Create a targeted linter (or TS plugin) that forbids usage of "Raw" `sys.*` opcodes, forcing usage of the Safe Wrappers.
+- **Action:** Add a `hidden` property to `OpcodeMetadata`.
+- **Result:** Opcodes marked as `hidden: true` are excluded from the generated TypeScript definitions. This effectively hides "Raw" opcodes like `sys.create` from the SDK surface, forcing users to use the safe wrapper classes, without requiring a separate linter.
 
 ---
 

@@ -255,6 +255,8 @@ interface OpcodeMetadata<Lazy extends boolean = boolean, Full extends boolean = 
   returnType?: string;
   /** If true, arguments are NOT evaluated before being passed to the handler. Default: false (Strict). */
   lazy?: Lazy;
+  /** If true, this opcode will be excluded from generated type definitions. Default: false. */
+  hidden?: boolean; // Added hidden here too for local interface consistency
 }
 
 interface FullOpcodeMetadata<Lazy extends boolean = boolean>
@@ -334,6 +336,9 @@ interface ScriptContext {
   const rootNamespace: Record<string, any> = {};
 
   for (const op of opcodes) {
+    if (op.hidden) {
+      continue;
+    }
     const parts = op.opcode.split(".");
     if (parts.length > 1) {
       let current = rootNamespace;

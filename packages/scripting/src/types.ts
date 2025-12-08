@@ -101,6 +101,8 @@ export interface OpcodeMetadata<Lazy extends boolean = boolean, Full extends boo
   returnType?: string;
   /** If true, arguments are NOT evaluated before being passed to the handler. Default: false (Strict). */
   lazy?: Lazy;
+  /** If true, this opcode will be excluded from generated type definitions. Default: false. */
+  hidden?: boolean;
 }
 
 export interface FullOpcodeMetadata<Lazy extends boolean = boolean>

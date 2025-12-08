@@ -26,9 +26,7 @@ import { scheduler } from "../../scheduler";
 
 // Entity Interaction
 
-/**
- * Creates a new entity.
- */
+/** Creates a new entity. */
 export const create = defineFullOpcode<[Capability | null, object], number>("create", {
   handler: ([capability, data], ctx) => {
     if (!capability) {
@@ -74,6 +72,7 @@ export const destroy = defineFullOpcode<[Capability | null, Entity], null>("dest
   metadata: {
     category: "action",
     description: "Destroy an entity (requires entity.control)",
+    hidden: true,
     label: "Destroy",
     parameters: [
       { description: "Capability to use.", name: "capability", type: "Capability | null" },

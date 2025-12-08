@@ -93,6 +93,8 @@ declare global {
     returnType?: string;
     /** If true, arguments are NOT evaluated before being passed to the handler. Default: false (Strict). */
     lazy?: Lazy;
+    /** If true, this opcode will be excluded from generated type definitions. Default: false. */
+    hidden?: boolean; // Added hidden here too for local interface consistency
   }
 
   interface FullOpcodeMetadata<Lazy extends boolean = boolean>
@@ -190,13 +192,6 @@ declare global {
    * @param data Initial data for the entity
    */
   function create(capability: Capability | null, data: object): number;
-  /**
-   * Destroy an entity (requires entity.control)
-   *
-   * @param capability Capability to use.
-   * @param target The entity to destroy.
-   */
-  function destroy(capability: Capability | null, target: Entity): null;
   /**
    * Get entity by ID
    *
