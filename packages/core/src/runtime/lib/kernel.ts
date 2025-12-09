@@ -6,6 +6,7 @@ import {
   updateCapabilityOwner,
 } from "../../repo";
 import type { Entity } from "@viwo/shared/jsonrpc";
+import { hydrateCapability } from "../capabilities";
 
 export const getCapability = defineFullOpcode<[type: string, filter?: object], Capability | null>(
   "get_capability",
@@ -31,12 +32,12 @@ export const getCapability = defineFullOpcode<[type: string, filter?: object], C
       if (!match) {
         return null;
       }
-      return {
-        __brand: "Capability",
+      return hydrateCapability({
         id: match.id,
         ownerId: match.owner_id,
+        params: match.params,
         type: match.type,
-      };
+      });
     },
     metadata: {
       category: "kernel",
@@ -86,7 +87,7 @@ export const mint = defineFullOpcode<
       throw new ScriptError(`mint: authority namespace '${allowedNs}' does not cover '${type}'`);
     }
     const newId = createCapability(ctx.this.id, type, params as never);
-    return { __brand: "Capability", id: newId, ownerId: ctx.this.id, type };
+    return hydrateCapability({ id: newId, ownerId: ctx.this.id, params, type });
   },
   metadata: {
     category: "kernel",
@@ -126,12 +127,12 @@ export const delegate = defineFullOpcode<
     const newParams = { ...parentCap.params, ...(restrictions as object) };
     const newId = createCapability(ctx.this.id, parentCap.type, newParams);
 
-    return {
-      __brand: "Capability",
+    return hydrateCapability({
       id: newId,
       ownerId: ctx.this.id,
+      params: newParams,
       type: parentCap.type,
-    };
+    });
   },
   metadata: {
     category: "kernel",

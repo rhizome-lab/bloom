@@ -61,7 +61,8 @@ describe("Capability Permissions", () => {
       StdLib.callMethod(
         StdLib.var("cap"),
         "update",
-        ListLib.listNew(target.id, ObjectLib.objNew(["name", newName])),
+        target.id,
+        ObjectLib.objNew(["name", newName]),
       ),
     );
 

@@ -107,7 +107,8 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
       StdLib.callMethod(
         KernelLib.getCapability("entity.control", { target_id: id }),
         "update",
-        ListLib.listNew(id, { name: "updated" }),
+        id,
+        { name: "updated" },
       ),
       ctx,
     ) as unknown as { id: number; name: string };
@@ -123,7 +124,8 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
         StdLib.callMethod(
           KernelLib.getCapability("entity.control", { target_id: id }),
           "update",
-          ListLib.listNew(id, { id: 123 }),
+          id,
+          { id: 123 },
         ),
         ctx,
       ),
@@ -139,7 +141,8 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
       StdLib.callMethod(
         KernelLib.getCapability("entity.control", { target_id: id }),
         "setPrototype",
-        ListLib.listNew(id, 2),
+        id,
+        2,
       ),
       ctx,
     );
@@ -167,7 +170,7 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
         ),
         userCtx,
       ),
-    ).toThrow("Invalid capability");
+    ).toThrow("Expected capability of type sys.sudo");
 
     // 2. Allow if System (ID 3) with valid cap
     const systemCtx = createScriptContext({ caller: { id }, ops: OPS, this: { id } });

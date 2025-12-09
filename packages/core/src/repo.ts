@@ -11,14 +11,7 @@ import { db } from "./db";
  * @param id - The ID of the entity to fetch.
  * @returns The resolved Entity object or null if not found.
  */
-/**
- * Fetches an entity by ID, resolving its properties against its prototype.
- *
- * This performs a "deep resolve" where instance properties override prototype properties.
- *
- * @param id - The ID of the entity to fetch.
- * @returns The resolved Entity object or null if not found.
- */
+
 export function getEntity(id: number): Entity | null {
   const chain = db
     .query<{ id: number; prototype_id: number | null; props: string }, [number]>(
@@ -89,20 +82,16 @@ export function createEntity(props: object, prototypeId: number | null = null): 
  * @param id - The ID of the entity to update.
  * @param props - The properties to update (merged with existing).
  */
-/**
- * Updates an existing entity.
- * Only provided fields will be updated.
- *
- * @param id - The ID of the entity to update.
- * @param props - The properties to update (merged with existing).
- */
+
 export function updateEntity(...entities: readonly Entity[]) {
   if (entities.length === 0) {
     return;
   }
 
+  console.log("updateEntity called with", entities.length, "entities");
   const transaction = db.transaction(() => {
     for (const { id, ...updates } of entities) {
+      console.log("Updating entity", id, "updates", updates);
       // 1. Fetch current raw props and prototype_id
       const row = db
         .query<{ props: string; prototype_id: number | null }, [number]>(

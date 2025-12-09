@@ -93,10 +93,8 @@ describe("Capability Security", () => {
         StdLib.callMethod(
           ObjectLib.objNew(["name", "Fail"]), // Invalid cap
           "update",
-          ListLib.listNew(
-            targetId,
-            ObjectLib.objNew(), // updates
-          ),
+          targetId,
+          ObjectLib.objNew(), // updates
         ),
         ctx,
       );
@@ -114,7 +112,8 @@ describe("Capability Security", () => {
       StdLib.callMethod(
         KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true])),
         "update",
-        ListLib.listNew(targetId, ObjectLib.objNew(["name", "Modified"])),
+        targetId,
+        ObjectLib.objNew(["name", "Modified"]),
       ),
       ctx,
     );

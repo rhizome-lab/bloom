@@ -140,9 +140,10 @@ describe("Book Item Scripting", () => {
           ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
         ),
       ),
-      CoreLib.setEntity(
+      StdLib.callMethod(
         StdLib.var("cap"),
-        StdLib.this(),
+        "update",
+        ObjectLib.objGet(StdLib.this(), "id"),
         ObjectLib.objNew(["chapters", StdLib.var("chapters")]),
       ),
       CoreLib.call(StdLib.caller(), "tell", "Chapter added."),

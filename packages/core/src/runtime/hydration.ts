@@ -9,15 +9,16 @@ export function hydrate(value: unknown): unknown {
   }
 
   // Hydrate Capability
-  // Check for signature { id, type, owner_id } or { id, __brand: "Capability" }
-  // The DB capability has { id, owner_id, type }
-  if ("id" in value && "type" in value && "owner_id" in value) {
-    // Provide defaults for missing fields if coming from partial source?
-    // Assuming strict hydration for now based on what we see in `repo.ts` getCapability.
-    const cap = value as any;
+  // Check for signature { id, type, owner_id|ownerId } or { id, __brand: "Capability" }
+  const cap = value as any;
+  if (
+    "id" in cap &&
+    "type" in cap &&
+    ("owner_id" in cap || "ownerId" in cap || cap.__brand === "Capability")
+  ) {
     return hydrateCapability({
       id: cap.id,
-      owner_id: cap.owner_id,
+      ownerId: cap.ownerId ?? cap.owner_id,
       params: cap.params ?? {},
       type: cap.type,
     });

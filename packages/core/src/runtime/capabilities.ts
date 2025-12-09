@@ -19,7 +19,7 @@ export abstract class BaseCapability implements Capability {
 }
 
 export class EntityControl extends BaseCapability {
-  static override readonly type = "viwo.capability.entity_control";
+  static override readonly type = "entity.control";
 
   // Example Method 1: Destroy
   // Logic refactored from sys.destroy opcode
@@ -117,7 +117,7 @@ function createCapabilityProxy(capability: BaseCapability): BaseCapability {
           if (ctx && typeof ctx === "object" && "this" in ctx) {
             checkCapability(
               target,
-              ctx.this.id,
+              ctx.caller.id,
               (target.constructor as typeof BaseCapability).type,
             );
           }
@@ -131,17 +131,16 @@ function createCapabilityProxy(capability: BaseCapability): BaseCapability {
 
 export function hydrateCapability(data: {
   id: string;
-  owner_id: number;
+  ownerId: number;
   type: string;
   params: any;
 }): BaseCapability {
   const Class = CAPABILITY_CLASSES[data.type];
   if (Class) {
-    const instance = new Class(data.id, data.owner_id, data.params);
+    const instance = new Class(data.id, data.ownerId, data.params);
     return createCapabilityProxy(instance);
   }
-  // Fallback for unknown types? Return raw object?
-  // Or generic BaseCapability?
-  // For now, raw object implies it has no methods, which fits "unknown".
-  return data as any;
+  // Fallback for unknown types (e.g. user capabilities)
+  // We still need to return a valid Capability object (with __brand)
+  return { ...data, __brand: "Capability" } as any;
 }
