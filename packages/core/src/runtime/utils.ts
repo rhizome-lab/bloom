@@ -64,10 +64,22 @@ export function checkCapability(
   if (!cap || typeof cap !== "object" || (cap as any).__brand !== "Capability") {
     throw new ScriptError(`Expected capability of type ${type}`);
   }
+  // Optional: Check ownerId on the object before DB (fails fast for hydration mismatch)
+  // if (cap.ownerId ... )
+  if (cap.type !== type) {
+    throw new ScriptError(`Expected capability of type ${type}, got ${cap.type}`);
+  }
 
   const dbCap = getCapability(cap.id);
   if (!dbCap) {
     throw new ScriptError("Invalid capability");
+  }
+
+  // Verify snapshot integrity (prevent spoofing via Object.create)
+  // We cast to any because we know it adheres to the interface now, but runtime objects might vary?
+  // Actually we can check 'ownerId' in cap if it exists.
+  if ("ownerId" in cap && cap.ownerId !== dbCap.owner_id) {
+    throw new ScriptError("Capability owner mismatch (stale or spoofed)");
   }
 
   if (Array.isArray(ownerId)) {
@@ -82,8 +94,8 @@ export function checkCapability(
     throw new ScriptError("Capability not owned by caller");
   }
 
-  if (dbCap.type !== type) {
-    throw new ScriptError(`Expected capability of type ${type}, got ${dbCap.type}`);
+  if (dbCap.type !== cap.type) {
+    throw new ScriptError(`Expected capability of type ${cap.type}, got ${dbCap.type}`);
   }
   // Allow wildcard params (superuser)
   if (dbCap.params && dbCap.params["*"] === true) {

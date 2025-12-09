@@ -131,6 +131,8 @@ export interface ScriptRaw<Type> {
 export interface Capability {
   readonly __brand: "Capability";
   readonly id: string;
+  readonly ownerId: number;
+  readonly type: string;
 }
 
 type UnknownUnion =
