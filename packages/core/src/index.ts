@@ -47,6 +47,7 @@ export {
   getEntities,
 } from "./repo";
 export { checkCapability } from "./runtime/utils";
+export { BaseCapability, registerCapabilityClass } from "./runtime/capabilities";
 export { KernelLib };
 
 // Scheduler is started by the application (server/client)

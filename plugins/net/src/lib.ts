@@ -1,5 +1,5 @@
+import { BaseCapability, checkCapability, registerCapabilityClass } from "@viwo/core";
 import { type Capability, ScriptError, defineFullOpcode } from "@viwo/scripting";
-import { checkCapability } from "@viwo/core";
 
 function checkNetCapability(ctx: any, cap: Capability, targetDomain: string, method: string) {
   checkCapability(cap, ctx.this.id, "net.http", (params) => {
@@ -28,6 +28,72 @@ function checkNetCapability(ctx: any, cap: Capability, targetDomain: string, met
     return true;
   });
 }
+
+export class NetHttp extends BaseCapability {
+  static override readonly type = "net.http";
+
+  async fetch(
+    urlStr: string,
+    options?: { method?: string; headers?: Record<string, string>; body?: string },
+    ctx?: any,
+  ) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("net.http.fetch: missing capability");
+    }
+
+    if (typeof urlStr !== "string") {
+      throw new ScriptError("net.http.fetch: url must be a string");
+    }
+
+    const method = (options?.method as string) || "GET";
+    const headers = (options?.headers as Record<string, string>) || {};
+    const body = (options?.body as string | undefined) ?? null;
+
+    let url: URL;
+    try {
+      url = new URL(urlStr);
+    } catch {
+      throw new ScriptError("net.http.fetch: invalid url");
+    }
+
+    // Inline adaptation of checkNetCapability logic
+    const allowedDomain = this.params["domain"] as string;
+    if (!allowedDomain) {
+      throw new ScriptError("net.http: invalid capability params");
+    }
+    if (!url.hostname.endsWith(allowedDomain)) {
+      throw new ScriptError(`net.http: domain '${url.hostname}' not allowed`);
+    }
+    const allowedMethods = this.params["methods"] as string[] | undefined;
+    if (allowedMethods) {
+      if (Array.isArray(allowedMethods) && !allowedMethods.includes(method)) {
+        throw new ScriptError(`net.http: method '${method}' not allowed`);
+      }
+    }
+
+    console.log("Calling fetch with", urlStr, method);
+    try {
+      const response = await fetch(urlStr, { body, headers, method });
+
+      const responseHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+
+      return {
+        __response: response,
+        headers: responseHeaders,
+        ok: response.ok,
+        status: response.status,
+        statusText: response.statusText,
+      };
+    } catch (error: any) {
+      throw new ScriptError(`net.http.fetch failed: ${error.message}`);
+    }
+  }
+}
+
+registerCapabilityClass(NetHttp.type, NetHttp);
 
 export interface HttpResponse {
   ok: boolean;

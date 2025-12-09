@@ -1,6 +1,21 @@
-import { type Capability, type ScriptContext, ScriptError } from "@viwo/scripting";
+import {
+  type Capability,
+  type ScriptContext,
+  ScriptError,
+  createScriptContext,
+  evaluate,
+} from "@viwo/scripting";
 import { checkCapability, deepFreeze } from "./utils";
-import { deleteEntity, getEntity, setPrototypeId, updateEntity } from "../repo";
+import {
+  createCapability,
+  deleteEntity,
+  getEntity,
+  getVerb,
+  setPrototypeId,
+  updateCapabilityOwner,
+  updateEntity,
+} from "../repo";
+import { createEntityLogic } from "./logic";
 
 export abstract class BaseCapability implements Capability {
   static readonly type: string;
@@ -89,13 +104,115 @@ export class EntityControl extends BaseCapability {
   }
 }
 
+export class SysMint extends BaseCapability {
+  static override readonly type = "sys.mint";
+
+  mint(type: string, params: object, ctx: ScriptContext) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("mint: invalid authority capability");
+    }
+
+    const allowedNs = this.params["namespace"];
+    if (typeof allowedNs !== "string") {
+      throw new ScriptError("mint: authority namespace must be string");
+    }
+    if (allowedNs !== "*" && !type.startsWith(allowedNs)) {
+      throw new ScriptError(`mint: authority namespace '${allowedNs}' does not cover '${type}'`);
+    }
+
+    const newId = createCapability(ctx.this.id, type, params as never);
+    return hydrateCapability({ id: newId, ownerId: ctx.this.id, params, type });
+  }
+
+  delegate(restrictions: object, ctx: ScriptContext) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("delegate: invalid parent capability");
+    }
+    const newParams = { ...this.params, ...(restrictions as object) };
+    const newId = createCapability(ctx.this.id, this.type, newParams);
+
+    return hydrateCapability({
+      id: newId,
+      ownerId: ctx.this.id,
+      params: newParams,
+      type: this.type,
+    });
+  }
+
+  give(targetId: number, ctx: ScriptContext) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("give: invalid capability");
+    }
+    updateCapabilityOwner(this.id, targetId);
+    return null;
+  }
+}
+
+export class SysCreate extends BaseCapability {
+  static override readonly type = "sys.create";
+
+  create(data: object, ctx: ScriptContext) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("sys.create: capability not owned by caller");
+    }
+    return createEntityLogic(this, data, ctx);
+  }
+}
+
+export class SysSudo extends BaseCapability {
+  static override readonly type = "sys.sudo";
+
+  exec(target: any, verb: string, args: any[], ctx: ScriptContext) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("sys.sudo: capability not owned by caller");
+    }
+
+    if (!target || !("id" in target) || typeof target.id !== "number") {
+      throw new ScriptError(`sys.sudo.exec: target must be an entity`);
+    }
+
+    const targetVerb = getVerb(target.id, verb);
+    if (!targetVerb) {
+      throw new ScriptError(`sys.sudo.exec: verb '${verb}' not found on ${target.id}`);
+    }
+
+    const callerId = ctx.caller.id;
+    const originalSend = ctx.send;
+
+    return evaluate(
+      targetVerb.code,
+      createScriptContext({
+        args,
+        caller: target, // Impersonation
+        ops: ctx.ops,
+        stack: [...(ctx.stack ?? []), { args, name: `sudo:${verb}` }],
+        this: target,
+        warnings: ctx.warnings,
+        ...(originalSend
+          ? {
+              send: (type: string, payload: unknown) => {
+                if (callerId === 4) {
+                  originalSend("forward", {
+                    payload,
+                    target: target.id,
+                    type,
+                  });
+                } else {
+                  originalSend(type, payload);
+                }
+              },
+            }
+          : {}),
+      }),
+    );
+  }
+}
+
 // Registry for Hydration
 const CAPABILITY_CLASSES: Record<
   string,
   new (id: string, ownerId: number, params: any) => BaseCapability
-> = {
-  [EntityControl.type]: EntityControl,
-};
+> = {};
 
 export function registerCapabilityClass(
   type: string,
@@ -144,3 +261,8 @@ export function hydrateCapability(data: {
   // We still need to return a valid Capability object (with __brand)
   return { ...data, __brand: "Capability" } as any;
 }
+
+registerCapabilityClass(EntityControl.type, EntityControl);
+registerCapabilityClass(SysMint.type, SysMint);
+registerCapabilityClass(SysCreate.type, SysCreate);
+registerCapabilityClass(SysSudo.type, SysSudo);
