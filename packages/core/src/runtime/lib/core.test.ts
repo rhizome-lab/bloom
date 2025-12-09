@@ -46,7 +46,15 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
 
   test("destroy", () => {
     const id = createEntity({});
-    evaluate(CoreLib.destroy(KernelLib.getCapability("entity.control"), { id }), ctx);
+    // evaluate(CoreLib.destroy(KernelLib.getCapability("entity.control"), { id }), ctx);
+    evaluate(
+      StdLib.callMethod(
+        KernelLib.getCapability("entity.control", { target_id: id }),
+        "destroy",
+        ListLib.listNew(id),
+      ),
+      ctx,
+    );
     expect(getEntity(id)).toBeNull();
   });
 
@@ -93,10 +101,14 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
     expect(evaluate(CoreLib.entity(id), ctx)).toEqual({ id, prototype_id: null });
   });
 
-  test("set_entity", () => {
+  test("set_entity (via EntityControl.update)", () => {
     // Should return the merged entity object
     const result = evaluate(
-      CoreLib.setEntity(KernelLib.getCapability("entity.control"), { id }, { name: "updated" }),
+      StdLib.callMethod(
+        KernelLib.getCapability("entity.control", { target_id: id }),
+        "update",
+        ListLib.listNew(id, { name: "updated" }),
+      ),
       ctx,
     ) as unknown as { id: number; name: string };
     expect(result.name).toBe("updated");
@@ -105,10 +117,14 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
     // Should update in DB
     expect(getEntity(id)?.["name"]).toBe("updated");
 
-    // Should fail if id is in updates
+    // Should fail if id is in updates (caught by capability class logic)
     expect(() =>
       evaluate(
-        CoreLib.setEntity(KernelLib.getCapability("entity.control"), { id }, { id: 123 }),
+        StdLib.callMethod(
+          KernelLib.getCapability("entity.control", { target_id: id }),
+          "update",
+          ListLib.listNew(id, { id: 123 }),
+        ),
         ctx,
       ),
     ).toThrow();
@@ -119,7 +135,14 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
   });
 
   test("set_prototype", () => {
-    evaluate(CoreLib.setPrototype(KernelLib.getCapability("entity.control"), { id }, 2), ctx);
+    evaluate(
+      StdLib.callMethod(
+        KernelLib.getCapability("entity.control", { target_id: id }),
+        "setPrototype",
+        ListLib.listNew(id, 2),
+      ),
+      ctx,
+    );
     expect(getPrototypeId(id)).toBe(2);
   });
 

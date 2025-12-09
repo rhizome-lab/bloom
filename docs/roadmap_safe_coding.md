@@ -14,7 +14,11 @@ These steps can be implemented immediately on top of the current engine to stric
 
 ### Current Status (Dec 2025)
 
-- **Typed Facade**: **Implemented**. `EntityControl` has been implemented with automated proxy-based validation (`createCapabilityProxy`), ensuring 100% type safety and runtime security without manual checks in methods.
+- **Typed Facade**:- **Deprecated**: `WrappedEntity` (Removed/Replaced by Capability Classes)
+- **Implemented**: `std.call_method` (Accessing Capability Methods)
+- **Implemented**: Capability Classes (e.g. `EntityControl` for `update`, `destroy`, `setPrototype`)
+- **Protected**: `create` (Requires `sys.create`), `sudo` (Requires `sys.sudo`)
+- **Removed**: Raw `destroy`, `set_entity`, `set_prototype` opcodes (Now handled by `EntityControl`), ensuring 100% type safety and runtime security without manual checks in methods.
 - **Strict Type Generation**: In Progress. `generated_types.ts` is being generated with interfaces for Entities and Verbs.
 - **Standard Library**:
   - ✅ `std.int`, `std.float`, `std.number` added for safe parsing.
@@ -28,6 +32,19 @@ ViwoScript is designed to be language-agnostic. The strategies below distinguish
 - **Kernel:** Remains low-level, opcode-based, and secure. Validated by the engine.
 - **SDK:** Provides the "Typed Facade". For TypeScript, this means **Capability Classes**.
 - **Goal:** The AI/Human writes against the SDK. The SDK talks to the Kernel.
+
+### Phase 2: Capability Classes (Status: Implemented)
+
+We have moved away from raw opcodes for sensitive operations. Instead, we use **Capability Classes** which expose methods via `std.call_method`.
+
+- **EntityControl**: Wraps `target_id` or `*` wildcard.
+  - `update(id, props)`: Replaces `set_entity`. Checks ownership.
+  - `destroy(id)`: Replaces `destroy`. Checks ownership.
+  - `setPrototype(id, protoId)`: Replaces `set_prototype`. Checks ownership.
+
+Raw opcodes `destroy`, `set_entity`, and `set_prototype` have been **removed** from the runtime.
+
+### Phase 3: Typed Facade & Validation (Status: In Progress)
 
 ### 1. The "Typed Facade" (Capability Classes)
 

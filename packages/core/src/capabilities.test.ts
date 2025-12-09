@@ -1,6 +1,6 @@
 import * as CoreLib from "./runtime/lib/core";
 import * as KernelLib from "./runtime/lib/kernel";
-import { ObjectLib, createScriptContext, evaluate } from "@viwo/scripting";
+import { ListLib, ObjectLib, StdLib, createScriptContext, evaluate } from "@viwo/scripting";
 import { beforeEach, describe, expect, test } from "bun:test";
 import { createCapability, createEntity, getCapabilities, getEntity } from "./repo";
 import type { Entity } from "@viwo/shared/jsonrpc";
@@ -90,10 +90,13 @@ describe("Capability Security", () => {
 
     try {
       await evaluate(
-        CoreLib.setEntity(
+        StdLib.callMethod(
           ObjectLib.objNew(["name", "Fail"]), // Invalid cap
-          CoreLib.entity(targetId),
-          ObjectLib.objNew(), // updates
+          "update",
+          ListLib.listNew(
+            targetId,
+            ObjectLib.objNew(), // updates
+          ),
         ),
         ctx,
       );
@@ -108,10 +111,10 @@ describe("Capability Security", () => {
     const targetId = createEntity({ name: "Target" });
 
     await evaluate(
-      CoreLib.setEntity(
+      StdLib.callMethod(
         KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true])),
-        CoreLib.entity(targetId),
-        ObjectLib.objNew(["name", "Modified"]),
+        "update",
+        ListLib.listNew(targetId, ObjectLib.objNew(["name", "Modified"])),
       ),
       ctx,
     );

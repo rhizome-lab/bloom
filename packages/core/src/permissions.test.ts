@@ -1,5 +1,12 @@
 import * as KernelLib from "./runtime/lib/kernel";
-import { BooleanLib, ObjectLib, StdLib, createScriptContext, evaluate } from "@viwo/scripting";
+import {
+  BooleanLib,
+  ListLib,
+  ObjectLib,
+  StdLib,
+  createScriptContext,
+  evaluate,
+} from "@viwo/scripting";
 import { CoreLib, db } from ".";
 import { beforeEach, describe, expect, test } from "bun:test";
 import { createCapability, createEntity, getEntity } from "./repo";
@@ -40,7 +47,7 @@ describe("Capability Permissions", () => {
 
   const tryRename = (actor: Entity, target: Entity, newName: string) => {
     // Script to rename entity:
-    // set_entity(get_capability("entity.control", { target_id: target.id }), target, { name: newName })
+    // std.callMethod(get_capability("entity.control", { target_id: target.id }), "update", [target.id, { name: newName }])
     const script = StdLib.seq(
       StdLib.let(
         "cap",
@@ -51,10 +58,10 @@ describe("Capability Permissions", () => {
         BooleanLib.not(StdLib.var("cap")),
         StdLib.set("cap", KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true]))),
       ),
-      CoreLib.setEntity(
+      StdLib.callMethod(
         StdLib.var("cap"),
-        CoreLib.entity(target.id),
-        ObjectLib.objNew(["name", newName]),
+        "update",
+        ListLib.listNew(target.id, ObjectLib.objNew(["name", newName])),
       ),
     );
 

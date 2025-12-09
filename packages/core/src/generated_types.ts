@@ -228,22 +228,6 @@ declare global {
    */
   function schedule(verb: string, args: any[], delay: number): null;
   /**
-   * Update entity properties (requires entity.control)
-   *
-   * @param capability Capability to use.
-   * @param target The entity to update.
-   * @param updates The properties to update.
-   */
-  function set_entity(capability: Capability | null, target: Entity, updates: object): Entity;
-  /**
-   * Set entity prototype (requires entity.control)
-   *
-   * @param capability Capability to use.
-   * @param target The entity to set the prototype of.
-   * @param prototypeId The ID of the new prototype.
-   */
-  function set_prototype(capability: Capability | null, target: Entity, prototypeId: number): null;
-  /**
    * Execute verb as another entity (requires sys.sudo)
    *
    * @param capability Capability to use.

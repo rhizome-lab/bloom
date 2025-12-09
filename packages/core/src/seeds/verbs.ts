@@ -85,7 +85,7 @@ export function entity_base_on_enter(this: Entity) {
     list.push(contents, mover.id);
     list.push(contents, mover.id);
     // this["contents"] = contents;
-    set_entity(cap, this, { contents });
+    std.call_method(cap, "update", [this.id, { contents: contents }]);
   } else {
     send("message", "The room refuses you.");
   }
@@ -104,7 +104,8 @@ export function entity_base_on_leave(this: Entity) {
     const contents = (this["contents"] as number[]) ?? [];
     const newContents = list.filter(contents, (id: number) => id !== mover.id);
     // this["contents"] = newContents;
-    set_entity(cap, this, { contents: newContents });
+    // this["contents"] = newContents;
+    std.call_method(cap, "update", [this.id, { contents: newContents }]);
   } else {
     send("message", "BASE ROOM REFUSES YOU");
   }
@@ -149,7 +150,8 @@ export function entity_base_teleport() {
 
         if (selfCap) {
           // mover["location"] = destId;
-          set_entity(selfCap, mover, { location: destId });
+          // mover["location"] = destId;
+          std.call_method(selfCap, "update", [mover.id, { location: destId }]);
         } else {
           send("message", "You cannot move yourself.");
         }
@@ -256,13 +258,14 @@ export function player_dig() {
       // We can't do that with a static file unless we do a replace after extraction.
       // Let's use a placeholder and replace it in seed.ts.
 
-      set_prototype(controlCap, entity(newRoomId), ENTITY_BASE_ID_PLACEHOLDER);
+      std.call_method(controlCap, "setPrototype", [newRoomId, ENTITY_BASE_ID_PLACEHOLDER]);
 
       const currentRoom = entity(std.caller()["location"] as number);
       const exits = (currentRoom["exits"] as number[]) ?? [];
       list.push(exits, exitId);
       // currentRoom["exits"] = exits;
-      set_entity(controlCap, currentRoom, { exits });
+      // currentRoom["exits"] = exits;
+      std.call_method(controlCap, "update", [currentRoom.id, { exits }]);
 
       // Back exit
       const backExitData: Record<string, any> = {};
@@ -292,7 +295,8 @@ export function player_dig() {
       });
       if (newRoomCap) {
         // newRoom["exits"] = newExits;
-        set_entity(newRoomCap, newRoom, { exits: newExits });
+        // newRoom["exits"] = newExits;
+        std.call_method(newRoomCap, "update", [newRoom.id, { exits: newExits }]);
       }
 
       send("message", "You dig a new room.");
@@ -321,21 +325,23 @@ export function player_create() {
       itemData["name"] = name;
       itemData["location"] = std.caller()["location"];
       const itemId = create(createCap, itemData);
-      set_prototype(controlCap, entity(itemId), ENTITY_BASE_ID_PLACEHOLDER);
+      std.call_method(controlCap, "setPrototype", [itemId, ENTITY_BASE_ID_PLACEHOLDER]);
 
       const room = entity(std.caller()["location"] as number);
       const contents = (room["contents"] as number[]) ?? [];
       list.push(contents, itemId);
       // room["contents"] = contents;
-      set_entity(controlCap, room, { contents });
+      // room["contents"] = contents;
+      std.call_method(controlCap, "update", [room.id, { contents }]);
 
       send("message", `You create ${name}.`);
       call(std.caller(), "look");
       return itemId;
     }
     send("message", "You do not have permission to create here.");
+    return null;
   }
-  return;
+  return null;
 }
 
 export function player_set(this: Entity) {
@@ -354,7 +360,7 @@ export function player_set(this: Entity) {
         controlCap = get_capability("entity.control", { "*": true });
       }
       if (controlCap) {
-        set_entity(controlCap, entity(targetId), { [propName]: value });
+        std.call_method(controlCap, "update", [targetId, { [propName]: value }]);
         send("message", "Property set.");
       } else {
         send("message", "You do not have permission to modify this object.");
@@ -394,7 +400,11 @@ export function mood_ring_update_color(this: Entity) {
   const cap = get_capability("entity.control", { target_id: this.id });
   if (cap) {
     // this["adjectives"] = [`color:${newColor}`, "material:silver"];
-    set_entity(cap, this, { adjectives: [`color:${newColor}`, "material:silver"] });
+    // this["adjectives"] = [`color:${newColor}`, "material:silver"];
+    std.call_method(cap, "update", [
+      this.id,
+      { adjectives: [`color:${newColor}`, "material:silver"] },
+    ]);
   }
   schedule("update_color", [], 5000);
 }
@@ -511,13 +521,15 @@ export function hotel_room_on_leave(this: Entity) {
     const contents = (this["contents"] as number[]) ?? [];
     const newContents = list.filter(contents, (id: number) => id !== mover.id);
     this["contents"] = newContents;
-    set_entity(cap, this, { contents: newContents });
+    this["contents"] = newContents;
+    std.call_method(cap, "update", [this.id, { contents: newContents }]);
 
     // Auto-lock logic
     const occupants = list.len(newContents);
     if (occupants === 0) {
       // Destroy room
-      call(this, "destroy", this);
+      // Destroy room
+      std.call_method(cap, "destroy", [this.id]);
     }
   } else {
     send("message", "The room refuses to let you go.");
@@ -532,9 +544,11 @@ export function hotel_lobby_room_vacated() {
 export function elevator_push(this: Entity) {
   const floor = std.arg(0);
   // this["current_floor"] = floor;
-  set_entity(get_capability("entity.control", { target_id: this.id })!, this, {
-    current_floor: floor,
-  });
+  // this["current_floor"] = floor;
+  const controlCap = get_capability("entity.control", { target_id: this.id });
+  if (controlCap) {
+    std.call_method(controlCap, "update", [this.id, { current_floor: floor }]);
+  }
   call(std.caller(), "tell", `The elevator hums and moves to floor ${floor}.`);
 }
 
@@ -559,23 +573,23 @@ export function elevator_go(this: Entity) {
         lobbyData["location"] = ENTITY_BASE_ID_PLACEHOLDER; // Void
         lobbyData["description"] = `The lobby for the ${currentFloor}th floor.`;
         const lobbyId = create(createCap, lobbyData);
-        set_prototype(createCap, entity(lobbyId), ENTITY_BASE_ID_PLACEHOLDER);
+        std.call_method(createCap, "setPrototype", [lobbyId, ENTITY_BASE_ID_PLACEHOLDER]);
 
         // 2. Create West Wing
         const westData: Record<string, any> = {};
         westData["name"] = `Floor ${currentFloor} West Wing`;
-        westData["location"] = ENTITY_BASE_ID_PLACEHOLDER;
+        westData["location"] = lobbyId;
         westData["description"] = `The West Wing of floor ${currentFloor}.`;
         const westId = create(createCap, westData);
-        set_prototype(createCap, entity(westId), WING_PROTO_ID_PLACEHOLDER);
+        std.call_method(createCap, "setPrototype", [westId, WING_PROTO_ID_PLACEHOLDER]);
 
         // 3. Create East Wing
         const eastData: Record<string, any> = {};
         eastData["name"] = `Floor ${currentFloor} East Wing`;
-        eastData["location"] = ENTITY_BASE_ID_PLACEHOLDER;
+        eastData["location"] = lobbyId;
         eastData["description"] = `The East Wing of floor ${currentFloor}.`;
         const eastId = create(createCap, eastData);
-        set_prototype(createCap, entity(eastId), WING_PROTO_ID_PLACEHOLDER);
+        std.call_method(createCap, "setPrototype", [eastId, WING_PROTO_ID_PLACEHOLDER]);
 
         // 4. Link Lobby -> West
         const westExitData: Record<string, any> = {};
@@ -618,33 +632,30 @@ export function elevator_go(this: Entity) {
         const elevatorExitId = create(createCap, elevatorExitData);
 
         // Update Lobby Exits
-        const lobby = entity(lobbyId);
-        // lobby["exits"] = [westExitId, eastExitId, elevatorExitId];
+        // lobby variable unused now
         // We (Elevator) have control of Lobby because we created it.
         const lobbyCap = get_capability("entity.control", {
           target_id: lobbyId,
         });
-        set_entity(lobbyCap, lobby, { exits: [westExitId, eastExitId, elevatorExitId] });
+        std.call_method(lobbyCap, "update", [
+          lobbyId,
+          { exits: [westExitId, eastExitId, elevatorExitId] },
+        ]);
 
-        // Update Wings Exits
-        const westWing = entity(westId);
-        // westWing["exits"] = [westBackExitId];
         const westCap = get_capability("entity.control", { target_id: westId });
-        set_entity(westCap, westWing, { exits: [westBackExitId] });
+        std.call_method(westCap, "update", [westId, { exits: [westBackExitId] }]);
 
-        const eastWing = entity(eastId);
-        // eastWing["exits"] = [eastBackExitId];
         const eastCap = get_capability("entity.control", { target_id: eastId });
-        set_entity(eastCap, eastWing, { exits: [eastBackExitId] });
+        std.call_method(eastCap, "update", [eastId, { exits: [eastBackExitId] }]);
 
         destId = lobbyId;
         floors[`${currentFloor}`] = destId;
         // this["floors"] = floors;
-        set_entity(controlCap, this, { floors });
+        std.call_method(controlCap, "update", [this.id, { floors }]);
 
         // Store wing IDs on the lobby so we can find them later for destruction
         // lobby["wings"] = [westId, eastId];
-        set_entity(lobbyCap, lobby, { wings: [westId, eastId] });
+        std.call_method(lobbyCap, "update", [lobbyId, { wings: [westId, eastId] }]);
       } else {
         send("message", "Elevator malfunction: Cannot create floor.");
         return;
@@ -703,7 +714,7 @@ export function elevator_on_enter(this: Entity) {
       }
     }
     // this["floors"] = floors;
-    set_entity(controlCap, this, { floors });
+    std.call_method(controlCap, "update", [this.id, { floors }]);
   }
 }
 
@@ -714,7 +725,7 @@ export function wing_on_enter(this: Entity) {
     const contents = (this["contents"] as number[]) ?? [];
     list.push(contents, mover.id);
     // this["contents"] = contents;
-    set_entity(cap, this, { contents });
+    std.call_method(cap, "update", [this.id, { contents: contents }]);
     call(std.caller(), "tell", "You enter the hallway. It smells of carpet cleaner.");
   } else {
     send("message", "The wing is closed for cleaning.");
@@ -768,7 +779,8 @@ export function wing_enter_room(this: Entity) {
         owner: undefined,
         room_number: roomNumber,
       });
-      set_prototype(createCap, entity(roomId), HOTEL_ROOM_PROTO_ID_PLACEHOLDER);
+      std.call_method(createCap, "setPrototype", [roomId, HOTEL_ROOM_PROTO_ID_PLACEHOLDER]);
+      std.call_method(createCap, "setPrototype", [roomId, HOTEL_ROOM_PROTO_ID_PLACEHOLDER]);
 
       // Link Room -> Wing (out)
       const outExitId = create(createCap, {
@@ -777,11 +789,11 @@ export function wing_enter_room(this: Entity) {
         location: roomId,
         name: "out",
       });
-
-      const room = entity(roomId);
+      // room unused
+      // const room = entity(roomId);
       // room["exits"] = [outExitId];
       const roomCap = get_capability("entity.control", { target_id: roomId });
-      set_entity(roomCap, room, { exits: [outExitId] });
+      std.call_method(roomCap, "update", [roomId, { exits: [outExitId] }]);
 
       // Add 'on_leave' verb
       // Again, we need a prototype or a way to add verbs.
@@ -790,7 +802,7 @@ export function wing_enter_room(this: Entity) {
 
       // Add to Wing contents
       list.push(contents, roomId);
-      set_entity(controlCap, this, { contents: contents });
+      std.call_method(controlCap, "update", [this.id, { contents: contents }]);
     } else {
       send("message", "Cannot create room: Permission denied.");
       return;
@@ -983,7 +995,8 @@ export function combat_next_turn(this: Entity) {
     if (index >= list.len(order)) {
       index = 0;
       const round = session["round"] as number;
-      session["round"] = round + 1;
+      // session["round"] = round + 1;
+      std.call_method(controlCap, "update", [session.id, { round: round + 1 }]);
     }
 
     const candidateId = order[index]!;
@@ -999,7 +1012,7 @@ export function combat_next_turn(this: Entity) {
 
     attempts += 1;
   }
-  set_entity(controlCap, session, { current_turn_index: index });
+  std.call_method(controlCap, "update", [session.id, { current_turn_index: index }]);
   return nextId;
 }
 
@@ -1031,7 +1044,6 @@ export function combat_apply_status(this: Entity) {
   }
 
   // Update target
-  // We need to mutate the dictionary. `effects` is a reference so modifying it works locally,
   // but we need to set it back on the entity.
   effects[effectKey] = newEffect;
 
@@ -1041,7 +1053,7 @@ export function combat_apply_status(this: Entity) {
   }
 
   if (controlCap) {
-    set_entity(controlCap, target, { status_effects: effects });
+    std.call_method(controlCap, "update", [target.id, { status_effects: effects }]);
 
     // Hook
     // Assuming all effects inherit from Effect Base and thus have the verbs
@@ -1097,7 +1109,7 @@ export function combat_tick_status(this: Entity) {
   }
 
   // Save changes
-  set_entity(controlCap, target, { status_effects: effects });
+  std.call_method(controlCap, "update", [target.id, { status_effects: effects }]);
 
   return canAct;
 }
@@ -1139,7 +1151,7 @@ export function combat_attack(this: Entity) {
   }
 
   if (targetCap) {
-    set_entity(targetCap, target, { hp: newHp });
+    std.call_method(targetCap, "update", [target.id, { hp: newHp }]);
 
     call(attacker, "tell", `You attack ${defProps["name"]} for ${damage} damage!`);
     call(target, "tell", `${attProps["name"]} attacks you for ${damage} damage!`);
@@ -1197,7 +1209,7 @@ export function combat_attack_elemental(this: Entity) {
   }
 
   if (targetCap) {
-    set_entity(targetCap, target, { hp: newHp });
+    std.call_method(targetCap, "update", [target.id, { hp: newHp }]);
 
     let msg = `You attack ${defProps["name"]} with ${element} for ${finalDamage} damage!`;
     if (resMod > 1) {
@@ -1275,7 +1287,7 @@ export function poison_on_tick(this: Entity) {
   }
 
   if (controlCap) {
-    set_entity(controlCap, target, { hp: newHp });
+    std.call_method(controlCap, "update", [target.id, { hp: newHp }]);
     call(target, "tell", `You take ${magnitude} poison damage!`);
 
     if (newHp <= 0) {
@@ -1307,7 +1319,7 @@ export function regen_on_tick(this: Entity) {
   }
 
   if (controlCap) {
-    set_entity(controlCap, target, { hp: newHp });
+    std.call_method(controlCap, "update", [target.id, { hp: newHp }]);
     call(target, "tell", `You regenerate ${magnitude} HP.`);
   }
 
@@ -1363,7 +1375,7 @@ export function player_quest_start() {
   const rootId = structure.id;
   questState.tasks[rootId] = { status: "active" };
   quests[String(questId)] = questState;
-  set_entity(controlCap, player, { quests });
+  std.call_method(controlCap, "update", [player.id, { quests }]);
   send("message", `Quest Started: ${structure.description || questEnt["name"]}`);
 
   // If root is a container (parallel/sequence) checking its children might happen in update loop
@@ -1411,7 +1423,7 @@ export function player_quest_update() {
   // Save state before recursion to ensure consistency?
   // Actually recursion calls 'quest_update' which fetches state again.
   // So we MUST save state now.
-  set_entity(controlCap, player, { quests });
+  std.call_method(controlCap, "update", [player.id, { quests }]);
 
   const questEnt = entity(questId);
   const structure = call(questEnt, "get_structure") as any;
@@ -1512,7 +1524,7 @@ export function player_quest_update() {
       if (taskId === structure.id) {
         qState.status = "completed";
         qState.completed_at = time.to_timestamp(time.now());
-        set_entity(controlCap, player, { quests }); // Need to save final Quest Level status
+        std.call_method(controlCap, "update", [player.id, { quests }]); // Need to save final Quest Level status
         send("message", `Quest Completed: ${structure.description || questEnt["name"]}!`);
       }
     }

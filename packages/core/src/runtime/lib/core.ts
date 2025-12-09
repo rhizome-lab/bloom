@@ -7,13 +7,8 @@ import {
 } from "@viwo/scripting";
 import { type Verb, getEntity, getPrototypeId, getVerb, getVerbs } from "../../repo";
 import { checkCapability, resolveProps } from "../utils";
-import {
-  createEntityLogic,
-  destroyEntityLogic,
-  setPrototypeLogic,
-  updateEntityLogic,
-} from "../logic";
-import type { Entity } from "@viwo/shared/jsonrpc";
+import { type Entity } from "@viwo/shared/jsonrpc";
+import { createEntityLogic } from "../logic";
 import { hydrate } from "../hydration";
 import { scheduler } from "../../scheduler";
 
@@ -38,32 +33,6 @@ export const create = defineFullOpcode<[Capability | null, object], number>("cre
     slots: [
       { name: "Cap", type: "block" },
       { name: "Data", type: "block" },
-    ],
-  },
-});
-
-/** Destroys an entity. */
-export const destroy = defineFullOpcode<[Capability | null, Entity], null>("destroy", {
-  handler: ([capability, target], ctx) => {
-    if (!target || typeof (target as Entity).id !== "number") {
-      throw new ScriptError(`destroy: target must be an entity, got ${JSON.stringify(target)}`);
-    }
-    destroyEntityLogic(capability, (target as Entity).id, ctx);
-    return null;
-  },
-  metadata: {
-    category: "action",
-    description: "Destroy an entity (requires entity.control)",
-    hidden: true,
-    label: "Destroy",
-    parameters: [
-      { description: "Capability to use.", name: "capability", type: "Capability | null" },
-      { description: "The entity to destroy.", name: "target", type: "Entity" },
-    ],
-    returnType: "null",
-    slots: [
-      { name: "Cap", type: "block" },
-      { name: "Target", type: "block" },
     ],
   },
 });
@@ -192,31 +161,6 @@ export const entity = defineFullOpcode<[number], Entity>("entity", {
   },
 });
 
-/** Updates one or more entities' properties transactionally. */
-export const setEntity = defineFullOpcode<[Capability | null, Entity, object], Entity>(
-  "set_entity",
-  {
-    handler: ([capability, entity, updates], ctx) =>
-      updateEntityLogic(capability, entity, updates, ctx),
-    metadata: {
-      category: "action",
-      description: "Update entity properties (requires entity.control)",
-      label: "Update Entity",
-      parameters: [
-        { description: "Capability to use.", name: "capability", type: "Capability | null" },
-        { description: "The entity to update.", name: "target", type: "Entity" },
-        { description: "The properties to update.", name: "updates", type: "object" },
-      ],
-      returnType: "Entity",
-      slots: [
-        { name: "Cap", type: "block" },
-        { name: "Entity", type: "block" },
-        { name: "Updates", type: "block" },
-      ],
-    },
-  },
-);
-
 /**
  * Gets the prototype ID of an entity.
  */
@@ -238,32 +182,6 @@ export const getPrototype = defineFullOpcode<[Entity], number | null>("get_proto
     slots: [{ name: "Entity", type: "block" }],
   },
 });
-
-export const setPrototype = defineFullOpcode<[Capability | null, Entity, number | null], null>(
-  "set_prototype",
-  {
-    handler: ([capability, entity, protoId], ctx) => {
-      setPrototypeLogic(capability, entity, protoId, ctx);
-      return null;
-    },
-    metadata: {
-      category: "action",
-      description: "Set entity prototype (requires entity.control)",
-      label: "Set Prototype",
-      parameters: [
-        { description: "Capability to use.", name: "capability", type: "Capability | null" },
-        { description: "The entity to set the prototype of.", name: "target", type: "Entity" },
-        { description: "The ID of the new prototype.", name: "prototypeId", type: "number" },
-      ],
-      returnType: "null",
-      slots: [
-        { name: "Cap", type: "block" },
-        { name: "Entity", type: "block" },
-        { name: "PrototypeID", type: "number" },
-      ],
-    },
-  },
-);
 
 /** Resolves all properties of an entity, including dynamic ones. */
 export const resolve_props = defineFullOpcode<[Entity], Entity>("resolve_props", {
