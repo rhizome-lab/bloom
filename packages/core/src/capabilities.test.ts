@@ -1,6 +1,5 @@
-import * as CoreLib from "./runtime/lib/core";
 import * as KernelLib from "./runtime/lib/kernel";
-import { ListLib, ObjectLib, StdLib, createScriptContext, evaluate } from "@viwo/scripting";
+import { ObjectLib, StdLib, createScriptContext, evaluate } from "@viwo/scripting";
 import { beforeEach, describe, expect, test } from "bun:test";
 import { createCapability, createEntity, getCapabilities, getEntity } from "./repo";
 import type { Entity } from "@viwo/shared/jsonrpc";
@@ -67,7 +66,7 @@ describe("Capability Security", () => {
     // expect(async () => await evaluate(...)).toThrow() works in bun test?
 
     try {
-      await evaluate(CoreLib.create(null, ObjectLib.objNew(["name", "Fail"])), ctx);
+      await evaluate(StdLib.callMethod(null, "create", ObjectLib.objNew(["name", "Fail"])), ctx);
       expect(true).toBe(false); // Should not reach here
     } catch (error) {
       expect(error).toBeDefined();
@@ -78,7 +77,11 @@ describe("Capability Security", () => {
     // Admin creates entity
     const ctx = createScriptContext({ args: [], caller: admin, ops: GameOpcodes, this: admin });
     const newId = await evaluate(
-      CoreLib.create(KernelLib.getCapability("sys.create"), ObjectLib.objNew(["name", "Success"])),
+      StdLib.callMethod(
+        KernelLib.getCapability("sys.create"),
+        "create",
+        ObjectLib.objNew(["name", "Success"]),
+      ),
       ctx,
     );
     expect(typeof newId).toBe("number");

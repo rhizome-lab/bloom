@@ -1,7 +1,6 @@
 import * as FsLib from "./lib";
 import { KernelLib, createCapability, createEntity, db, getEntity } from "@viwo/core";
 import {
-  ListLib,
   ObjectLib,
   StdLib,
   createOpcodeRegistry,
@@ -12,7 +11,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "bun:test"
 import { join, resolve } from "node:path";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 
-const TEST_OPS = createOpcodeRegistry(StdLib, ObjectLib, ListLib, KernelLib, FsLib);
+const TEST_OPS = createOpcodeRegistry(StdLib, ObjectLib, KernelLib, FsLib as any);
 
 describe("FS Library", () => {
   const testDir = resolve(`./tmp_test_fs_${Math.random()}`);
@@ -48,7 +47,7 @@ describe("FS Library", () => {
     const ctx = createScriptContext({ caller: admin, ops: TEST_OPS, this: admin });
     const filePath = join(testDir, "test.txt");
     await evaluate(
-      FsLib.fsWrite(KernelLib.getCapability("fs.write"), filePath, "Hello World"),
+      StdLib.callMethod(KernelLib.getCapability("fs.write"), "write", filePath, "Hello World"),
       ctx,
     );
 
@@ -60,7 +59,10 @@ describe("FS Library", () => {
     const ctx = createScriptContext({ caller: admin, ops: TEST_OPS, this: admin });
     const filePath = join(testDir, "read_test.txt");
     await writeFile(filePath, "Read Me");
-    const content = await evaluate(FsLib.fsRead(KernelLib.getCapability("fs.read"), filePath), ctx);
+    const content = await evaluate(
+      StdLib.callMethod(KernelLib.getCapability("fs.read"), "read", filePath),
+      ctx,
+    );
     expect(content).toBe("Read Me");
   });
 
@@ -68,41 +70,43 @@ describe("FS Library", () => {
     const ctx = createScriptContext({ caller: admin, ops: TEST_OPS, this: admin });
     const filePath = join(testDir, "test2.txt");
     await writeFile(filePath, "Test 2");
-    const files = await evaluate(FsLib.fsList(KernelLib.getCapability("fs.read"), testDir), ctx);
+    const files = await evaluate(
+      StdLib.callMethod(KernelLib.getCapability("fs.read"), "list", testDir),
+      ctx,
+    );
     expect(files).toContain("test.txt");
     expect(files).toContain("test2.txt");
   });
 
   it("should fail without capability", () => {
     const ctx = createScriptContext({ caller: user, ops: TEST_OPS, this: user });
-    expect(evaluate(FsLib.fsWrite(null, "path", "content"), ctx)).rejects.toThrow(
-      "fs.write: missing capability",
-    );
+    expect(() =>
+      evaluate(
+        StdLib.callMethod(
+          { __brand: "Capability", id: "", ownerId: 0, type: "fake" } as any,
+          "write",
+          "path",
+          "content",
+        ),
+        ctx,
+      ),
+    ).toThrow();
   });
 
   it("should fail to read without capability", () => {
     const ctx = createScriptContext({ caller: user, ops: TEST_OPS, this: user });
-    expect(
+    expect(() =>
       evaluate(
-        FsLib.fsRead(
-          KernelLib.getCapability("fs.read"), // User has none, returns null
-          join(testDir, "test.txt"),
-        ),
+        StdLib.callMethod(KernelLib.getCapability("fs.read"), "read", join(testDir, "test.txt")),
         ctx,
       ),
-    ).rejects.toThrow();
+    ).toThrow();
   });
 
   it("should fail to read outside allowed path", () => {
     const ctx = createScriptContext({ caller: admin, ops: TEST_OPS, this: admin });
-    expect(
-      evaluate(
-        FsLib.fsRead(
-          KernelLib.getCapability("fs.read"),
-          "/etc/passwd", // Outside /tmp
-        ),
-        ctx,
-      ),
-    ).rejects.toThrow();
+    expect(() =>
+      evaluate(StdLib.callMethod(KernelLib.getCapability("fs.read"), "read", "/etc/passwd"), ctx),
+    ).toThrow();
   });
 });

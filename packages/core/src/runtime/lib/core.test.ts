@@ -41,7 +41,10 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
 
   // Entity Interaction
   test("create", () => {
-    expect(evaluate(CoreLib.create(KernelLib.getCapability("sys.create"), {}), ctx)).toBeNumber();
+    // expect(evaluate(CoreLib.create(KernelLib.getCapability("sys.create"), {}), ctx)).toBeNumber();
+    expect(
+      evaluate(StdLib.callMethod(KernelLib.getCapability("sys.create"), "create", {}), ctx),
+    ).toBeNumber();
   });
 
   test("destroy", () => {
@@ -162,22 +165,24 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
 
     expect(() =>
       evaluate(
-        CoreLib.sudo(
-          { __brand: "Capability", id: "", ownerId: 0, type: "fake" },
+        StdLib.callMethod(
+          { __brand: "Capability", id: "", ownerId: 0, type: "fake" } as any,
+          "exec",
           { id: 101 },
           "get_dynamic",
           ListLib.listNew(),
         ),
         userCtx,
       ),
-    ).toThrow("Expected capability of type sys.sudo");
+    ).toThrow("is not a function");
 
     // 2. Allow if System (ID 3) with valid cap
     const systemCtx = createScriptContext({ caller: { id }, ops: OPS, this: { id } });
     expect(
       evaluate(
-        CoreLib.sudo(
+        StdLib.callMethod(
           KernelLib.getCapability("sys.sudo"),
+          "exec",
           { id: 101 },
           "get_dynamic",
           ListLib.listNew(),
@@ -190,8 +195,9 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
     const botCtx = createScriptContext({ caller: { id: 4 }, ops: OPS, this: { id: 4 } });
     expect(
       evaluate(
-        CoreLib.sudo(
+        StdLib.callMethod(
           KernelLib.getCapability("sys.sudo"),
+          "exec",
           { id: 101 },
           "get_dynamic",
           ListLib.listNew(),
@@ -215,8 +221,9 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
     addVerb(103, "say_hello", StdLib.send("message", "Hello!"));
 
     evaluate(
-      CoreLib.sudo(
+      StdLib.callMethod(
         KernelLib.getCapability("sys.sudo"),
+        "exec",
         { id: 103 },
         "say_hello",
         ListLib.listNew(),

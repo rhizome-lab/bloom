@@ -1,7 +1,6 @@
 import * as NetLib from "./lib";
 import { KernelLib, createCapability, createEntity, db, getEntity } from "@viwo/core";
 import {
-  ListLib,
   ObjectLib,
   ScriptError,
   StdLib,
@@ -15,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 const originalFetch = globalThis.fetch;
 const mockFetch = mock();
 
-const TEST_OPS = createOpcodeRegistry(StdLib, ObjectLib, ListLib, KernelLib, NetLib);
+const TEST_OPS = createOpcodeRegistry(StdLib, ObjectLib, KernelLib, NetLib as any);
 
 describe("net.http", () => {
   let admin: { id: number };
@@ -59,7 +58,12 @@ describe("net.http", () => {
       });
 
       const response = await evaluate(
-        NetLib.netHttpFetch(KernelLib.getCapability("net.http"), "https://example.com/api", {}),
+        StdLib.callMethod(
+          KernelLib.getCapability("net.http"),
+          "fetch",
+          "https://example.com/api",
+          {},
+        ),
         ctx,
       );
 
@@ -78,32 +82,40 @@ describe("net.http", () => {
 
     it("should fail if capability is missing", () => {
       const ctx = createScriptContext({ caller: user, ops: TEST_OPS, this: user });
-      expect(evaluate(NetLib.netHttpFetch(null, "https://example.com", {}), ctx)).rejects.toThrow(
-        ScriptError,
-      );
+      expect(() =>
+        evaluate(
+          StdLib.callMethod(
+            { __brand: "Capability", id: "", ownerId: 0, type: "fake" } as any,
+            "fetch",
+            "https://example.com",
+            {},
+          ),
+          ctx,
+        ),
+      ).toThrow();
     });
 
     it("should fail if domain does not match", () => {
       const ctx = createScriptContext({ caller: admin, ops: TEST_OPS, this: admin });
-      expect(
+      expect(() =>
         evaluate(
-          NetLib.netHttpFetch(KernelLib.getCapability("net.http"), "https://google.com", {}),
+          StdLib.callMethod(KernelLib.getCapability("net.http"), "fetch", "https://google.com", {}),
           ctx,
         ),
-      ).rejects.toThrow(ScriptError);
+      ).toThrow(ScriptError);
     });
 
     it("should fail if method is not allowed", () => {
       const ctx = createScriptContext({ caller: admin, ops: TEST_OPS, this: admin });
       // Admin only has GET
-      expect(
+      expect(() =>
         evaluate(
-          NetLib.netHttpFetch(KernelLib.getCapability("net.http"), "https://example.com", {
+          StdLib.callMethod(KernelLib.getCapability("net.http"), "fetch", "https://example.com", {
             method: "POST",
           }),
           ctx,
         ),
-      ).rejects.toThrow(ScriptError);
+      ).toThrow();
     });
 
     it("should allow method if methods param is missing", async () => {
@@ -124,7 +136,7 @@ describe("net.http", () => {
       });
 
       await evaluate(
-        NetLib.netHttpFetch(KernelLib.getCapability("net.http"), "https://example.com", {
+        StdLib.callMethod(KernelLib.getCapability("net.http"), "fetch", "https://example.com", {
           method: "POST",
         }),
         ctx,

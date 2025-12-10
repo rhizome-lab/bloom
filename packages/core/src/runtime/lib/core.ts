@@ -1,41 +1,11 @@
-import {
-  type Capability,
-  ScriptError,
-  createScriptContext,
-  defineFullOpcode,
-  evaluate,
-} from "@viwo/scripting";
+import { ScriptError, createScriptContext, defineFullOpcode, evaluate } from "@viwo/scripting";
 import { type Verb, getEntity, getPrototypeId, getVerb, getVerbs } from "../../repo";
-import { checkCapability, resolveProps } from "../utils";
 import { type Entity } from "@viwo/shared/jsonrpc";
-import { createEntityLogic } from "../logic";
 import { hydrate } from "../hydration";
+import { resolveProps } from "../utils";
 import { scheduler } from "../../scheduler";
 
 // Entity Interaction
-
-/** Creates a new entity. */
-export const create = defineFullOpcode<[Capability | null, object], number>("create", {
-  handler: ([capability, data], ctx) => createEntityLogic(capability, data, ctx),
-  metadata: {
-    category: "action",
-    description: "Create a new entity (requires sys.create)",
-    label: "Create",
-    parameters: [
-      {
-        description: "Capability to use for creation",
-        name: "capability",
-        type: "Capability | null",
-      },
-      { description: "Initial data for the entity", name: "data", type: "object" },
-    ],
-    returnType: "number",
-    slots: [
-      { name: "Cap", type: "block" },
-      { name: "Data", type: "block" },
-    ],
-  },
-});
 
 /** Calls a verb on an entity. */
 export const call = defineFullOpcode<[Entity, string, ...unknown[]], any>("call", {
@@ -196,76 +166,5 @@ export const resolve_props = defineFullOpcode<[Entity], Entity>("resolve_props",
     ],
     returnType: "Entity",
     slots: [{ name: "Entity", type: "block" }],
-  },
-});
-
-/**
- * Executes a verb on an entity as if called by that entity (impersonation).
- * Restricted to System (ID 3) and Bot (ID 4).
- */
-export const sudo = defineFullOpcode<[Capability | null, Entity, string, unknown[]], any>("sudo", {
-  handler: ([capability, target, verb, evaluatedArgs], ctx) => {
-    if (!capability) {
-      throw new ScriptError("sudo: expected capability");
-    }
-    checkCapability(capability, ctx.this.id, "sys.sudo");
-    if (!target || !("id" in target) || typeof target.id !== "number") {
-      throw new ScriptError(`sudo: target must be an entity, got ${JSON.stringify(target)}`);
-    }
-    const targetVerb = getVerb(target.id, verb);
-    if (!targetVerb) {
-      console.log(getVerbs(target.id));
-      throw new ScriptError(`sudo: verb '${verb}' not found on ${target.id}`);
-    }
-    // Capture send function to satisfy TS in closure
-    const originalSend = ctx.send;
-    const callerId = ctx.caller.id;
-    // Execute with target as caller AND this
-    // This effectively impersonates the user
-    return evaluate(
-      targetVerb.code,
-      createScriptContext({
-        args: evaluatedArgs,
-        caller: target, // Impersonation
-        ops: ctx.ops,
-        stack: [...(ctx.stack ?? []), { args: evaluatedArgs, name: `sudo:${verb}` }],
-        this: target,
-        warnings: ctx.warnings,
-        // If caller is Bot (4), wrap send to forward messages
-        ...(originalSend
-          ? {
-              send: (type: string, payload: unknown) => {
-                if (callerId === 4) {
-                  originalSend("forward", {
-                    payload,
-                    target: target.id,
-                    type,
-                  });
-                } else {
-                  originalSend(type, payload);
-                }
-              },
-            }
-          : {}),
-      }),
-    );
-  },
-  metadata: {
-    category: "system",
-    description: "Execute verb as another entity (requires sys.sudo)",
-    label: "Sudo",
-    parameters: [
-      { description: "Capability to use.", name: "capability", type: "Capability | null" },
-      { description: "The entity to impersonate.", name: "target", type: "Entity" },
-      { description: "The verb to call.", name: "verb", type: "string" },
-      { description: "Arguments to pass to the verb.", name: "args", type: "any[]" },
-    ],
-    returnType: "any",
-    slots: [
-      { name: "Cap", type: "block" },
-      { name: "Target", type: "block" },
-      { name: "Verb", type: "string" },
-      { name: "Args", type: "block" },
-    ],
   },
 });

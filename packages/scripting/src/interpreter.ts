@@ -28,7 +28,9 @@ export function createOpcodeRegistry(...libs: ScriptOps[]): ScriptOps {
   const registry: ScriptOps = {};
   for (const lib of libs) {
     for (const def of Object.values(lib)) {
-      registry[def.metadata.opcode] = def;
+      if (typeof def === "function" && "metadata" in def && (def as any).metadata?.opcode) {
+        registry[(def as any).metadata.opcode] = def;
+      }
     }
   }
   return registry;

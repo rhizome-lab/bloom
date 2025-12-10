@@ -112,9 +112,10 @@ describe("Mailbox Verification", () => {
               ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.var("item"), "id")]),
             ),
           ),
-          CoreLib.setEntity(
+          StdLib.callMethod(
             StdLib.var("cap"),
-            StdLib.var("item"),
+            "update",
+            ObjectLib.objGet(StdLib.var("item"), "id"),
             ObjectLib.objNew(
               ["location", ObjectLib.objGet(StdLib.var("dest"), "id")],
               ["owner", StdLib.var("newOwner")],

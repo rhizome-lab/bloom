@@ -1,5 +1,5 @@
 import * as KernelLib from "./runtime/lib/kernel";
-import { CoreLib, db } from ".";
+import { db } from ".";
 import { MathLib, ObjectLib, StdLib } from "@viwo/scripting";
 import { addVerb, createCapability, createEntity, getEntity } from "./repo";
 import { beforeAll, describe, expect, it } from "bun:test";
@@ -34,9 +34,10 @@ describe("Scheduler Verification", () => {
             ObjectLib.objNew(["target_id", ObjectLib.objGet(StdLib.this(), "id")]),
           ),
         ),
-        CoreLib.setEntity(
+        StdLib.callMethod(
           StdLib.var("cap"),
-          StdLib.this(),
+          "update",
+          ObjectLib.objGet(StdLib.this(), "id"),
           ObjectLib.objNew(["count", MathLib.add(ObjectLib.objGet(StdLib.this(), "count"), 1)]),
         ),
       ),

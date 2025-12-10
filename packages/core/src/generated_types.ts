@@ -188,13 +188,6 @@ declare global {
    */
   function call(target: Entity, verb: string, ...args: any[]): any;
   /**
-   * Create a new entity (requires sys.create)
-   *
-   * @param capability Capability to use for creation
-   * @param data Initial data for the entity
-   */
-  function create(capability: Capability | null, data: object): number;
-  /**
    * Get entity by ID
    *
    * @param id The ID of the entity.
@@ -227,15 +220,6 @@ declare global {
    * @param delay Delay in milliseconds.
    */
   function schedule(verb: string, args: any[], delay: number): null;
-  /**
-   * Execute verb as another entity (requires sys.sudo)
-   *
-   * @param capability Capability to use.
-   * @param target The entity to impersonate.
-   * @param verb The verb to call.
-   * @param args Arguments to pass to the verb.
-   */
-  function sudo(capability: Capability | null, target: Entity, verb: string, args: any[]): any;
   /**
    * Get available verbs
    *

@@ -1,33 +1,5 @@
-import { BaseCapability, checkCapability, registerCapabilityClass } from "@viwo/core";
-import { type Capability, ScriptError, defineFullOpcode } from "@viwo/scripting";
-
-function checkNetCapability(ctx: any, cap: Capability, targetDomain: string, method: string) {
-  checkCapability(cap, ctx.this.id, "net.http", (params) => {
-    const allowedDomain = params["domain"] as string;
-    if (!allowedDomain) {
-      return false;
-    }
-
-    // Simple domain suffix check
-    // "example.com" allows "api.example.com"
-    if (!targetDomain.endsWith(allowedDomain)) {
-      return false;
-    }
-
-    // Method check
-    const allowedMethods = params["methods"] as string[] | undefined;
-    if (allowedMethods) {
-      if (!Array.isArray(allowedMethods)) {
-        return false;
-      }
-      if (!allowedMethods.includes(method)) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-}
+import { BaseCapability, registerCapabilityClass } from "@viwo/core";
+import { ScriptError, defineFullOpcode } from "@viwo/scripting";
 
 export class NetHttp extends BaseCapability {
   static override readonly type = "net.http";
@@ -102,78 +74,6 @@ export interface HttpResponse {
   headers: Record<string, string>;
   __response: Response;
 }
-
-export const netHttpFetch = defineFullOpcode<
-  [
-    cap: Capability | null,
-    url: string,
-    options?: {
-      readonly method?: string;
-      readonly headers?: Record<string, string>;
-      readonly body?: string;
-    },
-  ],
-  Promise<HttpResponse>
->("net.http.fetch", {
-  handler: async ([cap, urlStr, options], ctx) => {
-    if (!cap) {
-      throw new ScriptError("net.http.fetch: missing capability");
-    }
-
-    if (typeof urlStr !== "string") {
-      throw new ScriptError("net.http.fetch: url must be a string");
-    }
-
-    const method = (options?.method as string) || "GET";
-    const headers = (options?.headers as Record<string, string>) || {};
-    const body = (options?.body as string | undefined) ?? null;
-
-    let url: URL;
-    try {
-      url = new URL(urlStr);
-    } catch {
-      throw new ScriptError("net.http.fetch: invalid url");
-    }
-
-    checkNetCapability(ctx, cap, url.hostname, method);
-
-    console.log("Calling fetch with", urlStr, method);
-    try {
-      const response = await fetch(urlStr, { body, headers, method });
-
-      const responseHeaders: Record<string, string> = {};
-      response.headers.forEach((value, key) => {
-        responseHeaders[key] = value;
-      });
-
-      return {
-        __response: response,
-        headers: responseHeaders,
-        ok: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-      };
-    } catch (error: any) {
-      throw new ScriptError(`net.http.fetch failed: ${error.message}`);
-    }
-  },
-  metadata: {
-    category: "net",
-    description: "Perform an HTTP request",
-    label: "HTTP Fetch",
-    parameters: [
-      { description: "The capability to use.", name: "cap", type: "Capability | null" },
-      { description: "The URL to fetch.", name: "url", type: "string" },
-      { description: "The fetch options.", name: "options", optional: true, type: "object" },
-    ],
-    returnType: "Promise<object>",
-    slots: [
-      { name: "Cap", type: "block" },
-      { name: "URL", type: "string" },
-      { name: "Options", type: "block" },
-    ],
-  },
-});
 
 export const netHttpResponseText = defineFullOpcode<[response: HttpResponse], string>(
   "net.http.response_text",
