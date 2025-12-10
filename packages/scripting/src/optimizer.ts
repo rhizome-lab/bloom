@@ -154,7 +154,7 @@ function isPureSubtree(
 }
 
 /** Converts a JavaScript value back into a ViwoScript AST. */
-export function quote(value: unknown): ScriptValue<any> {
+function quote(value: unknown): ScriptValue<any> {
   if (value instanceof Date) {
     return TimeLib.timeFromTimestamp(value.getTime());
   }

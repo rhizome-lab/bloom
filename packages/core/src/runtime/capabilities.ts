@@ -216,7 +216,7 @@ export interface CapabilityRegistry {
   [SysSudo.type]: typeof SysSudo;
 }
 
-export const CAPABILITY_CLASSES: CapabilityRegistry = {} as CapabilityRegistry;
+const CAPABILITY_CLASSES: CapabilityRegistry = {} as CapabilityRegistry;
 
 function getKey<Type, Key extends keyof Type>(type: Type, key: Key) {
   return type[key];

@@ -1,7 +1,7 @@
 import { BaseCapability, registerCapabilityClass } from "@viwo/core";
 import { ScriptError, defineFullOpcode } from "@viwo/scripting";
 
-export class NetHttp extends BaseCapability {
+class NetHttp extends BaseCapability {
   static override readonly type = "net.http";
 
   async fetch(
