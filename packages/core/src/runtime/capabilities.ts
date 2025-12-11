@@ -21,12 +21,15 @@ export abstract class BaseCapability implements Capability {
   static readonly type: string;
   readonly type: string;
   readonly __brand = "Capability" as const;
-  constructor(
-    public readonly id: string,
-    public readonly ownerId: number,
-    public readonly params: any,
-  ) {
+  readonly id: string;
+  readonly ownerId: number;
+  readonly params: any;
+
+  constructor(id: string, ownerId: number, params: any) {
     this.type = (this.constructor as typeof BaseCapability).type;
+    this.id = id;
+    this.ownerId = ownerId;
+    this.params = params;
     deepFreeze(this);
   }
 

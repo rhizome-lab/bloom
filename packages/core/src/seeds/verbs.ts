@@ -295,42 +295,42 @@ export function player_create() {
   const name = std.arg<string>(0);
   if (!name) {
     send("message", "What do you want to create?");
-  } else {
-    const createCap = get_capability("sys.create");
-    const controlCap =
-      get_capability("entity.control", { target_id: std.caller()["location"] }) ??
-      get_capability("entity.control", { "*": true });
-    if (!createCap || !controlCap) {
-      send("message", "You do not have permission to create here.");
-      return;
-    }
-    const itemData: Record<string, any> = {};
-    itemData["name"] = name;
-    itemData["location"] = std.caller()["location"];
-    const itemId = createCap.create(itemData);
-    controlCap.setPrototype(itemId, ENTITY_BASE_ID_PLACEHOLDER);
-
-    const room = entity(std.caller()["location"] as number);
-    const roomId = room.id; // Get room ID for logging
-    if (roomId) {
-      if (itemId) {
-        const contents = (room["contents"] as number[]) ?? [];
-        const newContents = list.concat(contents, [itemId]);
-        controlCap.update(roomId, { contents: newContents });
-        send(
-          "message",
-          `DEBUG: Added ${itemId} to room ${roomId} contents. New size: ${list.len(newContents)}`,
-        );
-      } else {
-        send("message", "DEBUG: itemId missing");
-      }
-    } else {
-      send("message", "DEBUG: room missing");
-    }
-    send("message", `You create ${name}.`);
-    call(std.caller(), "look");
-    return itemId;
+    return;
   }
+  const createCap = get_capability("sys.create");
+  const controlCap =
+    get_capability("entity.control", { target_id: std.caller()["location"] }) ??
+    get_capability("entity.control", { "*": true });
+  if (!createCap || !controlCap) {
+    send("message", "You do not have permission to create here.");
+    return;
+  }
+  const itemData: Record<string, any> = {};
+  itemData["name"] = name;
+  itemData["location"] = std.caller()["location"];
+  const itemId = createCap.create(itemData);
+  controlCap.setPrototype(itemId, ENTITY_BASE_ID_PLACEHOLDER);
+
+  const room = entity(std.caller()["location"] as number);
+  const roomId = room.id; // Get room ID for logging
+  if (!roomId) {
+    send("message", "DEBUG: Room missing");
+    return;
+  }
+  if (!itemId) {
+    send("message", "DEBUG: itemId missing");
+    return;
+  }
+  const contents = (room["contents"] as number[]) ?? [];
+  const newContents = list.concat(contents, [itemId]);
+  controlCap.update(roomId, { contents: newContents });
+  send(
+    "message",
+    `DEBUG: Added ${itemId} to room ${roomId} contents. New size: ${list.len(newContents)}`,
+  );
+  send("message", `You create ${name}.`);
+  call(std.caller(), "look");
+  return itemId;
 }
 
 export function player_set(this: Entity) {
@@ -367,12 +367,12 @@ export function watch_tell() {
 
 export function teleporter_teleport(this: Entity) {
   const destId = this["destination"];
-  if (destId) {
-    call(std.caller(), "teleport", entity(destId as number));
-    send("message", "Whoosh! You have been teleported.");
-  } else {
+  if (!destId) {
     send("message", "The stone is dormant.");
+    return;
   }
+  call(std.caller(), "teleport", entity(destId as number));
+  send("message", "Whoosh! You have been teleported.");
 }
 
 export function status_check() {
@@ -389,8 +389,6 @@ export function mood_ring_update_color(this: Entity) {
   const newColor = call(entity(libId), "random_color");
   const cap = get_capability("entity.control", { target_id: this.id });
   if (cap) {
-    // this["adjectives"] = [`color:${newColor}`, "material:silver"];
-    // this["adjectives"] = [`color:${newColor}`, "material:silver"];
     std.call_method(cap, "update", this.id, {
       adjectives: [`color:${newColor}`, "material:silver"],
     });

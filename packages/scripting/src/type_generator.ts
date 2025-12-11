@@ -326,11 +326,18 @@ interface ScriptContext {
 }
 
 interface CapabilityRegistry {
-  // TODO: Pull these into the type generator
-  "sys.mint": any;
-  "sys.create": any;
-  "sys.sudo": any;
-  "entity.control": EntityControl;
+${classes
+  .map((cls) => {
+    const typeProp = cls.staticProperties?.find((property) => property.name === "type");
+    if (typeProp?.value) {
+      // Value comes with quotes from initializer, remove them
+      const key = typeProp.value.replaceAll(/^["']|["']$/g, "");
+      return `  "${key}": ${cls.name};`;
+    }
+    return null;
+  })
+  .filter(Boolean)
+  .join("\n")}
 }
 
 // Standard library functions

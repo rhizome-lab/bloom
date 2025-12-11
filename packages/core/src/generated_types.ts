@@ -165,14 +165,12 @@ declare global {
   }
 
   interface CapabilityRegistry {
-    // TODO: Pull these into the type generator
-    "sys.mint": any;
-    "sys.create": any;
-    "sys.sudo": any;
     "entity.control": EntityControl;
+    "sys.mint": SysMint;
+    "sys.create": SysCreate;
+    "sys.sudo": SysSudo;
   }
 
-  // Standard library functions
   interface Entity {
     /** Unique ID of the entity */
     id: number;
@@ -181,10 +179,34 @@ declare global {
     /** Dynamic properties */
     [key: string]: unknown;
   }
+
+  // Standard library functions
+  class BaseCapability implements Capability {
+    type: string;
+    __brand: "Capability";
+    id: string;
+    ownerId: number;
+    params: any;
+  }
+
   class EntityControl {
     destroy(targetId: number): boolean;
     update(targetId: number, updates: object): any;
     setPrototype(targetId: number, protoId: number): boolean;
+  }
+
+  class SysMint {
+    mint(type: string, params: object): BaseCapability;
+    delegate(restrictions: object): BaseCapability;
+    give(targetId: number): any;
+  }
+
+  class SysCreate {
+    create(data: object): number;
+  }
+
+  class SysSudo {
+    exec(target: any, verb: string, args: any[]): any;
   }
 
   /**

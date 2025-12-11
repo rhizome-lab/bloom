@@ -86,6 +86,16 @@ function extractMetadata(class_: ClassDeclaration, nameOverride?: string): Class
     .getImplements()
     .map((implement) => implement.getExpression().getText());
 
+  const staticProperties: PropertyMetadata[] = class_
+    .getProperties()
+    .filter((property) => property.isStatic() && property.getScope() === Scope.Public)
+    .map((property) => ({
+      description: property.getJsDocs()[0]?.getDescription().trim(),
+      name: property.getName(),
+      type: property.getType().getText(property),
+      value: property.getInitializer()?.getText(),
+    }));
+
   return {
     description: class_.getJsDocs()[0]?.getDescription().trim(),
     implements: implementsClauses.length > 0 ? implementsClauses : undefined,
@@ -93,6 +103,7 @@ function extractMetadata(class_: ClassDeclaration, nameOverride?: string): Class
     methods,
     name: nameOverride ?? class_.getName()!,
     properties,
+    staticProperties,
   };
 }
 
@@ -103,25 +114,29 @@ const classes: ClassMetadata[] = [];
 // const wrappedEntity = wrappersFile.getClassOrThrow("WrappedEntity");
 // classes.push(extractMetadata(wrappedEntity, "Entity"));
 
-// EntityControl
+// Capabilities
 const capabilitiesFile = project.getSourceFileOrThrow("capabilities.ts");
-const entityControl = capabilitiesFile.getClassOrThrow("EntityControl");
-classes.push(extractMetadata(entityControl));
+const exportedClasses = capabilitiesFile.getClasses().filter((clazz) => clazz.isExported());
+
+for (const cls of exportedClasses) {
+  classes.push(extractMetadata(cls));
+}
 
 let definitions = generateTypeDefinitions(opcodes, classes);
 
 // Inject Entity interface
 definitions = definitions.replace(
   "// Standard library functions",
-  `// Standard library functions
-  interface Entity {
-    /** Unique ID of the entity */
-    id: number;
-    /** Unique ID of the entity's prototype */
-    prototype_id?: number | null;
-    /** Dynamic properties */
-    [key: string]: unknown;
-  }`,
+  `interface Entity {
+  /** Unique ID of the entity */
+  id: number;
+  /** Unique ID of the entity's prototype */
+  prototype_id?: number | null;
+  /** Dynamic properties */
+  [key: string]: unknown;
+}
+
+// Standard library functions`,
 );
 
 const outputPath = join(import.meta.dir, "../src/generated_types.ts");

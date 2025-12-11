@@ -250,6 +250,7 @@ export interface PropertyMetadata {
   name: string;
   type: string;
   description?: string | undefined;
+  value?: string | undefined;
 }
 
 /** Metadata for an SDK class for type generation. */
@@ -258,6 +259,7 @@ export interface ClassMetadata {
   description?: string | undefined;
   methods: MethodMetadata[];
   properties?: PropertyMetadata[];
+  staticProperties?: PropertyMetadata[];
   indexSignature?: string | undefined;
   implements?: string[] | undefined; // e.g. "Capability"
 }
