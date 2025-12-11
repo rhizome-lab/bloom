@@ -6,7 +6,7 @@ import { initSchema } from "./schema";
  * Initialized with WAL mode for concurrency.
  */
 export const db = new Database(
-  process.env.DB_PATH ?? (process.env.NODE_ENV === "test" ? ":memory:" : "world.sqlite"),
+  process.env["DB_PATH"] ?? (process.env.NODE_ENV === "test" ? ":memory:" : "world.sqlite"),
   {
     create: true,
   },

@@ -29,6 +29,32 @@ export function transpile(code: string): any {
     }
   });
 
+  const relevantStatements = sourceFile.statements.filter(
+    (stmt) =>
+      !ts.isImportDeclaration(stmt) &&
+      !ts.isInterfaceDeclaration(stmt) &&
+      !ts.isTypeAliasDeclaration(stmt) &&
+      !ts.isModuleDeclaration(stmt) &&
+      !ts.isEnumDeclaration(stmt),
+  );
+
+  if (relevantStatements.length === 1 && ts.isFunctionDeclaration(relevantStatements[0]!)) {
+    const func = relevantStatements[0]!;
+    if (func.body) {
+      const funcScope = new Set(scope);
+      const parameters = func.parameters.map((p) => p.name.getText());
+      parameters.forEach((p) => funcScope.add(p));
+      const body = transpileNode(func.body, funcScope);
+
+      // Create argument bindings
+      const bindings = parameters
+        .filter((p) => p !== "this")
+        .map((p, i) => StdLib.let(p, StdLib.arg(i)));
+
+      return StdLib.seq(...bindings, body);
+    }
+  }
+
   // If there's only one statement and it's an expression, return it directly?
   // Or should we always return a sequence if there are multiple statements?
   // ViwoScript usually expects a single expression or a sequence.

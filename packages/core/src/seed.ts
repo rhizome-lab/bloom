@@ -1,10 +1,11 @@
-import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "./repo";
-import { db } from "./db";
-import { extractVerb } from "./verb_loader";
+import { transpile } from "@viwo/scripting";
 import { resolve } from "node:path";
+import { db } from "./db";
+import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "./repo";
 import { seedHotel } from "./seeds/hotel/seed";
 import { seedItems } from "./seeds/items";
-import { transpile } from "@viwo/scripting";
+import { loadEntityDefinition } from "./seeds/loader";
+import { extractVerb } from "./verb_loader";
 
 const verbsPath = resolve(__dirname, "seeds/verbs.ts");
 
@@ -27,11 +28,18 @@ export function seed() {
   });
 
   // 2. Create Entity Base
+  const entityBaseDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/EntityBase.ts"),
+    "EntityBase",
+  );
   const entityBaseId = createEntity({
-    description: "The base of all things.",
+    ...entityBaseDef.props,
     location: voidId,
-    name: "Entity Base",
   });
+
+  for (const [name, code] of entityBaseDef.verbs) {
+    addVerb(entityBaseId, name, code);
+  }
 
   // 3. Create System Entity
   const systemId = createEntity({
@@ -59,24 +67,6 @@ export function seed() {
     systemId,
     "get_available_verbs",
     transpile(extractVerb(verbsPath, "system_get_available_verbs")),
-  );
-  addVerb(entityBaseId, "find", transpile(extractVerb(verbsPath, "entity_base_find")));
-  addVerb(entityBaseId, "find_exit", transpile(extractVerb(verbsPath, "entity_base_find_exit")));
-  addVerb(entityBaseId, "on_enter", transpile(extractVerb(verbsPath, "entity_base_on_enter")));
-  addVerb(entityBaseId, "on_leave", transpile(extractVerb(verbsPath, "entity_base_on_leave")));
-  addVerb(entityBaseId, "teleport", transpile(extractVerb(verbsPath, "entity_base_teleport")));
-  addVerb(entityBaseId, "go", transpile(extractVerb(verbsPath, "entity_base_go")));
-  addVerb(entityBaseId, "say", transpile(extractVerb(verbsPath, "entity_base_say")));
-  addVerb(entityBaseId, "tell", transpile(extractVerb(verbsPath, "entity_base_tell")));
-  addVerb(
-    entityBaseId,
-    "get_llm_prompt",
-    transpile(extractVerb(verbsPath, "entity_base_get_llm_prompt")),
-  );
-  addVerb(
-    entityBaseId,
-    "get_image_gen_prompt",
-    transpile(extractVerb(verbsPath, "entity_base_get_image_gen_prompt")),
   );
 
   // 3. Create Humanoid Base
