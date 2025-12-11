@@ -1,12 +1,21 @@
 import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "../../repo";
-import { extractVerb } from "../../verb_loader";
 import { resolve } from "node:path";
+import { loadEntityDefinition } from "../loader";
 import { transpile } from "@viwo/scripting";
 
 export function seedHotel(voidId: number, lobbyId: number) {
   // 12. Hotel Seed (Stage 1)
-  const hotelManagerPath = resolve(__dirname, "manager.ts");
-  const hotelPrototypesPath = resolve(__dirname, "prototypes.ts");
+
+  // Load Hotel Definitions
+  const managerDef = loadEntityDefinition(
+    resolve(__dirname, "../definitions/Hotel.ts"),
+    "HotelManager",
+  );
+
+  const roomProtoDef = loadEntityDefinition(
+    resolve(__dirname, "../definitions/Hotel.ts"),
+    "HotelRoomPrototype",
+  );
 
   // Create Hotel Manager
   const hotelManagerId = createEntity({
@@ -20,47 +29,19 @@ export function seedHotel(voidId: number, lobbyId: number) {
   createCapability(hotelManagerId, "entity.control", { "*": true });
 
   // Add Manager Verbs
-  addVerb(hotelManagerId, "enter", transpile(extractVerb(hotelManagerPath, "manager_enter")));
-  addVerb(
-    hotelManagerId,
-    "create_lobby",
-    transpile(extractVerb(hotelManagerPath, "manager_create_lobby")),
-  );
-  addVerb(
-    hotelManagerId,
-    "create_room",
-    transpile(extractVerb(hotelManagerPath, "manager_create_room")),
-  );
-  addVerb(
-    hotelManagerId,
-    "cleanup_loop",
-    transpile(extractVerb(hotelManagerPath, "manager_cleanup_loop")),
-  );
-  addVerb(hotelManagerId, "gc", transpile(extractVerb(hotelManagerPath, "manager_gc")));
-  addVerb(
-    hotelManagerId,
-    "generate_content",
-    transpile(extractVerb(hotelManagerPath, "manager_generate_content")),
-  );
-
-  // Start Cleanup Loop
-  addVerb(hotelManagerId, "start", transpile("schedule('cleanup_loop', [], 1000)")); // Simple inline start script
+  for (const [name, code] of managerDef.verbs) {
+    addVerb(hotelManagerId, name, code);
+  }
 
   // Prototypes
   const hotelRoomProtoId = createEntity({
     description: "A standard hotel room.",
     name: "Hotel Room Prototype",
   });
-  addVerb(
-    hotelRoomProtoId,
-    "on_enter",
-    transpile(extractVerb(hotelPrototypesPath, "room_on_enter")),
-  );
-  addVerb(
-    hotelRoomProtoId,
-    "on_leave",
-    transpile(extractVerb(hotelPrototypesPath, "room_on_leave")),
-  );
+
+  for (const [name, code] of roomProtoDef.verbs) {
+    addVerb(hotelRoomProtoId, name, code);
+  }
 
   const hotelLobbyProtoId = createEntity({
     description: "Points to the Hotel Manager.",

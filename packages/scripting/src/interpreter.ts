@@ -41,7 +41,7 @@ export function executeLambda(lambda: any, args: unknown[], ctx: ScriptContext):
     return null;
   }
   // Create new context
-  const newVars = { ...lambda.closure };
+  const newVars = Object.create(lambda.closure ?? null);
   // Bind arguments
   for (let idx = 0; idx < lambda.args.length; idx += 1) {
     newVars[lambda.args[idx]] = args[idx];
@@ -80,7 +80,11 @@ export function unsafeAsAwaited<Type>(value: Type): Awaited<Type> {
  * @returns The result of the evaluation (or a Promise if async).
  * @throws ScriptError if execution fails or gas runs out.
  */
-export function evaluate<Type>(ast: ScriptValue<Type>, ctx: ScriptContext): Type | Promise<Type> {
+export function evaluate<Type>(
+  ast: ScriptValue<Type>,
+  ctx: ScriptContext,
+  options: { catchReturn?: boolean } = { catchReturn: true },
+): Type | Promise<Type> {
   // If it's a simple value, return immediately
   if (!Array.isArray(ast)) {
     return ast as Type;
@@ -105,7 +109,7 @@ export function evaluate<Type>(ast: ScriptValue<Type>, ctx: ScriptContext): Type
   stackIdx[0] = 1;
   sp = 1;
 
-  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx);
+  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx, options);
 }
 
 // oxlint-disable-next-line max-params
@@ -116,6 +120,7 @@ function executeLoop(
   stackArgs: unknown[][],
   stackAst: any[][],
   stackIdx: number[],
+  options: { catchReturn?: boolean } = { catchReturn: true },
 ): any {
   while (sp > 0) {
     if (ctx.gas !== undefined) {
@@ -191,7 +196,10 @@ function executeLoop(
           throw error;
         }
         if (error instanceof ReturnSignal) {
-          return error.value;
+          if (options.catchReturn) {
+            return error.value;
+          }
+          throw error;
         }
         if (error instanceof ContinueSignal) {
           throw error; // Propagate continue signal to loop handler
@@ -219,7 +227,7 @@ function executeLoop(
 
       // Handle Async Result
       if (result instanceof Promise) {
-        return handleAsyncResult(result, ctx, sp, stackOp, stackArgs, stackAst, stackIdx);
+        return handleAsyncResult(result, ctx, sp, stackOp, stackArgs, stackAst, stackIdx, options);
       }
 
       // If stack is empty, we are done
@@ -245,6 +253,7 @@ async function handleAsyncResult(
   stackArgs: unknown[][],
   stackAst: any[][],
   stackIdx: number[],
+  options: { catchReturn?: boolean },
 ): Promise<unknown> {
   let currentResult = await promise;
   // Push result to parent frame and continue loop
@@ -253,7 +262,7 @@ async function handleAsyncResult(
   }
   stackArgs[sp - 1]!.push(currentResult);
   // Resume the loop
-  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx);
+  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx, options);
 }
 
 function createStackTrace(sp: number, stackOp: string[], stackArgs: unknown[][]): StackFrame[] {

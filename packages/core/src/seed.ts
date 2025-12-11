@@ -1,13 +1,9 @@
-import { transpile } from "@viwo/scripting";
-import { resolve } from "node:path";
-import { db } from "./db";
 import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "./repo";
+import { db } from "./db";
+import { loadEntityDefinition } from "./seeds/loader";
+import { resolve } from "node:path";
 import { seedHotel } from "./seeds/hotel/seed";
 import { seedItems } from "./seeds/items";
-import { loadEntityDefinition } from "./seeds/loader";
-import { extractVerb } from "./verb_loader";
-
-const verbsPath = resolve(__dirname, "seeds/verbs.ts");
 
 export function seed() {
   // Check for any row at all.
@@ -41,7 +37,15 @@ export function seed() {
     addVerb(entityBaseId, name, code);
   }
 
+  // Set Void prototype to EntityBase so it has on_leave/on_enter
+  updateEntity({ id: voidId, prototype_id: entityBaseId });
+
   // 3. Create System Entity
+  const systemDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/System.ts"),
+    "System",
+  );
+
   const systemId = createEntity({
     description: "The system root object.",
     location: voidId,
@@ -54,7 +58,16 @@ export function seed() {
   createCapability(systemId, "sys.sudo", {});
   createCapability(systemId, "entity.control", { "*": true });
 
+  for (const [name, code] of systemDef.verbs) {
+    addVerb(systemId, name, code);
+  }
+
   // 4. Create Discord Bot Entity
+  const botDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/System.ts"),
+    "DiscordBot",
+  );
+
   const botId = createEntity({
     description: "The bridge to Discord.",
     location: voidId,
@@ -62,12 +75,10 @@ export function seed() {
   });
 
   createCapability(botId, "sys.sudo", {});
-  addVerb(botId, "sudo", transpile(extractVerb(verbsPath, "bot_sudo")));
-  addVerb(
-    systemId,
-    "get_available_verbs",
-    transpile(extractVerb(verbsPath, "system_get_available_verbs")),
-  );
+
+  for (const [name, code] of botDef.verbs) {
+    addVerb(botId, name, code);
+  }
 
   // 3. Create Humanoid Base
   const humanoidBaseId = createEntity(
@@ -104,6 +115,8 @@ export function seed() {
         "r_finger_thumb",
         "r_finger_index",
         "r_finger_middle",
+        "r_finger_index",
+        "r_finger_middle",
         "r_finger_ring",
         "r_finger_pinky",
         // Legs
@@ -121,50 +134,25 @@ export function seed() {
   );
 
   // 4. Create Player Prototype
+  const playerDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Player.ts"),
+    "Player",
+    {
+      ENTITY_BASE_ID_PLACEHOLDER: String(entityBaseId),
+    },
+  );
+
   const playerBaseId = createEntity(
     {
-      description: "A generic adventurer.",
-      name: "Player Base",
+      ...playerDef.props,
     },
     humanoidBaseId,
   );
 
   // Add verbs to Player Base
-
-  addVerb(playerBaseId, "look", transpile(extractVerb(verbsPath, "player_look")));
-
-  addVerb(playerBaseId, "inventory", transpile(extractVerb(verbsPath, "player_inventory")));
-
-  addVerb(playerBaseId, "whoami", transpile(extractVerb(verbsPath, "player_whoami")));
-
-  addVerb(
-    playerBaseId,
-    "dig",
-    transpile(
-      extractVerb(verbsPath, "player_dig").replace(
-        "ENTITY_BASE_ID_PLACEHOLDER",
-        String(entityBaseId),
-      ),
-    ),
-  );
-
-  addVerb(
-    playerBaseId,
-    "create",
-    transpile(
-      extractVerb(verbsPath, "player_create").replace(
-        "ENTITY_BASE_ID_PLACEHOLDER",
-        String(entityBaseId),
-      ),
-    ),
-  );
-
-  addVerb(playerBaseId, "set", transpile(extractVerb(verbsPath, "player_set")));
-
-  // Quest Verbs
-  addVerb(playerBaseId, "quest_start", transpile(extractVerb(verbsPath, "player_quest_start")));
-  addVerb(playerBaseId, "quest_update", transpile(extractVerb(verbsPath, "player_quest_update")));
-  addVerb(playerBaseId, "quest_log", transpile(extractVerb(verbsPath, "player_quest_log")));
+  for (const [name, code] of playerDef.verbs) {
+    addVerb(playerBaseId, name, code);
+  }
 
   // 3. Create a Lobby Room
   const lobbyId = createEntity(
@@ -379,16 +367,22 @@ export function seed() {
   // 10. Create Scripting Test Items (Lobby)
 
   // Watch Item
+  const watchDef = loadEntityDefinition(resolve(__dirname, "seeds/definitions/Items.ts"), "Watch");
   const watchId = createEntity({
     adjectives: ["color:gold", "material:gold"],
     description: "A beautiful golden pocket watch.",
     location: lobbyId,
     name: "Golden Watch",
   });
-
-  addVerb(watchId, "tell", transpile(extractVerb(verbsPath, "watch_tell")));
+  for (const [name, code] of watchDef.verbs) {
+    addVerb(watchId, name, code);
+  }
 
   // Teleporter Item
+  const teleporterDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "Teleporter",
+  );
   const teleporterId = createEntity({
     adjectives: ["effect:glowing", "material:stone"],
     description: "A humming stone that vibrates with energy.",
@@ -396,34 +390,44 @@ export function seed() {
     location: lobbyId,
     name: "Teleporter Stone",
   });
-
-  addVerb(teleporterId, "teleport", transpile(extractVerb(verbsPath, "teleporter_teleport")));
+  for (const [name, code] of teleporterDef.verbs) {
+    addVerb(teleporterId, name, code);
+  }
 
   // Status Item
+  const statusOrbDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "StatusOrb",
+  );
   const statusId = createEntity({
     adjectives: ["effect:transparent", "material:crystal"],
     description: "A crystal orb that shows world statistics.",
     location: lobbyId,
     name: "Status Orb",
   });
-
-  addVerb(
-    statusId,
-    "check",
-    // world.entities missing
-    transpile(extractVerb(verbsPath, "status_check")),
-  );
+  for (const [name, code] of statusOrbDef.verbs) {
+    addVerb(statusId, name, code);
+  }
 
   // Color Library
+  const colorLibDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "ColorLibrary",
+  );
   const colorLibId = createEntity({
     colors: ["red", "green", "blue", "purple", "orange", "yellow", "cyan", "magenta"],
     location: voidId, // Hidden
     name: "Color Library", // Or a system object
   });
-
-  addVerb(colorLibId, "random_color", transpile(extractVerb(verbsPath, "color_lib_random_color")));
+  for (const [name, code] of colorLibDef.verbs) {
+    addVerb(colorLibId, name, code);
+  }
 
   // Mood Ring
+  const moodRingDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "MoodRing",
+  );
   const moodRingId = createEntity({
     adjectives: ["color:grey", "material:silver"],
     color_lib: colorLibId,
@@ -431,74 +435,80 @@ export function seed() {
     location: lobbyId,
     name: "Mood Ring",
   });
-
-  // Verb to update color
-  // It calls random_color on the lib, sets its own color adjective, and schedules itself again.
-  addVerb(moodRingId, "update_color", transpile(extractVerb(verbsPath, "mood_ring_update_color")));
-
-  // Kickoff
-  // We need a way to start it. Let's add a 'touch' verb to start it.
-  addVerb(moodRingId, "touch", transpile(extractVerb(verbsPath, "mood_ring_touch")));
+  for (const [name, code] of moodRingDef.verbs) {
+    addVerb(moodRingId, name, code);
+  }
 
   // --- Advanced Items ---
 
   // 1. Dynamic Mood Ring (Getter)
+  const dynRingDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "DynamicMoodRing",
+  );
   const dynamicRingId = createEntity({
     // No static adjectives needed if we use getter
     description: "A ring that shimmers with the current second.",
     location: lobbyId,
     name: "Dynamic Mood Ring",
   });
-
-  // get_adjectives verb
-  // Returns a list of adjectives.
-  // We'll use the current second to determine color.
-  addVerb(
-    dynamicRingId,
-    "get_adjectives",
-    transpile(extractVerb(verbsPath, "dynamic_ring_get_adjectives")),
-  );
+  for (const [name, code] of dynRingDef.verbs) {
+    addVerb(dynamicRingId, name, code);
+  }
 
   // 2. Special Watch (Local Broadcast)
+  const broadcastWatchDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "BroadcastingWatch",
+  );
   const specialWatchId = createEntity({
     description: "A watch that announces the time to you.",
     location: lobbyId,
     name: "Broadcasting Watch",
   });
-
-  addVerb(specialWatchId, "tick", transpile(extractVerb(verbsPath, "special_watch_tick")));
-  addVerb(specialWatchId, "start", transpile(extractVerb(verbsPath, "special_watch_start")));
+  for (const [name, code] of broadcastWatchDef.verbs) {
+    addVerb(specialWatchId, name, code);
+  }
 
   // 3. Clock (Room Broadcast)
   // Watch broadcasts to holder (Player), Clock broadcasts to Room.
-
+  const clockDef = loadEntityDefinition(resolve(__dirname, "seeds/definitions/Items.ts"), "Clock");
   const clockId = createEntity({
     description: "A loud clock.",
     location: lobbyId,
     name: "Grandfather Clock",
   });
-
-  addVerb(clockId, "tick", transpile(extractVerb(verbsPath, "clock_tick")));
-  addVerb(clockId, "start", transpile(extractVerb(verbsPath, "clock_start")));
+  for (const [name, code] of clockDef.verbs) {
+    addVerb(clockId, name, code);
+  }
 
   // 4. Clock Tower (Global Broadcast)
+  const towerDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "ClockTower",
+  );
   const towerId = createEntity({
     description: "The source of time.",
     location: voidId, // Hidden, or visible somewhere
     name: "Clock Tower", // Or ROOM/BUILDING
   });
-
-  addVerb(towerId, "toll", transpile(extractVerb(verbsPath, "clock_tower_toll")));
-  addVerb(towerId, "start", transpile(extractVerb(verbsPath, "clock_tower_start")));
+  for (const [name, code] of towerDef.verbs) {
+    addVerb(towerId, name, code);
+  }
 
   // 5. Mailbox
   // A prototype for mailboxes.
+  const mailboxDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "Mailbox",
+  );
   const mailboxProtoId = createEntity({
     description: "A secure mailbox.",
     name: "Mailbox Prototype",
   });
-
-  addVerb(mailboxProtoId, "deposit", transpile(extractVerb(verbsPath, "mailbox_deposit")));
+  for (const [name, code] of mailboxDef.verbs) {
+    addVerb(mailboxProtoId, name, code);
+  }
 
   // Give the player a mailbox
   createEntity(
@@ -513,6 +523,10 @@ export function seed() {
   seedItems(voidId);
 
   // 7. Director AI
+  const directorDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "Director",
+  );
   const directorId = createEntity({
     description: "The AI Director.",
     location: voidId,
@@ -523,10 +537,15 @@ export function seed() {
   createCapability(directorId, "sys.sudo", {});
   createCapability(directorId, "entity.control", { "*": true });
 
-  addVerb(directorId, "tick", transpile(extractVerb(verbsPath, "director_tick")));
-  addVerb(directorId, "start", transpile(extractVerb(verbsPath, "director_start")));
+  for (const [name, code] of directorDef.verbs) {
+    addVerb(directorId, name, code);
+  }
 
   // 8. Combat Manager
+  const cmDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "CombatManager",
+  );
   const combatManagerId = createEntity({
     description: "Manages combat sessions.",
     location: voidId,
@@ -536,27 +555,27 @@ export function seed() {
   createCapability(combatManagerId, "sys.create", {});
   createCapability(combatManagerId, "entity.control", { "*": true });
 
-  addVerb(combatManagerId, "start", transpile(extractVerb(verbsPath, "combat_start")));
-  addVerb(combatManagerId, "next_turn", transpile(extractVerb(verbsPath, "combat_next_turn")));
-  // Use elemental attack for this manager
-  addVerb(combatManagerId, "attack", transpile(extractVerb(verbsPath, "combat_attack_elemental")));
-
-  addVerb(
-    combatManagerId,
-    "apply_status",
-    transpile(extractVerb(verbsPath, "combat_apply_status")),
-  );
-  addVerb(combatManagerId, "tick_status", transpile(extractVerb(verbsPath, "combat_tick_status")));
+  for (const [name, code] of cmDef.verbs) {
+    addVerb(combatManagerId, name, code);
+  }
 
   // 9a. Status Effect Prototypes
+  const effectBaseDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "EffectBase",
+  );
   const effectBaseId = createEntity({
     description: "Base for status effects.",
     name: "Effect Base",
   });
-  addVerb(effectBaseId, "on_apply", transpile(extractVerb(verbsPath, "effect_base_on_apply")));
-  addVerb(effectBaseId, "on_tick", transpile(extractVerb(verbsPath, "effect_base_on_tick")));
-  addVerb(effectBaseId, "on_remove", transpile(extractVerb(verbsPath, "effect_base_on_remove")));
+  for (const [name, code] of effectBaseDef.verbs) {
+    addVerb(effectBaseId, name, code);
+  }
 
+  const poisonDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "Poison",
+  );
   const poisonEffectId = createEntity(
     {
       description: "Deals damage over time.",
@@ -564,8 +583,11 @@ export function seed() {
     },
     effectBaseId,
   );
-  addVerb(poisonEffectId, "on_tick", transpile(extractVerb(verbsPath, "poison_on_tick")));
+  for (const [name, code] of poisonDef.verbs) {
+    addVerb(poisonEffectId, name, code);
+  }
 
+  const regenDef = loadEntityDefinition(resolve(__dirname, "seeds/definitions/Items.ts"), "Regen");
   const regenEffectId = createEntity(
     {
       description: "Heals over time.",
@@ -573,7 +595,9 @@ export function seed() {
     },
     effectBaseId,
   );
-  addVerb(regenEffectId, "on_tick", transpile(extractVerb(verbsPath, "regen_on_tick")));
+  for (const [name, code] of regenDef.verbs) {
+    addVerb(regenEffectId, name, code);
+  }
 
   // Link Poison to Combat Manager
   const cm = getEntity(combatManagerId);
@@ -625,28 +649,32 @@ export function seed() {
     waterElementalProtoId,
   );
 
-  // Use basic attack for testing
-  addVerb(combatManagerId, "basic_attack", transpile(extractVerb(verbsPath, "combat_attack")));
-
-  addVerb(combatManagerId, "test", transpile(extractVerb(verbsPath, "combat_test")));
-  addVerb(directorId, "test_quest", transpile(extractVerb(verbsPath, "quest_test")));
+  // Note: CombatManager basic_attack, test, etc are methods now.
+  // Already attached above.
 
   // 10a. Create Golem
+  const golemDef = loadEntityDefinition(resolve(__dirname, "seeds/definitions/Items.ts"), "Golem");
   const golemId = createEntity({
     description: "A large stone construct.",
     location: lobbyId,
     name: "Golem",
   });
-  addVerb(golemId, "on_hear", transpile(extractVerb(verbsPath, "golem_on_hear")));
+  for (const [name, code] of golemDef.verbs) {
+    addVerb(golemId, name, code);
+  }
 
   // 11. Quest Engine Seeds
+  const questBaseDef = loadEntityDefinition(
+    resolve(__dirname, "seeds/definitions/Items.ts"),
+    "QuestBase",
+  );
   const questBaseId = createEntity({
     description: "A base definition for quests.",
     name: "Quest Base",
   });
-
-  addVerb(questBaseId, "get_structure", transpile(extractVerb(verbsPath, "quest_get_structure")));
-  addVerb(questBaseId, "get_node", transpile(extractVerb(verbsPath, "quest_get_node")));
+  for (const [name, code] of questBaseDef.verbs) {
+    addVerb(questBaseId, name, code);
+  }
 
   createEntity(
     {

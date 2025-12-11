@@ -113,3 +113,25 @@ class TaskScheduler {
 }
 
 export const scheduler = new TaskScheduler();
+
+import { defineFullOpcode } from "@viwo/scripting";
+
+export const SchedulerLib = {
+  schedule: defineFullOpcode<[verb: string, args: unknown[], delay: number], void>("schedule", {
+    handler: ([verb, args, delay], ctx) => {
+      scheduler.schedule(ctx.this.id, verb, args, delay);
+    },
+    metadata: {
+      category: "system",
+      description: "Schedules a verb execution.",
+      label: "Schedule",
+      parameters: [
+        { name: "verb", type: "string", description: "The verb to execute." },
+        { name: "args", type: "any[]", description: "Arguments for the verb." },
+        { name: "delay", type: "number", description: "Delay in milliseconds." },
+      ],
+      returnType: "void",
+      slots: [],
+    },
+  }),
+};

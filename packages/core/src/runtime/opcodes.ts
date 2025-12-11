@@ -13,7 +13,10 @@ import {
   createOpcodeRegistry,
 } from "@viwo/scripting";
 
+import { SchedulerLib } from "../scheduler";
+
 export const GameOpcodes = createOpcodeRegistry(
+  SchedulerLib,
   StdLib,
   CoreLib,
   KernelLib,

@@ -57,7 +57,7 @@ describe("Hotel Seed Stage 1", () => {
     const ctx = createScriptContext({
       args,
       caller: caller ?? freshEntity,
-      gas: 1_000_000,
+      gas: 100_000,
       ops: createOps(),
       send,
       this: freshEntity,
@@ -84,11 +84,11 @@ describe("Hotel Seed Stage 1", () => {
     const roomId = (await runVerb(manager, "create_room")) as number;
     expect(roomId).toBeDefined();
 
-    const room = getEntity(roomId);
+    const room = getEntity(roomId)!;
     expect(room).toBeDefined();
-    expect(room!["hotel_entity_type"]).toBe("room");
-    expect(room!["managed_by"]).toBe(manager.id);
-    expect(room!["last_occupied"]).toBe(new Date(mockTime).toISOString());
+    expect(room["hotel_entity_type"]).toBe("room");
+    expect(room["managed_by"]).toBe(manager.id);
+    expect(room["last_occupied"]).toBe(new Date(mockTime).toISOString());
 
     const freshManager = getEntity(manager.id)!;
     const activeRooms = freshManager["active_rooms"] as number[];

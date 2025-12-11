@@ -95,7 +95,7 @@ describe("transpiler", () => {
       send("hello");
     `;
     const expected = StdLib.seq(
-      StdLib.let("send", StdLib.lambda(["msg"], StdLib.seq(StdLib.var("msg")))),
+      StdLib.let("send", StdLib.lambda(["msg"], StdLib.seq(StdLib.return(StdLib.var("msg"))))),
       StdLib.apply(StdLib.var("send"), "hello"),
     );
     expect(transpile(code)).toEqual(expected);
@@ -135,7 +135,10 @@ describe("transpiler", () => {
       inc(1);
     `;
     const expected = StdLib.seq(
-      StdLib.let("inc", StdLib.lambda(["x"], StdLib.seq(MathLib.add(StdLib.var("x"), 1)))),
+      StdLib.let(
+        "inc",
+        StdLib.lambda(["x"], StdLib.seq(StdLib.return(MathLib.add(StdLib.var("x"), 1)))),
+      ),
       StdLib.apply(StdLib.var("inc"), 1),
     );
     expect(transpile(code)).toEqual(expected);
@@ -146,7 +149,7 @@ describe("transpiler", () => {
       StdLib.lambda(["x"], MathLib.add(StdLib.var("x"), 1)),
     );
     expect(transpile("(x) => { return x + 1; }")).toEqual(
-      StdLib.lambda(["x"], StdLib.seq(MathLib.add(StdLib.var("x"), 1))),
+      StdLib.lambda(["x"], StdLib.seq(StdLib.return(MathLib.add(StdLib.var("x"), 1)))),
     );
   });
 
@@ -253,7 +256,7 @@ describe("transpiler", () => {
       id<number>(1);
     `;
     const funcExpected = StdLib.seq(
-      StdLib.let("id", StdLib.lambda(["x"], StdLib.seq(StdLib.var("x")))),
+      StdLib.let("id", StdLib.lambda(["x"], StdLib.seq(StdLib.return(StdLib.var("x"))))),
       StdLib.apply(StdLib.var("id"), 1),
     );
     expect(transpile(funcDecl)).toEqual(funcExpected);

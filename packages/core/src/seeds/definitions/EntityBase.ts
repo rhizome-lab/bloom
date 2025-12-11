@@ -13,21 +13,20 @@ export class EntityBase implements Entity {
   [key: string]: unknown;
 
   find(query: string) {
-    const locationId = std.caller().location;
-    const location = entity(locationId!);
-    list.find(location.contents ?? [], (id: number) => {
-      const props = resolve_props(entity(id));
-      return props.name === query;
+    const locationId = (std.caller() as EntityBase).location;
+    const location = entity(locationId!) as EntityBase;
+    const found = list.find(location.contents ?? [], (id: number) => {
+      const props = resolve_props(entity(id)) as EntityBase;
+      const match = props.name === query;
+      return match;
     });
+    return found;
   }
 
-  find_exit(query: string) {
-    const locationId = std.caller().location;
-    const location = entity(locationId!);
-    list.find(location.exits ?? [], (id: number) => {
-      const props = resolve_props(entity(id));
-      return props.name === query || props.direction === query;
-    });
+  find_exit(direction: string) {
+    const location = resolve_props(entity((std.caller() as EntityBase).location!)) as EntityBase;
+    const exits = location.exits ?? [];
+    return list.find(exits, (id: number) => (entity(id) as EntityBase).name === direction);
   }
 
   on_enter(mover: Entity, authCap: EntityControl | null) {
@@ -62,7 +61,7 @@ export class EntityBase implements Entity {
       send("message", "Invalid destination.");
       return;
     }
-    const mover = std.caller();
+    const mover = std.caller() as EntityBase;
     let checkId: number | null = destId;
     let isRecursive = false;
     while (checkId) {
@@ -70,8 +69,13 @@ export class EntityBase implements Entity {
         isRecursive = true;
         checkId = null;
       } else {
-        const checkEnt = entity(checkId);
-        checkId = checkEnt.location ?? null;
+        const checkEnt = entity(checkId) as EntityBase;
+        // Break infinite loop if entity is its own location (e.g. Void)
+        if (checkEnt.location === checkId) {
+          checkId = null;
+        } else {
+          checkId = checkEnt.location ?? null;
+        }
       }
     }
 
@@ -104,7 +108,7 @@ export class EntityBase implements Entity {
     } else {
       const exitId = call(this, "find_exit", direction);
       if (exitId) {
-        const destId = resolve_props(entity(exitId)).destination!;
+        const destId = (resolve_props(entity(exitId)) as EntityBase).destination!;
         call(std.caller(), "teleport", entity(destId));
       } else {
         send("message", "That way leads nowhere.");

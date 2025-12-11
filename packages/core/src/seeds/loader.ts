@@ -7,7 +7,11 @@ export interface EntityDefinition {
   verbs: Map<string, any>; // S-expressions
 }
 
-export function loadEntityDefinition(filePath: string, className: string): EntityDefinition {
+export function loadEntityDefinition(
+  filePath: string,
+  className: string,
+  replacements: Record<string, string> = {},
+): EntityDefinition {
   const content = readFileSync(filePath, "utf8");
   const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
 
@@ -44,7 +48,12 @@ export function loadEntityDefinition(filePath: string, className: string): Entit
         const params = member.parameters.map((parameter) => parameter.getText()).join(", ");
 
         // Extract body text including braces
-        const bodyText = member.body.getText();
+        let bodyText = member.body.getText();
+
+        // Apply replacements
+        for (const [key, val] of Object.entries(replacements)) {
+          bodyText = bodyText.replaceAll(key, val);
+        }
 
         const funcCode = `export function ${verbName}(${params}) ${bodyText}`;
         const compiled = transpile(funcCode);

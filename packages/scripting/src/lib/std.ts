@@ -84,7 +84,7 @@ const seq_ = defineFullOpcode<[...steps: unknown[]], any, true>("std.seq", {
         const step = args[idx];
         idx += 1;
         try {
-          const result = evaluate(step, ctx);
+          const result = evaluate(step, ctx, { catchReturn: false });
 
           if (result instanceof Promise) {
             return result.then((res) => {
@@ -145,7 +145,7 @@ const if_ = defineFullOpcode<
       const snapshot = enterScope(ctx);
       try {
         const branch = conditionResult ? thenBranch : elseBranch;
-        const result = branch ? evaluate(branch, ctx) : null;
+        const result = branch ? evaluate(branch, ctx, { catchReturn: false }) : null;
         if (result instanceof Promise) {
           return result.then(
             (result) => {
@@ -215,7 +215,7 @@ const while_ = defineFullOpcode<[condition: boolean, body: unknown], any, true>(
     const runBodyAsync = () => {
       const snapshot = enterScope(ctx);
       try {
-        const bodyResult = evaluate(body, ctx);
+        const bodyResult = evaluate(body, ctx, { catchReturn: false });
         if (bodyResult instanceof Promise) {
           return bodyResult.then(
             () => {
@@ -251,7 +251,7 @@ const while_ = defineFullOpcode<[condition: boolean, body: unknown], any, true>(
     const runLoop = (): any => {
       while (true) {
         try {
-          const condResult = evaluate(cond, ctx);
+          const condResult = evaluate(cond, ctx, { catchReturn: false });
           if (condResult instanceof Promise) {
             return condResult.then((res) => {
               if (res) {
@@ -265,7 +265,7 @@ const while_ = defineFullOpcode<[condition: boolean, body: unknown], any, true>(
           }
           const snapshot = enterScope(ctx);
           try {
-            const bodyResult = evaluate(body, ctx);
+            const bodyResult = evaluate(body, ctx, { catchReturn: false });
             if (bodyResult instanceof Promise) {
               return bodyResult.then(
                 () => {
@@ -354,7 +354,7 @@ const for_ = defineFullOpcode<
           ctx.vars[varName] = item;
 
           try {
-            const result = evaluate(body, ctx);
+            const result = evaluate(body, ctx, { catchReturn: false });
             if (result instanceof Promise) {
               return result.then(
                 () => {
@@ -391,7 +391,7 @@ const for_ = defineFullOpcode<
       return next();
     };
 
-    const listResult = evaluate(listExpr, ctx);
+    const listResult = evaluate(listExpr, ctx, { catchReturn: false });
     if (listResult instanceof Promise) {
       return listResult.then((res) => runLoop(res as any[]));
     }
@@ -773,10 +773,18 @@ const try_ = defineFullOpcode<
   handler: ([tryBlock, errorVar, catchBlock], ctx) => {
     const snapshot = enterScope(ctx);
     try {
-      const result = evaluate(tryBlock, ctx);
+      const result = evaluate(tryBlock, ctx, { catchReturn: false });
       exitScope(ctx, snapshot);
       return result;
     } catch (error: any) {
+      if (
+        error instanceof ReturnSignal ||
+        error instanceof BreakSignal ||
+        error instanceof ContinueSignal
+      ) {
+        exitScope(ctx, snapshot);
+        throw error;
+      }
       exitScope(ctx, snapshot); // Unwind try scope
       if (catchBlock) {
         const catchSnapshot = enterScope(ctx);
@@ -788,7 +796,7 @@ const try_ = defineFullOpcode<
           ctx.vars[errorVar] = error.message ?? String(error);
         }
         try {
-          const result = evaluate(catchBlock, ctx);
+          const result = evaluate(catchBlock, ctx, { catchReturn: false });
           exitScope(ctx, catchSnapshot);
           return result;
         } catch (error) {

@@ -1,12 +1,11 @@
 import { addVerb, createEntity } from "../repo";
-import { extractVerb } from "../verb_loader";
 import { resolve } from "path";
-import { transpile } from "@viwo/scripting";
-
-const verbsPath = resolve(__dirname, "verbs.ts");
+import { loadEntityDefinition } from "./loader";
 
 export function seedItems(locationId: number) {
   // 6. Book Item
+  const bookDef = loadEntityDefinition(resolve(__dirname, "definitions/Items.ts"), "Book");
+
   const bookId = createEntity({
     chapters: [
       { content: "Welcome to the world of Viwo.", title: "Introduction" },
@@ -17,13 +16,7 @@ export function seedItems(locationId: number) {
     name: "Dusty Book",
   });
 
-  addVerb(bookId, "read", transpile(extractVerb(verbsPath, "book_read")));
-
-  addVerb(bookId, "list_chapters", transpile(extractVerb(verbsPath, "book_list_chapters")));
-
-  addVerb(
-    bookId,
-    "search_chapters_v2",
-    transpile(extractVerb(verbsPath, "book_search_chapters_v2")),
-  );
+  for (const [name, code] of bookDef.verbs) {
+    addVerb(bookId, name, code);
+  }
 }

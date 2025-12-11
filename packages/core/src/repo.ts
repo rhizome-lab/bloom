@@ -99,6 +99,13 @@ export function updateEntity(...entities: readonly Entity[]) {
 
       let currentProps = {};
       let prototypeId: number | null = null;
+      let updatesPrototypeId: number | undefined;
+
+      // Extract prototype_id from updates if present
+      if ("prototype_id" in updates) {
+        updatesPrototypeId = (updates as any).prototype_id;
+        delete (updates as any).prototype_id;
+      }
 
       if (row) {
         prototypeId = row.prototype_id;
@@ -107,6 +114,11 @@ export function updateEntity(...entities: readonly Entity[]) {
         } catch {
           // invalid json, ignore
         }
+      }
+
+      // Override prototypeId if provided in updates
+      if (updatesPrototypeId !== undefined) {
+        prototypeId = updatesPrototypeId;
       }
 
       // 2. Linear merge (Partial Update)

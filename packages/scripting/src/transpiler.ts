@@ -9,7 +9,10 @@ import { RESERVED_TYPESCRIPT_KEYWORDS } from "./type_generator";
 import ts from "typescript";
 
 const OPCODE_MAPPINGS: Record<string, string> = {
-  "console.log": "log",
+  Boolean: "std.boolean",
+  Number: "std.number",
+  String: "std.string",
+  "console.log": "std.log",
 };
 
 export function registerOpcodeMapping(tsName: string, opcode: string) {
@@ -38,20 +41,24 @@ export function transpile(code: string): any {
       !ts.isEnumDeclaration(stmt),
   );
 
-  if (relevantStatements.length === 1 && ts.isFunctionDeclaration(relevantStatements[0]!)) {
-    const func = relevantStatements[0]!;
+  if (
+    relevantStatements.length === 1 &&
+    relevantStatements[0] &&
+    ts.isFunctionDeclaration(relevantStatements[0])
+  ) {
+    const [func] = relevantStatements;
     if (func.body) {
       const funcScope = new Set(scope);
-      const parameters = func.parameters.map((p) => p.name.getText());
-      parameters.forEach((p) => funcScope.add(p));
+      const parameters = func.parameters.map((parameter) => parameter.name.getText());
+      parameters.forEach((parameter) => funcScope.add(parameter));
       const body = transpileNode(func.body, funcScope);
 
       // Create argument bindings
       const bindings = parameters
-        .filter((p) => p !== "this")
-        .map((p, i) => StdLib.let(p, StdLib.arg(i)));
+        .filter((parameter) => parameter !== "this")
+        .map((parameter, idx) => StdLib.let(parameter, StdLib.arg(idx)));
 
-      return StdLib.seq(...bindings, body);
+      return StdLib.seq(...bindings, ...(body[0] === "std.seq" ? body.slice(1) : [body]));
     }
   }
 
@@ -743,14 +750,10 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
   }
 
   if (ts.isReturnStatement(node)) {
-    // ViwoScript doesn't have explicit return in sequences usually, it returns the last value.
-    // But if we are inside a lambda, we might want to just evaluate the expression.
-    // If we are in a block, `return x` might be tricky if it's not the last statement.
-    // For now, let's just return the expression.
     if (node.expression) {
-      return transpileNode(node.expression, scope);
+      return StdLib.return(transpileNode(node.expression, scope));
     }
-    return;
+    return StdLib.return();
   }
 
   if (ts.isBreakStatement(node)) {

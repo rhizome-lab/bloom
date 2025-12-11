@@ -93,9 +93,15 @@ describe("Player Commands", () => {
 
     await runCommand("look", ["Box"]);
     expect(sentMessages.length).toBeGreaterThan(0);
-    expect(Array.isArray(sentMessages[0])).toBe(true);
-    expect(sentMessages[0].length).toBeGreaterThan(0);
-    expect(sentMessages[0][0].name).toEqual("Box");
+    // Inspect payload assuming it's { entities: [...] }
+    const msg = sentMessages[0];
+    expect(msg).toBeDefined();
+    // Sometimes it pushes the list directly? Check send implementation.
+    // implementation: if payload.entities, push(payload.entities).
+    // So sentMessages[0] IS the array.
+    expect(Array.isArray(msg)).toBe(true);
+    expect(msg.length).toBeGreaterThan(0);
+    expect(msg[0].name).toEqual("Box");
   });
 
   it("should check inventory", async () => {
@@ -232,17 +238,63 @@ describe("Recursive Move Check", () => {
       .query<{ id: number }, []>(
         "SELECT id FROM entities WHERE json_extract(props, '$.name') = 'Player Base'",
       )
-      .get()!;
+      .get();
+
+    console.log("DEBUG: Player Base:", playerBase);
+    if (!playerBase) {
+      const all = db.query("SELECT json_extract(props, '$.name') as name FROM entities").all();
+      console.log("DEBUG: All Entities:", all);
+    }
 
     // Create a room
     const voidEntity = db
       .query<{ id: number }, []>(
         "SELECT id FROM entities WHERE json_extract(props, '$.name') = 'The Void'",
       )
-      .get()!;
+      .get();
+    console.log("DEBUG: Void Entity:", voidEntity);
+    const freshVoid = getEntity(voidEntity.id);
+    console.log("DEBUG: Void Prototype:", freshVoid?.prototype_id);
 
-    const callerId = createEntity({ location: voidEntity.id, name: "Player" }, playerBase.id);
+    const callerId = createEntity({ location: voidEntity.id, name: "Player" }, playerBase!.id);
     caller = getEntity(callerId)!;
+  });
+
+  it("should handle null logic correctly", async () => {
+    const code = [
+      "std.seq",
+      ["std.let", "val", null],
+      [
+        "std.if",
+        ["not", ["std.var", "val"]],
+        ["std.return", "null matches"],
+        ["std.return", "null failed"],
+      ],
+    ] as any;
+    const result = await evaluate(
+      code,
+      createScriptContext({ args: [], caller, ops: GameOpcodes, this: caller }),
+    );
+    expect(result).toBe("null matches");
+  });
+
+  it("should verify get_capability returns null", async () => {
+    // Void (id 1) should have no capability
+    const code = [
+      "std.seq",
+      ["std.let", "cap", ["get_capability", "entity.control", { target_id: 1 }]],
+      [
+        "std.if",
+        ["not", ["std.var", "cap"]],
+        ["std.return", "is null"],
+        ["std.return", "is not null"],
+      ],
+    ] as any;
+    const result = await evaluate(
+      code,
+      createScriptContext({ args: [], caller, ops: GameOpcodes, this: caller }),
+    );
+    expect(result).toBe("is null");
   });
 
   it("should prevent moving an entity into itself", async () => {
