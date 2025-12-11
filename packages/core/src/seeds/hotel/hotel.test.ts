@@ -31,7 +31,7 @@ describe("Hotel Seed Stage 1", () => {
     // Find Hotel Manager
     const managerRow = db
       .query<Entity, []>(
-        "SELECT * FROM entities WHERE json_extract(props, '$.name') = 'Hotel Manager'",
+        "SELECT id FROM entities WHERE json_extract(props, '$.name') = 'Hotel Manager'",
       )
       .get()!;
     manager = getEntity(managerRow.id)!;
@@ -57,6 +57,7 @@ describe("Hotel Seed Stage 1", () => {
     const ctx = createScriptContext({
       args,
       caller: caller ?? freshEntity,
+      gas: 1_000_000,
       ops: createOps(),
       send,
       this: freshEntity,
@@ -144,7 +145,6 @@ describe("Hotel Seed Stage 1", () => {
     const room = getEntity(roomId)!;
 
     // Check description for theme
-    console.log("Sent Messages:", JSON.stringify(sentMessages, null, 2));
     expect(room["theme"]).toBeDefined();
     expect(typeof room["theme"]).toBe("string");
 

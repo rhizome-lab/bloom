@@ -164,6 +164,14 @@ declare global {
     readonly ops: Record<string, OpcodeBuilder<any[], any>>;
   }
 
+  interface CapabilityRegistry {
+    // TODO: Pull these into the type generator
+    "sys.mint": any;
+    "sys.create": any;
+    "sys.sudo": any;
+    "entity.control": EntityControl;
+  }
+
   // Standard library functions
   interface Entity {
     /** Unique ID of the entity */
@@ -239,7 +247,10 @@ declare global {
    * @param type The capability type.
    * @param filter Filter parameters.
    */
-  function get_capability(type_: string, filter?: object): Capability | null;
+  function get_capability<Type extends keyof CapabilityRegistry>(
+    type_: Type,
+    filter?: object,
+  ): CapabilityRegistry[Type] | null;
   /**
    * Transfer a capability to another entity
    *

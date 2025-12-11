@@ -8,7 +8,12 @@ export function bot_sudo() {
   const targetId = std.arg<number>(0);
   const verb = std.arg<string>(1);
   const argsList = std.arg<any[]>(2);
-  std.call_method(get_capability("sys.sudo", {})!, "exec", entity(targetId), verb, argsList);
+  const sudo = get_capability("sys.sudo", {});
+  if (!sudo) {
+    send("message", "You do not have sudo access.");
+    return;
+  }
+  sudo.exec(entity(targetId), verb, argsList);
 }
 
 export function system_get_available_verbs() {
@@ -75,94 +80,75 @@ export function entity_base_find_exit() {
 
 export function entity_base_on_enter(this: Entity) {
   const mover = std.arg<Entity>(0);
-  const authCap = std.arg<Capability | null>(1);
-  let cap = get_capability("entity.control", { target_id: this.id });
-  if (!cap && authCap) {
-    cap = authCap;
-  }
-  if (cap) {
-    const contents = (this["contents"] as number[]) ?? [];
-    list.push(contents, mover.id);
-    list.push(contents, mover.id);
-    // this["contents"] = contents;
-    std.call_method(cap, "update", this.id, { contents: contents });
-  } else {
+  const authCap = std.arg<EntityControl | null>(1);
+  const cap = get_capability("entity.control", { target_id: this.id }) ?? authCap;
+  if (!cap) {
     send("message", "The room refuses you.");
+    return;
   }
+  const contents = (this["contents"] as number[]) ?? [];
+  list.push(contents, mover.id);
+  cap.update(this.id, { contents: contents });
 }
 
 export function entity_base_on_leave(this: Entity) {
   const mover = std.arg<Entity>(0);
-  const authCap = std.arg<Capability | null>(1);
-
-  let cap = get_capability("entity.control", { target_id: this.id });
-  if (!cap && authCap) {
-    cap = authCap;
+  const authCap = std.arg<EntityControl | null>(1);
+  const cap = get_capability("entity.control", { target_id: this.id }) ?? authCap;
+  if (!cap) {
+    send("message", "The room refuses you.");
+    return;
   }
-
-  if (cap) {
-    const contents = (this["contents"] as number[]) ?? [];
-    const newContents = list.filter(contents, (id: number) => id !== mover.id);
-    // this["contents"] = newContents;
-    // this["contents"] = newContents;
-    std.call_method(cap, "update", this.id, { contents: newContents });
-  } else {
-    send("message", "BASE ROOM REFUSES YOU");
-  }
+  const contents = (this["contents"] as number[]) ?? [];
+  const newContents = list.filter(contents, (id: number) => id !== mover.id);
+  cap.update(this.id, { contents: newContents });
 }
 
 export function entity_base_teleport() {
   const destEntity = std.arg<Entity>(0);
   if (!destEntity) {
     send("message", "Where do you want to teleport to?");
-  } else {
-    const destId = destEntity.id;
-    if (destId) {
-      const mover = std.caller();
-      let checkId: number | null = destId;
-      let isRecursive = false;
-      while (checkId) {
-        if (checkId === mover.id) {
-          isRecursive = true;
-          checkId = null;
-        } else {
-          const checkEnt = entity(checkId);
-          checkId = (checkEnt["location"] as number) ?? null;
-        }
-      }
-
-      if (isRecursive) {
-        send("message", "You can't put something inside itself.");
-      } else {
-        const oldLocId = mover["location"] as number;
-        const oldLoc = entity(oldLocId);
-        const newLoc = entity(destId);
-
-        const selfCap = get_capability("entity.control", {
-          target_id: mover.id,
-        });
-
-        send("message", "DEBUG: TELEPORT EXECUTING");
-
-        // Pass selfCap to authorize the room modification
-        call(oldLoc, "on_leave", mover, selfCap);
-        call(newLoc, "on_enter", mover, selfCap);
-
-        if (selfCap) {
-          // mover["location"] = destId;
-          // mover["location"] = destId;
-          std.call_method(selfCap, "update", mover.id, { location: destId });
-        } else {
-          send("message", "You cannot move yourself.");
-        }
-
-        send("room_id", { roomId: destId });
-        call(std.caller(), "look");
-      }
+    return;
+  }
+  const destId = destEntity.id;
+  if (!destId) {
+    send("message", "Invalid destination.");
+    return;
+  }
+  const mover = std.caller();
+  let checkId: number | null = destId;
+  let isRecursive = false;
+  while (checkId) {
+    if (checkId === mover.id) {
+      isRecursive = true;
+      checkId = null;
     } else {
-      send("message", "Invalid destination.");
+      const checkEnt = entity(checkId);
+      checkId = (checkEnt["location"] as number) ?? null;
     }
   }
+
+  if (isRecursive) {
+    send("message", "You can't put something inside itself.");
+    return;
+  }
+  const oldLocId = mover["location"] as number;
+  const oldLoc = entity(oldLocId);
+  const newLoc = entity(destId);
+  const selfCap =
+    get_capability("entity.control", { target_id: mover.id }) ??
+    get_capability("entity.control", { "*": true });
+
+  // Pass selfCap to authorize the room modification
+  call(oldLoc, "on_leave", mover, selfCap);
+  call(newLoc, "on_enter", mover, selfCap);
+  if (!selfCap) {
+    send("message", "You cannot move yourself.");
+    return;
+  }
+  selfCap.update(mover.id, { location: destId });
+  send("room_id", { roomId: destId });
+  call(std.caller(), "look");
 }
 
 export function entity_base_go(this: Entity) {
@@ -235,37 +221,35 @@ export function player_dig() {
     send("message", "Where do you want to dig?");
   } else {
     const createCap = get_capability("sys.create", {});
-    let controlCap = get_capability("entity.control", {
-      target_id: std.caller()["location"],
-    });
-    if (!controlCap) {
-      controlCap = get_capability("entity.control", { "*": true });
-    }
+    const controlCap =
+      get_capability("entity.control", {
+        target_id: std.caller()["location"],
+      }) ?? get_capability("entity.control", { "*": true });
 
     if (createCap && controlCap) {
       const newRoomData: Record<string, any> = {};
       newRoomData["name"] = roomName;
-      const newRoomId = std.call_method(createCap, "create", newRoomData);
+      const newRoomId = createCap.create(newRoomData);
 
       const exitData: Record<string, any> = {};
       exitData["name"] = direction;
       exitData["location"] = std.caller()["location"];
       exitData["direction"] = direction;
       exitData["destination"] = newRoomId;
-      const exitId = std.call_method(createCap, "create", exitData);
+      const exitId = createCap.create(exitData);
 
       // The original code used template literals to inject the ID.
       // We can't do that with a static file unless we do a replace after extraction.
       // Let's use a placeholder and replace it in seed.ts.
 
-      std.call_method(controlCap, "setPrototype", newRoomId, ENTITY_BASE_ID_PLACEHOLDER);
+      controlCap.setPrototype(newRoomId, ENTITY_BASE_ID_PLACEHOLDER);
 
       const currentRoom = entity(std.caller()["location"] as number);
       const exits = (currentRoom["exits"] as number[]) ?? [];
       list.push(exits, exitId);
       // currentRoom["exits"] = exits;
       // currentRoom["exits"] = exits;
-      std.call_method(controlCap, "update", currentRoom.id, { exits });
+      controlCap.update(currentRoom.id, { exits });
 
       // Back exit
       const backExitData: Record<string, any> = {};
@@ -273,7 +257,7 @@ export function player_dig() {
       backExitData["location"] = newRoomId;
       backExitData["direction"] = "back";
       backExitData["destination"] = std.caller()["location"];
-      const backExitId = std.call_method(createCap, "create", backExitData);
+      const backExitId = createCap.create(backExitData);
 
       const newRoom = entity(newRoomId);
       const newExits: number[] = [];
@@ -296,7 +280,7 @@ export function player_dig() {
       if (newRoomCap) {
         // newRoom["exits"] = newExits;
         // newRoom["exits"] = newExits;
-        std.call_method(newRoomCap, "update", newRoom.id, { exits: newExits });
+        newRoomCap.update(newRoom.id, { exits: newExits });
       }
 
       send("message", "You dig a new room.");
@@ -313,62 +297,68 @@ export function player_create() {
     send("message", "What do you want to create?");
   } else {
     const createCap = get_capability("sys.create");
-    let controlCap = get_capability("entity.control", {
-      target_id: std.caller()["location"],
-    });
-    if (!controlCap) {
-      controlCap = get_capability("entity.control", { "*": true });
+    const controlCap =
+      get_capability("entity.control", { target_id: std.caller()["location"] }) ??
+      get_capability("entity.control", { "*": true });
+    if (!createCap || !controlCap) {
+      send("message", "You do not have permission to create here.");
+      return;
     }
+    const itemData: Record<string, any> = {};
+    itemData["name"] = name;
+    itemData["location"] = std.caller()["location"];
+    const itemId = createCap.create(itemData);
+    controlCap.setPrototype(itemId, ENTITY_BASE_ID_PLACEHOLDER);
 
-    if (createCap && controlCap) {
-      const itemData: Record<string, any> = {};
-      itemData["name"] = name;
-      itemData["location"] = std.caller()["location"];
-      const itemId = std.call_method(createCap, "create", itemData);
-      std.call_method(controlCap, "setPrototype", itemId, ENTITY_BASE_ID_PLACEHOLDER);
-
-      const room = entity(std.caller()["location"] as number);
-      const contents = (room["contents"] as number[]) ?? [];
-      list.push(contents, itemId);
-      // room["contents"] = contents;
-      // room["contents"] = contents;
-      std.call_method(controlCap, "update", room.id, { contents });
-
-      send("message", `You create ${name}.`);
-      call(std.caller(), "look");
-      return itemId;
+    const room = entity(std.caller()["location"] as number);
+    const roomId = room.id; // Get room ID for logging
+    if (roomId) {
+      if (itemId) {
+        const contents = (room["contents"] as number[]) ?? [];
+        const newContents = list.concat(contents, [itemId]);
+        controlCap.update(roomId, { contents: newContents });
+        send(
+          "message",
+          `DEBUG: Added ${itemId} to room ${roomId} contents. New size: ${list.len(newContents)}`,
+        );
+      } else {
+        send("message", "DEBUG: itemId missing");
+      }
+    } else {
+      send("message", "DEBUG: room missing");
     }
-    send("message", "You do not have permission to create here.");
-    return null;
+    send("message", `You create ${name}.`);
+    call(std.caller(), "look");
+    return itemId;
   }
-  return null;
 }
 
 export function player_set(this: Entity) {
   const targetName = std.arg<string>(0);
   const propName = std.arg<string>(1);
   const value = std.arg<unknown>(2);
-  if (!targetName || !propName) {
+  if (!targetName) {
     send("message", "Usage: set <target> <prop> <value>");
-  } else {
-    const targetId = call(this, "find", targetName);
-    if (targetId) {
-      let controlCap = get_capability("entity.control", {
-        target_id: targetId,
-      });
-      if (!controlCap) {
-        controlCap = get_capability("entity.control", { "*": true });
-      }
-      if (controlCap) {
-        std.call_method(controlCap, "update", targetId, { [propName]: value });
-        send("message", "Property set.");
-      } else {
-        send("message", "You do not have permission to modify this object.");
-      }
-    } else {
-      send("message", "I don't see that here.");
-    }
+    return;
   }
+  if (!propName) {
+    send("message", "Usage: set <target> <prop> <value>");
+    return;
+  }
+  const targetId = call(this, "find", targetName);
+  if (!targetId) {
+    send("message", "I don't see that here.");
+    return;
+  }
+  const controlCap =
+    get_capability("entity.control", { target_id: targetId }) ??
+    get_capability("entity.control", { "*": true });
+  if (!controlCap) {
+    send("message", "You do not have permission to modify this object.");
+    return;
+  }
+  controlCap.update(targetId, { [propName]: value });
+  send("message", "Property set.");
 }
 
 export function watch_tell() {
@@ -487,7 +477,7 @@ export function book_add_chapter(this: Entity) {
   call(std.caller(), "tell", "Chapter added.");
 }
 
-export function book_search_chapters(this: Entity) {
+export function book_search_chapters_v2(this: Entity) {
   const query = str.lower(std.arg(0));
   const chapters = this["chapters"] as { title: string; content: string }[];
   const results = list.filter(
@@ -627,7 +617,11 @@ export function combat_start(this: Entity) {
   const createCap = get_capability("sys.create", {});
   const controlCap = get_capability("entity.control", { "*": true });
 
-  if (!createCap || !controlCap) {
+  if (!createCap) {
+    send("message", "Combat Manager missing capabilities.");
+    return;
+  }
+  if (!controlCap) {
     send("message", "Combat Manager missing capabilities.");
     return;
   }
@@ -642,7 +636,7 @@ export function combat_start(this: Entity) {
   sessionData["round"] = 1;
   sessionData["location"] = this["location"];
 
-  const sessionId = std.call_method(createCap, "create", sessionData);
+  const sessionId = createCap.create(sessionData);
   return sessionId;
 }
 
@@ -670,7 +664,7 @@ export function combat_next_turn(this: Entity) {
       index = 0;
       const round = session["round"] as number;
       // session["round"] = round + 1;
-      std.call_method(controlCap, "update", session.id, { round: round + 1 });
+      controlCap.update(session.id, { round: round + 1 });
     }
 
     const candidateId = order[index]!;
@@ -686,7 +680,7 @@ export function combat_next_turn(this: Entity) {
 
     attempts += 1;
   }
-  std.call_method(controlCap, "update", session.id, { current_turn_index: index });
+  controlCap.update(session.id, { current_turn_index: index });
   return nextId;
 }
 
@@ -721,20 +715,17 @@ export function combat_apply_status(this: Entity) {
   // but we need to set it back on the entity.
   effects[effectKey] = newEffect;
 
-  let controlCap = get_capability("entity.control", { target_id: target.id });
+  const controlCap =
+    get_capability("entity.control", { target_id: target.id }) ??
+    get_capability("entity.control", { "*": true });
   if (!controlCap) {
-    controlCap = get_capability("entity.control", { "*": true });
+    return;
   }
-
-  if (controlCap) {
-    std.call_method(controlCap, "update", target.id, { status_effects: effects });
-
-    // Hook
-    // Assuming all effects inherit from Effect Base and thus have the verbs
-    call(effectEntity, "on_apply", target, newEffect);
-
-    call(target, "tell", `Applied ${effectEntity["name"]}.`);
-  }
+  controlCap.update(target.id, { status_effects: effects });
+  // Hook
+  // Assuming all effects inherit from Effect Base and thus have the verbs
+  call(effectEntity, "on_apply", target, newEffect);
+  call(target, "tell", `Applied ${effectEntity["name"]}.`);
 }
 
 export function combat_tick_status(this: Entity) {
@@ -783,7 +774,7 @@ export function combat_tick_status(this: Entity) {
   }
 
   // Save changes
-  std.call_method(controlCap, "update", target.id, { status_effects: effects });
+  controlCap.update(target.id, { status_effects: effects });
 
   return canAct;
 }
@@ -841,7 +832,7 @@ export function combat_attack_elemental(this: Entity) {
   }
 
   if (targetCap) {
-    std.call_method(targetCap, "update", target.id, { hp: newHp });
+    targetCap.update(target.id, { hp: newHp });
 
     let msg = `You attack ${defProps["name"]} with ${element} for ${finalDamage} damage!`;
     if (resMod > 1) {
@@ -898,7 +889,7 @@ export function combat_attack(this: Entity) {
   }
 
   if (targetCap) {
-    std.call_method(targetCap, "update", target.id, { hp: newHp });
+    targetCap.update(target.id, { hp: newHp });
 
     call(attacker, "tell", `You attack ${defProps["name"]} for ${damage} damage!`);
     call(target, "tell", `${attProps["name"]} attacks you for ${damage} damage!`);
@@ -948,6 +939,12 @@ export function combat_test(this: Entity) {
 export function poison_on_tick(this: Entity) {
   const target = std.arg<Entity>(0);
   const data = std.arg<Record<string, any>>(1);
+  const controlCap =
+    get_capability("entity.control", { target_id: target.id }) ??
+    get_capability("entity.control", { "*": true });
+  if (!controlCap) {
+    return;
+  }
 
   const magnitude = (data["magnitude"] as number) ?? 5;
 
@@ -955,21 +952,12 @@ export function poison_on_tick(this: Entity) {
   const hp = (resolve_props(target)["hp"] as number) ?? 100;
   const newHp = hp - magnitude;
 
-  let controlCap = get_capability("entity.control", { target_id: target.id });
-  if (!controlCap) {
-    controlCap = get_capability("entity.control", { "*": true });
+  controlCap.update(target.id, { hp: newHp });
+  call(target, "tell", `You take ${magnitude} poison damage!`);
+
+  if (newHp <= 0) {
+    call(target, "tell", "You succumbed to poison!");
   }
-
-  if (controlCap) {
-    std.call_method(controlCap, "update", target.id, { hp: newHp });
-    call(target, "tell", `You take ${magnitude} poison damage!`);
-
-    if (newHp <= 0) {
-      call(target, "tell", "You succumbed to poison!");
-    }
-  }
-
-  return true;
 }
 
 export function regen_on_tick(this: Entity) {
@@ -987,17 +975,15 @@ export function regen_on_tick(this: Entity) {
     newHp = maxHp;
   }
 
-  let controlCap = get_capability("entity.control", { target_id: target.id });
+  const controlCap =
+    get_capability("entity.control", { target_id: target.id }) ??
+    get_capability("entity.control", { "*": true });
   if (!controlCap) {
-    controlCap = get_capability("entity.control", { "*": true });
+    return;
   }
 
-  if (controlCap) {
-    std.call_method(controlCap, "update", target.id, { hp: newHp });
-    call(target, "tell", `You regenerate ${magnitude} HP.`);
-  }
-
-  return true;
+  controlCap.update(target.id, { hp: newHp });
+  call(target, "tell", `You regenerate ${magnitude} HP.`);
 }
 
 export function player_quest_start() {
@@ -1049,7 +1035,7 @@ export function player_quest_start() {
   const rootId = structure.id;
   questState.tasks[rootId] = { status: "active" };
   quests[String(questId)] = questState;
-  std.call_method(controlCap, "update", player.id, { quests });
+  controlCap.update(player.id, { quests });
   send("message", `Quest Started: ${structure.description || questEnt["name"]}`);
 
   // If root is a container (parallel/sequence) checking its children might happen in update loop
@@ -1097,7 +1083,7 @@ export function player_quest_update() {
   // Save state before recursion to ensure consistency?
   // Actually recursion calls 'quest_update' which fetches state again.
   // So we MUST save state now.
-  std.call_method(controlCap, "update", player.id, { quests });
+  controlCap.update(player.id, { quests });
 
   const questEnt = entity(questId);
   const structure = call(questEnt, "get_structure") as any;
@@ -1198,7 +1184,7 @@ export function player_quest_update() {
       if (taskId === structure.id) {
         qState.status = "completed";
         qState.completed_at = time.to_timestamp(time.now());
-        std.call_method(controlCap, "update", player.id, { quests }); // Need to save final Quest Level status
+        controlCap.update(player.id, { quests }); // Need to save final Quest Level status
         send("message", `Quest Completed: ${structure.description || questEnt["name"]}!`);
       }
     }

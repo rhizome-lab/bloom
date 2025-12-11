@@ -54,39 +54,25 @@ export function seed() {
   });
 
   createCapability(botId, "sys.sudo", {});
-
-  createCapability(botId, "sys.sudo", {});
-
   addVerb(botId, "sudo", transpile(extractVerb(verbsPath, "bot_sudo")));
-
   addVerb(
     systemId,
     "get_available_verbs",
     transpile(extractVerb(verbsPath, "system_get_available_verbs")),
   );
-
   addVerb(entityBaseId, "find", transpile(extractVerb(verbsPath, "entity_base_find")));
-
   addVerb(entityBaseId, "find_exit", transpile(extractVerb(verbsPath, "entity_base_find_exit")));
-
   addVerb(entityBaseId, "on_enter", transpile(extractVerb(verbsPath, "entity_base_on_enter")));
-
   addVerb(entityBaseId, "on_leave", transpile(extractVerb(verbsPath, "entity_base_on_leave")));
-
   addVerb(entityBaseId, "teleport", transpile(extractVerb(verbsPath, "entity_base_teleport")));
-
   addVerb(entityBaseId, "go", transpile(extractVerb(verbsPath, "entity_base_go")));
-
   addVerb(entityBaseId, "say", transpile(extractVerb(verbsPath, "entity_base_say")));
-
   addVerb(entityBaseId, "tell", transpile(extractVerb(verbsPath, "entity_base_tell")));
-
   addVerb(
     entityBaseId,
     "get_llm_prompt",
     transpile(extractVerb(verbsPath, "entity_base_get_llm_prompt")),
   );
-
   addVerb(
     entityBaseId,
     "get_image_gen_prompt",

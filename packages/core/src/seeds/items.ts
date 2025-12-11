@@ -21,7 +21,9 @@ export function seedItems(locationId: number) {
 
   addVerb(bookId, "list_chapters", transpile(extractVerb(verbsPath, "book_list_chapters")));
 
-  addVerb(bookId, "add_chapter", transpile(extractVerb(verbsPath, "book_add_chapter")));
-
-  addVerb(bookId, "search_chapters", transpile(extractVerb(verbsPath, "book_search_chapters")));
+  addVerb(
+    bookId,
+    "search_chapters_v2",
+    transpile(extractVerb(verbsPath, "book_search_chapters_v2")),
+  );
 }

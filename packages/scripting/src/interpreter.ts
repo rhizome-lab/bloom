@@ -265,8 +265,8 @@ function createStackTrace(sp: number, stackOp: string[], stackArgs: unknown[][])
 }
 
 function validateArgs(op: string, args: unknown[], metadata: OpcodeMetadata) {
-  const { parameters } = metadata;
-  if (!parameters) {
+  const { parameters, lazy } = metadata;
+  if (!parameters || lazy) {
     return;
   }
   const hasRest = parameters.some((parameter) => parameter.name.startsWith("..."));

@@ -325,6 +325,14 @@ interface ScriptContext {
   readonly ops: Record<string, OpcodeBuilder<any[], any>>;
 }
 
+interface CapabilityRegistry {
+  // TODO: Pull these into the type generator
+  "sys.mint": any;
+  "sys.create": any;
+  "sys.sudo": any;
+  "entity.control": EntityControl;
+}
+
 // Standard library functions
 `;
 

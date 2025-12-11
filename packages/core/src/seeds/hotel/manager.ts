@@ -7,9 +7,11 @@ export function manager_enter(this: Entity) {
   const player = std.caller();
   const lobbyId = this["lobby_id"] as number;
 
-  if (lobbyId && entity(lobbyId)) {
-    call(player, "teleport", entity(lobbyId));
-    return;
+  if (lobbyId) {
+    if (entity(lobbyId)) {
+      call(player, "teleport", entity(lobbyId));
+      return;
+    }
   }
 
   // Lobby doesn't exist, create it.
@@ -27,7 +29,11 @@ export function manager_create_lobby(this: Entity) {
   const createCap = get_capability("sys.create", {});
   const controlCap = get_capability("entity.control", { "*": true });
 
-  if (!createCap || !controlCap) {
+  if (!createCap) {
+    send("message", "Hotel Manager missing capabilities.");
+    return;
+  }
+  if (!controlCap) {
     send("message", "Hotel Manager missing capabilities.");
     return;
   }
@@ -55,6 +61,22 @@ export function manager_create_lobby(this: Entity) {
     managed_by: this.id,
   });
 
+  std.call_method(controlCap, "update", lobbyId, {
+    hotel_entity_type: "lobby",
+    managed_by: this.id,
+  });
+
+  // Manual location handling: Add lobby to manager's location (Void?)
+  const locId = this["location"];
+  if (locId) {
+    const loc = entity(locId as number);
+    if (loc) {
+      const contents = (loc["contents"] as number[]) ?? [];
+      list.push(contents, lobbyId);
+      std.call_method(controlCap, "update", loc.id, { contents });
+    }
+  }
+
   send("message", "Grand Hotel Lobby created.");
   return lobbyId;
 }
@@ -65,7 +87,10 @@ export function manager_create_room(this: Entity) {
   const createCap = get_capability("sys.create", {});
   const controlCap = get_capability("entity.control", { "*": true });
 
-  if (!createCap || !controlCap) {
+  if (!createCap) {
+    return null;
+  }
+  if (!controlCap) {
     return null;
   }
 
@@ -100,6 +125,17 @@ export function manager_create_room(this: Entity) {
   const activeRooms = (this["active_rooms"] as number[]) ?? [];
   list.push(activeRooms, roomId);
   std.call_method(controlCap, "update", this.id, { active_rooms: activeRooms });
+
+  // Manual location handling: Add room to manager's location
+  const locId = this["location"];
+  if (locId) {
+    const loc = entity(locId as number);
+    if (loc) {
+      const contents = (loc["contents"] as number[]) ?? [];
+      list.push(contents, roomId);
+      std.call_method(controlCap, "update", loc.id, { contents });
+    }
+  }
 
   return roomId;
 }
@@ -140,13 +176,14 @@ export function manager_cleanup_loop(this: Entity) {
     const lastOccupied = (room["last_occupied"] as string) ?? time.now();
     const isEmpty = list.len(contents) === 0; // Very naive for now
 
-    if (
-      isEmpty &&
-      time.to_timestamp(now) - time.to_timestamp(lastOccupied) > CLEANUP_GRACE_PERIOD
-    ) {
-      // Destroy!
-      call(this, "gc", roomId);
-      send("message", `[Manager] Cleaned up room ${roomId}`);
+    if (isEmpty) {
+      if (time.to_timestamp(now) - time.to_timestamp(lastOccupied) > CLEANUP_GRACE_PERIOD) {
+        // Destroy!
+        call(this, "gc", roomId);
+        send("message", `[Manager] Cleaned up room ${roomId}`);
+      } else {
+        list.push(stillActiveRooms, roomId);
+      }
     } else {
       list.push(stillActiveRooms, roomId);
     }
@@ -163,7 +200,10 @@ export function manager_generate_content() {
   const createCap = get_capability("sys.create", {});
   const controlCap = get_capability("entity.control", { "*": true });
 
-  if (!createCap || !controlCap) {
+  if (!createCap) {
+    return;
+  }
+  if (!controlCap) {
     return;
   }
 
@@ -212,12 +252,22 @@ export function manager_generate_content() {
 
     const itemName = `${selectedTheme} ${furnitureType}`;
 
-    std.call_method(createCap, "create", {
-      adjectives: [`style:${selectedTheme}`, `type:${furnitureType}`],
-      description: `A ${selectedTheme}-style ${furnitureType}.`,
-      location: roomId,
-      name: itemName,
-    });
+    // Manual location handling: Add furniture to room contents
+    const room = entity(roomId);
+    if (room) {
+      const contents = (room["contents"] as number[]) ?? [];
+      // Workaround for transpiler issue with const logic?
+      const newContents = list.concat(contents, [
+        std.call_method(createCap, "create", {
+          adjectives: [`style:${selectedTheme}`, `type:${furnitureType}`],
+          description: `A ${selectedTheme}-style ${furnitureType}.`,
+          location: roomId,
+          name: itemName,
+        }),
+      ]);
+      std.call_method(controlCap, "update", roomId, { contents: newContents });
+      send("message", `DEBUG: Added item to room ${roomId}`);
+    }
   }
 }
 

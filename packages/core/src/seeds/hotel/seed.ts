@@ -1,7 +1,7 @@
-import { resolve } from "node:path";
-import { transpile } from "@viwo/scripting";
 import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "../../repo";
 import { extractVerb } from "../../verb_loader";
+import { resolve } from "node:path";
+import { transpile } from "@viwo/scripting";
 
 export function seedHotel(voidId: number, lobbyId: number) {
   // 12. Hotel Seed (Stage 1)

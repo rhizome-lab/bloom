@@ -146,6 +146,7 @@ describe("Player Commands", () => {
     await runCommand("go", ["north"]);
 
     const updatedPlayer = getEntity(player.id)!;
+    console.log("DEBUG: Sent Messages for Move:", JSON.stringify(sentMessages, null, 2));
     expect(updatedPlayer["location"]).toBe(otherRoomId);
 
     // Find the update message (array of entities)

@@ -8,6 +8,7 @@ import {
 import { checkCapability, deepFreeze } from "./utils";
 import {
   createCapability,
+  createEntity,
   deleteEntity,
   getEntity,
   getVerb,
@@ -15,7 +16,6 @@ import {
   updateCapabilityOwner,
   updateEntity,
 } from "../repo";
-import { createEntityLogic } from "./logic";
 
 export abstract class BaseCapability implements Capability {
   static readonly type: string;
@@ -155,7 +155,13 @@ export class SysCreate extends BaseCapability {
     if (this.ownerId !== ctx.this.id) {
       throw new ScriptError("sys.create: capability not owned by caller");
     }
-    return createEntityLogic(this, data, ctx);
+    checkCapability(this, ctx.this.id, "sys.create");
+
+    const newId = createEntity(data as never);
+    // Mint entity.control for the new entity and give to creator
+    createCapability(ctx.this.id, "entity.control", { target_id: newId });
+
+    return newId;
   }
 }
 

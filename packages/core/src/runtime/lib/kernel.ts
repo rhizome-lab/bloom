@@ -42,12 +42,13 @@ export const getCapability = defineFullOpcode<[type: string, filter?: object], C
     metadata: {
       category: "kernel",
       description: "Retrieve a capability owned by the current entity",
+      genericParameters: ["Type extends keyof CapabilityRegistry"],
       label: "Get Capability",
       parameters: [
-        { description: "The capability type.", name: "type", type: "string" },
+        { description: "The capability type.", name: "type", type: "Type" },
         { description: "Filter parameters.", name: "filter", optional: true, type: "object" },
       ],
-      returnType: "Capability | null",
+      returnType: "CapabilityRegistry[Type] | null",
       slots: [
         { name: "Type", type: "string" },
         { name: "Filter", type: "block" },
