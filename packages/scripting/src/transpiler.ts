@@ -225,10 +225,7 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
         return BooleanLib.or(left, right);
       }
       case ts.SyntaxKind.QuestionQuestionToken: {
-        // Fallback if not an obj.get optimization
-        // We don't have a nullish coalescing opcode yet, so we can use a conditional
-        // (left != null) ? left : right
-        return StdLib.if(BooleanLib.neq(left, null), left, right);
+        return BooleanLib.nullish(left, right);
       }
       case ts.SyntaxKind.InKeyword: {
         return ObjectLib.objHas(right, left);

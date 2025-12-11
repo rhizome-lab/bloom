@@ -1,10 +1,10 @@
-import { resolve } from "node:path";
-import { transpile } from "@viwo/scripting";
 import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "./repo";
 import { db } from "./db";
 import { extractVerb } from "./verb_loader";
+import { resolve } from "node:path";
 import { seedHotel } from "./seeds/hotel/seed";
 import { seedItems } from "./seeds/items";
+import { transpile } from "@viwo/scripting";
 
 const verbsPath = resolve(__dirname, "seeds/verbs.ts");
 

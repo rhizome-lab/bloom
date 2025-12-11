@@ -249,9 +249,9 @@ export const and = defineFullOpcode<
     layout: "infix",
     lazy: true,
     parameters: [
-      { description: "The first value.", name: "left", type: "unknown" },
-      { description: "The second value.", name: "right", type: "unknown" },
-      { description: "Additional values.", name: "...args", type: "unknown[]" },
+      { description: "The first value.", name: "left", type: "boolean" },
+      { description: "The second value.", name: "right", type: "boolean" },
+      { description: "Additional values.", name: "...args", type: "boolean[]" },
     ],
     returnType: "boolean",
     slots: [
@@ -294,7 +294,62 @@ export const or = defineFullOpcode<
   metadata: {
     category: "logic",
     description: "Logical OR. Returns true if at least one argument is true.",
-    label: "Greater Than",
+    label: "Or",
+    layout: "infix",
+    lazy: true,
+    parameters: [
+      { description: "The first value.", name: "left", type: "boolean" },
+      { description: "The second value.", name: "right", type: "boolean" },
+      { description: "Additional values.", name: "...args", type: "boolean[]" },
+    ],
+    returnType: "boolean",
+    slots: [
+      { name: "A", type: "block" },
+      { name: "B", type: "block" },
+    ],
+  },
+});
+
+/**
+ * Logical AND (Short-circuiting).
+ * Often used as a Guard: `guard(cond, value)` returns `value` if `cond` is truthy, else `cond`.
+ */
+export const guard = defineFullOpcode<
+  [first: unknown, second: unknown, ...rest: unknown[]],
+  unknown,
+  true
+>("guard", {
+  handler: (args, ctx) => {
+    let idx = 0;
+    const next = (): any => {
+      if (idx >= args.length) {
+        return true;
+      }
+      const arg = args[idx]!;
+      idx += 1;
+      const result = evaluate(arg, ctx);
+
+      const processResult = (res: any) => {
+        if (!res) {
+          return res;
+        }
+        if (idx >= args.length) {
+          return res;
+        }
+        return next();
+      };
+
+      if (result instanceof Promise) {
+        return result.then(processResult);
+      }
+      return processResult(result);
+    };
+    return next();
+  },
+  metadata: {
+    category: "logic",
+    description: "Short-circuiting AND. Returns the first falsy value or the last value.",
+    label: "Guard",
     layout: "infix",
     lazy: true,
     parameters: [
@@ -302,7 +357,59 @@ export const or = defineFullOpcode<
       { description: "The second value.", name: "right", type: "unknown" },
       { description: "Additional values.", name: "...args", type: "unknown[]" },
     ],
-    returnType: "boolean",
+    returnType: "unknown",
+    slots: [
+      { name: "A", type: "block" },
+      { name: "B", type: "block" },
+    ],
+  },
+});
+
+/** Nullish Coalescing. */
+export const nullish = defineFullOpcode<
+  [first: unknown, second: unknown, ...rest: unknown[]],
+  unknown,
+  true
+>("nullish", {
+  handler: (args, ctx) => {
+    let idx = 0;
+    const next = (): any => {
+      if (idx >= args.length) {
+        return null;
+      }
+      const arg = args[idx]!;
+      idx += 1;
+      const result = evaluate(arg, ctx);
+
+      const processResult = (res: any) => {
+        if (res !== null && res !== undefined) {
+          return res;
+        }
+        if (idx >= args.length) {
+          return res;
+        }
+        return next();
+      };
+
+      if (result instanceof Promise) {
+        return result.then(processResult);
+      }
+      return processResult(result);
+    };
+    return next();
+  },
+  metadata: {
+    category: "logic",
+    description: "Nullish Coalescing. Returns the first non-null/undefined value.",
+    label: "Nullish Coalescing",
+    layout: "infix",
+    lazy: true,
+    parameters: [
+      { description: "The first value.", name: "left", type: "unknown" },
+      { description: "The second value.", name: "right", type: "unknown" },
+      { description: "Additional values.", name: "...args", type: "unknown[]" },
+    ],
+    returnType: "unknown",
     slots: [
       { name: "A", type: "block" },
       { name: "B", type: "block" },

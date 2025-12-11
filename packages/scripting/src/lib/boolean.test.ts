@@ -74,4 +74,25 @@ createLibraryTester(BooleanOps, "Boolean Library", (test) => {
     expect(evaluate(BooleanOps.not(true), ctx)).toBe(false);
     expect(evaluate(BooleanOps.not(false), ctx)).toBe(true);
   });
+
+  test("guard", () => {
+    // Basic boolean logic
+    expect(evaluate(BooleanOps.guard(true, true), ctx)).toBe(true);
+    expect(evaluate(BooleanOps.guard(true, false), ctx)).toBe(false);
+
+    // Value preservation / Short-circuiting
+    expect(evaluate(BooleanOps.guard(1, 2), ctx)).toBe(2);
+    expect(evaluate(BooleanOps.guard(0, 2), ctx)).toBe(0);
+    expect(evaluate(BooleanOps.guard(false, 2), ctx)).toBe(false);
+    expect(evaluate(BooleanOps.guard(0, "anything"), ctx)).toBe(0);
+  });
+
+  test("nullish", () => {
+    expect(evaluate(BooleanOps.nullish(null, 1), ctx)).toBe(1);
+    expect(evaluate(BooleanOps.nullish(undefined, 1), ctx)).toBe(1);
+    expect(evaluate(BooleanOps.nullish(0, 1), ctx)).toBe(0);
+    expect(evaluate(BooleanOps.nullish(false, 1), ctx)).toBe(false);
+    expect(evaluate(BooleanOps.nullish(null, undefined, 2), ctx)).toBe(2);
+    expect(evaluate(BooleanOps.nullish(null, null), ctx)).toBe(null);
+  });
 });

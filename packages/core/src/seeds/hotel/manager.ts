@@ -60,7 +60,7 @@ export function manager_create_lobby(this: Entity) {
 }
 
 export function manager_create_room(this: Entity) {
-  const params = std.arg<Record<string, any>>(1) || {};
+  const params = std.arg<Record<string, any>>(1) ?? {};
 
   const createCap = get_capability("sys.create", {});
   const controlCap = get_capability("entity.control", { "*": true });

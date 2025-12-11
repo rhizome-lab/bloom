@@ -390,8 +390,14 @@ ${compileValue(args[1], ops, true)}}`;
     case "and": {
       return `${prefix}(${compiledArgs.join(" && ")})`;
     }
+    case "guard": {
+      return `${prefix}(${compiledArgs.join(" && ")})`;
+    }
     case "or": {
       return `${prefix}(${compiledArgs.join(" || ")})`;
+    }
+    case "nullish": {
+      return `${prefix}(${compiledArgs.join(" ?? ")})`;
     }
     case "not": {
       return `${prefix}!${compiledArgs[0]}`;

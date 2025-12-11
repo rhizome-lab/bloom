@@ -317,7 +317,7 @@ declare global {
    * @param right The second value.
    * @param args Additional values.
    */
-  function and(left: unknown, right: unknown, ...args: unknown[]): boolean;
+  function and(left: boolean, right: boolean, ...args: boolean[]): boolean;
   /**
    * Checks if all arguments are equal.
    *
@@ -342,6 +342,14 @@ declare global {
    * @param args Additional numbers.
    */
   function gte(left: number, right: number, ...args: number[]): boolean;
+  /**
+   * Short-circuiting AND. Returns the first falsy value or the last value.
+   *
+   * @param left The first value.
+   * @param right The second value.
+   * @param args Additional values.
+   */
+  function guard(left: unknown, right: unknown, ...args: unknown[]): unknown;
   /**
    * Checks if arguments are strictly increasing.
    *
@@ -373,13 +381,21 @@ declare global {
    */
   function not(value: unknown): boolean;
   /**
+   * Nullish Coalescing. Returns the first non-null/undefined value.
+   *
+   * @param left The first value.
+   * @param right The second value.
+   * @param args Additional values.
+   */
+  function nullish(left: unknown, right: unknown, ...args: unknown[]): unknown;
+  /**
    * Logical OR. Returns true if at least one argument is true.
    *
    * @param left The first value.
    * @param right The second value.
    * @param args Additional values.
    */
-  function or(left: unknown, right: unknown, ...args: unknown[]): boolean;
+  function or(left: boolean, right: boolean, ...args: boolean[]): boolean;
   /**
    * Sends a system message to the client.
    *
