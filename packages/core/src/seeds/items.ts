@@ -1,6 +1,6 @@
 import { addVerb, createEntity } from "../repo";
-import { resolve } from "path";
 import { loadEntityDefinition } from "./loader";
+import { resolve } from "path";
 
 export function seedItems(locationId: number) {
   // 6. Book Item

@@ -38,6 +38,7 @@
     "oxc/no-const-enum": "error",
     "promise/catch-or-return": "error",
     "jsdoc/empty-tags": "error",
+    "id-length": "off",
     "max-classes-per-file": "off",
     // Conflicts with formatter
     "unicorn/number-literal-case": "off",

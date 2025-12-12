@@ -115,4 +115,84 @@ export class PluginManager {
     }
     throw new Error(`RPC method '${method}' not found.`);
   }
+
+  /**
+   * Returns metadata about all registered capability classes.
+   * This allows the block editor to auto-generate blocks from capability methods.
+   *
+   * @returns An array of capability metadata objects.
+   */
+  getCapabilityMetadata() {
+    // For now, return metadata for core capabilities
+    // Later, plugins can extend this by registering their own capabilities
+    return [
+      {
+        description: "Image generation using diffusers",
+        label: "Diffusers Generate",
+        methods: [
+          {
+            description: "Generate an image from a text prompt",
+            label: "Text to Image",
+            name: "textToImage",
+            parameters: [
+              { description: "The text prompt", name: "prompt", type: "string" },
+              {
+                fields: [
+                  { name: "negativePrompt", optional: true, type: "string" },
+                  { default: 512, name: "width", optional: true, type: "number" },
+                  { default: 512, name: "height", optional: true, type: "number" },
+                  { default: 30, name: "numInferenceSteps", optional: true, type: "number" },
+                  { default: 7.5, name: "guidanceScale", optional: true, type: "number" },
+                  { name: "seed", optional: true, type: "number" },
+                ],
+                name: "options",
+                optional: true,
+                type: "object",
+              },
+            ],
+            returnType: "Promise<string>",
+          },
+        ],
+        type: "diffusers.generate",
+      },
+      {
+        description: "Control entity operations",
+        label: "Entity Control",
+        methods: [
+          {
+            description: "Destroys an entity",
+            label: "Destroy Entity",
+            name: "destroy",
+            parameters: [{ description: "Entity ID to destroy", name: "targetId", type: "number" }],
+            returnType: "boolean",
+          },
+          {
+            description: "Updates entity properties",
+            label: "Update Entity",
+            name: "update",
+            parameters: [
+              { description: "Entity ID to update", name: "targetId", type: "number" },
+              { description: "Properties to update", name: "updates", type: "object" },
+            ],
+            returnType: "Entity",
+          },
+        ],
+        type: "entity.control",
+      },
+      {
+        description: "Create new entities",
+        label: "System Create",
+        methods: [
+          {
+            description: "Creates a new entity",
+            label: "Create Entity",
+            name: "create",
+            parameters: [{ description: "Entity data", name: "data", type: "object" }],
+            returnType: "number",
+          },
+        ],
+        type: "sys.create",
+      },
+    ];
+  }
 }

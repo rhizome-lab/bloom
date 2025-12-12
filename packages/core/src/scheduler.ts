@@ -1,4 +1,4 @@
-import { type ScriptOps, createScriptContext, evaluate } from "@viwo/scripting";
+import { type ScriptOps, createScriptContext, defineFullOpcode, evaluate } from "@viwo/scripting";
 import { getEntity, getVerb } from "./repo";
 import { db } from "./db";
 
@@ -114,8 +114,6 @@ class TaskScheduler {
 
 export const scheduler = new TaskScheduler();
 
-import { defineFullOpcode } from "@viwo/scripting";
-
 export const SchedulerLib = {
   schedule: defineFullOpcode<[verb: string, args: unknown[], delay: number], void>("schedule", {
     handler: ([verb, args, delay], ctx) => {
@@ -126,9 +124,9 @@ export const SchedulerLib = {
       description: "Schedules a verb execution.",
       label: "Schedule",
       parameters: [
-        { name: "verb", type: "string", description: "The verb to execute." },
-        { name: "args", type: "any[]", description: "Arguments for the verb." },
-        { name: "delay", type: "number", description: "Delay in milliseconds." },
+        { description: "The verb to execute.", name: "verb", type: "string" },
+        { description: "Arguments for the verb.", name: "args", type: "any[]" },
+        { description: "Delay in milliseconds.", name: "delay", type: "number" },
       ],
       returnType: "void",
       slots: [],

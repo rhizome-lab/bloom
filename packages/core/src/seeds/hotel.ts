@@ -1,6 +1,6 @@
-import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "../../repo";
+import { addVerb, createCapability, createEntity, getEntity, updateEntity } from "../repo";
+import { loadEntityDefinition } from "./loader";
 import { resolve } from "node:path";
-import { loadEntityDefinition } from "../loader";
 import { transpile } from "@viwo/scripting";
 
 export function seedHotel(voidId: number, lobbyId: number) {

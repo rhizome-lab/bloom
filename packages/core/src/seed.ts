@@ -2,7 +2,7 @@ import { addVerb, createCapability, createEntity, getEntity, updateEntity } from
 import { db } from "./db";
 import { loadEntityDefinition } from "./seeds/loader";
 import { resolve } from "node:path";
-import { seedHotel } from "./seeds/hotel/seed";
+import { seedHotel } from "./seeds/hotel";
 import { seedItems } from "./seeds/items";
 
 export function seed() {

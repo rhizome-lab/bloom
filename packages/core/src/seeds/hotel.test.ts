@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { createScriptContext, evaluate } from "@viwo/scripting";
-import { getEntity, getVerb, updateEntity } from "../../repo";
+import { getEntity, getVerb, updateEntity } from "../repo";
 import type { Entity } from "@viwo/shared/jsonrpc";
-import { GameOpcodes } from "../../runtime/opcodes";
-import { db } from "../../db";
-import { seed } from "../../seed";
+import { GameOpcodes } from "../runtime/opcodes";
+import { db } from "../db";
+import { seed } from "../seed";
 
 describe("Hotel Seed Stage 1", () => {
   let manager: Entity;

@@ -1,3 +1,4 @@
+import * as CapLib from "./lib/cap";
 import * as CoreLib from "./lib/core";
 import * as KernelLib from "./lib/kernel";
 import {
@@ -27,6 +28,7 @@ export const GameOpcodes = createOpcodeRegistry(
   MathLib,
   BooleanLib,
   RandomLib,
+  CapLib,
 );
 
 export function registerGameLibrary(lib: ScriptOps) {

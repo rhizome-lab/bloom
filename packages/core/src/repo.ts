@@ -340,11 +340,24 @@ export function createCapability(
 
 export function getCapabilities(ownerId: number): Capability[] {
   const rows = db
-    .query<{ id: string; owner_id: number; type: string; params: string }, [number]>(
-      "SELECT id, owner_id, type, params FROM capabilities WHERE owner_id = ?",
-    )
+    .query<Capability, SQLQueryBindings>("SELECT * FROM capabilities WHERE owner_id = ?")
     .all(ownerId);
-  return rows.map((row) => ({ ...row, params: JSON.parse(row.params) }));
+  return rows.map((row) => ({
+    ...row,
+    params: JSON.parse(row.params as unknown as string) as Record<string, unknown>,
+  }));
+}
+
+export function getCapabilitiesByType(ownerId: number, type: string): Capability[] {
+  const rows = db
+    .query<Capability, SQLQueryBindings>(
+      "SELECT * FROM capabilities WHERE owner_id = ? AND type = ?",
+    )
+    .all(ownerId, type);
+  return rows.map((row) => ({
+    ...row,
+    params: JSON.parse(row.params as unknown as string) as Record<string, unknown>,
+  }));
 }
 
 export function getCapability(id: string): Capability | null {

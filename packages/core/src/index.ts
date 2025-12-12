@@ -458,6 +458,16 @@ export async function handleJsonRpcRequest(
         };
       }
     }
+    case "get_capability_metadata": {
+      // Return metadata about all registered capability classes
+      // This allows the block editor to auto-generate blocks from capability methods
+      const metadata = pluginManager.getCapabilityMetadata();
+      return {
+        id: req.id,
+        jsonrpc: "2.0",
+        result: metadata,
+      };
+    }
     case "plugin_rpc": {
       const params = req.params as { method: string; params: any };
       if (!params || typeof params.method !== "string") {

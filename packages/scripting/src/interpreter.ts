@@ -83,7 +83,7 @@ export function unsafeAsAwaited<Type>(value: Type): Awaited<Type> {
 export function evaluate<Type>(
   ast: ScriptValue<Type>,
   ctx: ScriptContext,
-  options: { catchReturn?: boolean } = { catchReturn: true },
+  { catchReturn = true }: { catchReturn?: boolean } = {},
 ): Type | Promise<Type> {
   // If it's a simple value, return immediately
   if (!Array.isArray(ast)) {
@@ -109,7 +109,7 @@ export function evaluate<Type>(
   stackIdx[0] = 1;
   sp = 1;
 
-  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx, options);
+  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx, { catchReturn });
 }
 
 // oxlint-disable-next-line max-params
@@ -120,7 +120,7 @@ function executeLoop(
   stackArgs: unknown[][],
   stackAst: any[][],
   stackIdx: number[],
-  options: { catchReturn?: boolean } = { catchReturn: true },
+  options: { catchReturn?: boolean },
 ): any {
   while (sp > 0) {
     if (ctx.gas !== undefined) {
