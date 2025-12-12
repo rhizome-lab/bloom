@@ -2158,3 +2158,114 @@ body {
   overflow-y: auto;
   font-family: monospace;
 }
+
+/* Blocks Mode */
+.blocks-mode__connecting {
+  padding: 20px;
+  text-align: center;
+}
+
+/* Layer Mode */
+.layer-mode__canvas-wrapper {
+  display: inline-block;
+  position: relative;
+}
+
+.layer-mode__canvas-main {
+  image-rendering: pixelated;
+  max-height: 100%;
+  max-width: 100%;
+}
+
+.layer-mode__canvas-main--brush {
+  cursor: crosshair;
+}
+
+.layer-mode__canvas-main--eraser {
+  cursor: crosshair;
+}
+
+.layer-mode__canvas-main--bbox {
+  cursor: crosshair;
+}
+
+.layer-mode__canvas-main--pan {
+  cursor: grab;
+}
+
+.layer-mode__canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: 100%;
+  max-height: 100%;
+  pointer-events: none;
+}
+
+/* Script Editor */
+.script-editor__workspace--row {
+  flex-direction: row;
+}
+
+.script-editor__canvas--bordered {
+  border-right: 1px solid var(--border-color);
+  flex: 1;
+}
+
+.script-editor__code-preview--flex {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Monaco Editor */
+.monaco-editor__container {
+  height: 100%;
+  min-height: 400px;
+  width: 100%;
+}
+
+/* Popover */
+.popover__trigger-wrapper {
+  display: inline-block;
+}
+
+.popover__content {
+  position: absolute;
+  z-index: 1000;
+}
+
+/* Theme Editor */
+.theme-editor__action-import {
+  display: inline-block;
+}
+
+.theme-editor__checkbox-label {
+  color: var(--text-primary);
+}
+
+/* Inventory Panel */
+.inventory-panel__item-link--no-expand {
+  margin-left: 20px;
+}
+
+/* Builder */
+.builder__toolbar {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  margin: 10px;
+  background: #2a2a2a;
+  border-radius: 4px;
+  align-items: center;
+}
+
+.builder__input--narrow {
+  margin: 0;
+  width: 200px;
+}
+
+.builder__input--narrower {
+  margin: 0;
+  width: 150px;
+}

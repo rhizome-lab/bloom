@@ -99,11 +99,7 @@ export const ThemeEditor: Component<Props> = (props) => {
           <button onClick={handleExport} class="theme-editor__action-btn" title="Export Theme">
             ⬇️
           </button>
-          <label
-            class="theme-editor__action-btn"
-            title="Import Theme"
-            style={{ display: "inline-block" }}
-          >
+          <label class="theme-editor__action-btn theme-editor__action-import" title="Import Theme">
             ⬆️
             <input
               type="file"
@@ -145,7 +141,7 @@ export const ThemeEditor: Component<Props> = (props) => {
             checked={themeStore.state.allowCustomCss}
             onChange={() => themeStore.toggleCustomCss()}
           />
-          <label for="allowCustomCss" style={{ color: "var(--text-primary)" }}>
+          <label for="allowCustomCss" class="theme-editor__checkbox-label">
             Allow Custom CSS from Areas/Rooms
           </label>
         </div>

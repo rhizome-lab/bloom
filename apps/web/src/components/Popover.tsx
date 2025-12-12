@@ -47,11 +47,7 @@ export default function Popover(props: PopoverProps) {
 
   return (
     <>
-      <div
-        ref={triggerRef}
-        class={props.triggerWrapperClass}
-        style={{ display: "inline-block", ...props.triggerWrapperStyle }}
-      >
+      <div ref={triggerRef} class={`popover__trigger-wrapper ${props.triggerWrapperClass ?? ""}`}>
         {props.trigger({ onClick: toggle })}
       </div>
       <Show when={isOpen()}>
@@ -81,13 +77,11 @@ export default function Popover(props: PopoverProps) {
                 });
               }
             }}
-            class={props.contentClass}
+            class={`popover__content ${props.contentClass ?? ""}`}
             style={{
               left: `${position().left}px`,
               opacity: position().top === 0 ? 0 : 1,
-              position: "absolute",
               top: `${position().top}px`,
-              "z-index": 1000, // Hide until positioned
             }}
           >
             {props.children({ close })}

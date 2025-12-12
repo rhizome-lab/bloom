@@ -45,7 +45,7 @@ function BlocksMode() {
   return (
     <div class="blocks-mode">
       {!connected() ? (
-        <div style={{ padding: "20px", "text-align": "center" }}>Connecting to viwo server...</div>
+        <div class="blocks-mode__connecting">Connecting to viwo server...</div>
       ) : (
         <ScriptEditor opcodes={opcodes()} value={script()} onChange={setScript} />
       )}

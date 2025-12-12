@@ -142,7 +142,5 @@ export const MonacoEditor: Component<MonacoEditorProps> = (props) => {
     editorInstance()?.dispose();
   });
 
-  return (
-    <div ref={containerRef} style={{ height: "100%", "min-height": "400px", width: "100%" }} />
-  );
+  return <div ref={containerRef} class="monaco-editor__container" />;
 };

@@ -106,15 +106,11 @@ export const ScriptEditor: Component<ScriptEditorProps> = (props) => {
       </div>
       <div class="script-editor__workspace-container">
         <div
-          class="script-editor__workspace"
-          style={{ "flex-direction": "row" }}
+          class="script-editor__workspace script-editor__workspace--row"
           onDrop={onDrop}
           onDragOver={onDragOver}
         >
-          <div
-            class="script-editor__canvas"
-            style={{ "border-right": "1px solid var(--border-color)", flex: 1 }}
-          >
+          <div class="script-editor__canvas script-editor__canvas--bordered">
             <BlockNode
               node={props.value}
               path={[]}
@@ -123,10 +119,7 @@ export const ScriptEditor: Component<ScriptEditorProps> = (props) => {
               onDelete={deleteNode}
             />
           </div>
-          <div
-            class="script-editor__code-preview"
-            style={{ flex: 1, height: "100%", overflow: "hidden" }}
-          >
+          <div class="script-editor__code-preview script-editor__code-preview--flex">
             <MonacoEditor
               value={decompile(props.value, 0, true)}
               onChange={handleCodeChange}

@@ -208,21 +208,10 @@ export default function Builder() {
 
       <Show when={activeTab() === "script-code"}>
         <div class="builder__script-panel">
-          <div
-            class="builder__toolbar"
-            style={{
-              "align-items": "center",
-              background: "#2a2a2a",
-              "border-radius": "4px",
-              display: "flex",
-              gap: "10px",
-              margin: "10px",
-              padding: "10px",
-            }}
-          >
+          <div class="builder__toolbar">
             <select
               class="builder__input"
-              style={{ margin: 0, width: "200px" }}
+              class="builder__input builder__input--narrow"
               onChange={(event) => setSelectedEntityId(Number(event.currentTarget.value))}
               value={selectedEntityId() || ""}
             >
@@ -240,7 +229,7 @@ export default function Builder() {
             <input
               type="text"
               class="builder__input"
-              style={{ margin: 0, width: "150px" }}
+              class="builder__input builder__input--narrower"
               placeholder="Verb Name (e.g. interact)"
               value={verbName()}
               onInput={(event) => setVerbName(event.currentTarget.value)}

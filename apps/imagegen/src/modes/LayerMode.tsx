@@ -211,7 +211,7 @@ function LayerMode() {
       </div>
 
       <div class="layer-mode__canvas">
-        <div style={{ display: "inline-block", position: "relative" }}>
+        <div class="layer-mode__canvas-wrapper">
           <canvas
             ref={canvasRef}
             width={1024}
@@ -220,31 +220,9 @@ function LayerMode() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            style={{
-              cursor:
-                canvas.tool() === "bbox"
-                  ? "crosshair"
-                  : canvas.tool() === "pan"
-                    ? "grab"
-                    : "crosshair",
-              "image-rendering": "pixelated",
-              "max-height": "100%",
-              "max-width": "100%",
-            }}
+            class={`layer-mode__canvas-main layer-mode__canvas-main--${canvas.tool()}`}
           />
-          <canvas
-            ref={overlayRef}
-            width={1024}
-            height={1024}
-            style={{
-              left: "0",
-              "max-height": "100%",
-              "max-width": "100%",
-              "pointer-events": "none",
-              position: "absolute",
-              top: "0",
-            }}
-          />
+          <canvas ref={overlayRef} width={1024} height={1024} class="layer-mode__canvas-overlay" />
         </div>
       </div>
 

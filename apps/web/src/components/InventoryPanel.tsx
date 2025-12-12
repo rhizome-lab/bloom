@@ -27,13 +27,14 @@ const ItemView = (props: { item: Entity }) => {
         <span
           onClick={() => gameStore.execute("look", [props.item.id])}
           class={`inventory-panel__item-link ${
+            hasContents() ? "" : "inventory-panel__item-link--no-expand"
+          } ${
             (props.item["adjectives"] as readonly string[])
               ?.map(
                 (adjective) => `attribute-${adjective.replaceAll(":", "-").replaceAll(" ", "-")}`,
               )
               .join(" ") || ""
           }`}
-          style={{ "margin-left": hasContents() ? "0" : "20px" }}
         >
           {props.item["name"] as string}
         </span>
