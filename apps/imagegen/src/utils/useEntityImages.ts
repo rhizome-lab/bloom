@@ -12,7 +12,9 @@ export interface ImageEntityData {
  * Hook for managing image entities
  * Provides functionality to load and query image entities from the viwo database
  */
-export function useEntityImages(sendRpc: (method: string, params: any) => Promise<any>) {
+export function useEntityImages(
+  sendRpc: (method: string, params: any, signal?: AbortSignal) => Promise<any>,
+) {
   const [entities, setEntities] = createSignal<ImageEntityData[]>([]);
   const [loading, setLoading] = createSignal(false);
 

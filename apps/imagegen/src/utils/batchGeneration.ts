@@ -22,7 +22,7 @@ export interface BatchOptions {
   onComplete?: (results: GenerationResult[]) => void;
   onError?: (error: Error, request: GenerationRequest, idx: number) => void;
   continueOnError?: boolean;
-  cancelSignal?: { cancelled: boolean };
+  signal?: AbortSignal;
 }
 
 /** Create prompt variations from an array of prompts */
@@ -38,8 +38,19 @@ function createPromptVariations(
   }));
 }
 
+/** Create seed variations of a base request */
+function createSeedVariations(
+  baseRequest: GenerationRequest,
+  count: number,
+  startSeed = 1,
+): GenerationRequest[] {
+  return Array.from({ length: count }, (_, idx) => ({ ...baseRequest, seed: startSeed + idx }));
+}
+
 /** Batch generation hook for generating multiple images with progress tracking */
-export function useBatch(sendRpc: (method: string, params: any) => Promise<any>) {
+export function useBatch(
+  sendRpc: (method: string, params: any, signal?: AbortSignal) => Promise<any>,
+) {
   const [isRunning, setIsRunning] = createSignal(false);
   const [progress, setProgress] = createSignal({ current: 0, total: 0 });
   const [results, setResults] = createSignal<GenerationResult[]>([]);
@@ -62,7 +73,7 @@ export function useBatch(sendRpc: (method: string, params: any) => Promise<any>)
 
     for (let idx = 0; idx < requests.length; idx += 1) {
       // Check cancellation
-      if (options.cancelSignal?.cancelled) {
+      if (options.signal?.aborted) {
         break;
       }
 
@@ -74,23 +85,31 @@ export function useBatch(sendRpc: (method: string, params: any) => Promise<any>)
       try {
         // Call the diffusers.generate capability
         // oxlint-disable-next-line no-await-in-loop
-        const capability = await sendRpc("get_capability", { type: "diffusers.generate" });
+        const capability = await sendRpc(
+          "get_capability",
+          { type: "diffusers.generate" },
+          options.signal,
+        );
         // oxlint-disable-next-line no-await-in-loop
-        const result = await sendRpc("std.call_method", {
-          args: [
-            request.prompt,
-            {
-              height: request.height,
-              model_id: "runwayml/stable-diffusion-v1-5",
-              negative_prompt: request.negativePrompt,
-              num_inference_steps: request.steps ?? 50,
-              seed: request.seed,
-              width: request.width,
-            },
-          ],
-          method: "generate",
-          object: capability,
-        });
+        const result = await sendRpc(
+          "std.call_method",
+          {
+            args: [
+              request.prompt,
+              {
+                height: request.height,
+                model_id: "runwayml/stable-diffusion-v1-5",
+                negative_prompt: request.negativePrompt,
+                num_inference_steps: request.steps ?? 50,
+                seed: request.seed,
+                width: request.width,
+              },
+            ],
+            method: "generate",
+            object: capability,
+          },
+          options.signal,
+        );
 
         const generationResult: GenerationResult = {
           image_url: `data:image/png;base64,${result.image}`,
@@ -122,34 +141,7 @@ export function useBatch(sendRpc: (method: string, params: any) => Promise<any>)
     return batchResults;
   }
 
-  /** Cancel the current batch operation */
-  function cancel() {
-    // Note: This requires the caller to pass a cancelSignal object
-    // and check it in their loop
-  }
-
-  /**
-   * Create seed variations of a base request
-   */
-  function createSeedVariations(
-    baseRequest: GenerationRequest,
-    count: number,
-    startSeed = 1,
-  ): GenerationRequest[] {
-    const requests: GenerationRequest[] = [];
-
-    for (let idx = 0; idx < count; idx += 1) {
-      requests.push({
-        ...baseRequest,
-        seed: startSeed + idx,
-      });
-    }
-
-    return requests;
-  }
-
   return {
-    cancel,
     createPromptVariations,
     createSeedVariations,
     errors,

@@ -10,7 +10,9 @@ export interface GenerationRequest {
   seed?: number;
 }
 
-export function useGeneration(sendRpc: (method: string, params: any) => Promise<any>) {
+export function useGeneration(
+  sendRpc: (method: string, params: any, signal?: AbortSignal) => Promise<any>,
+) {
   const [generating, setGenerating] = createSignal(false);
   const [queue, setQueue] = createSignal<GenerationRequest[]>([]);
 

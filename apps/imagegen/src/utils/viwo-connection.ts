@@ -73,8 +73,14 @@ export function useViwoConnection() {
   };
 }
 
-function sendRpc(method: string, params: any): Promise<any> {
+function sendRpc(method: string, params: any, signal?: AbortSignal): Promise<any> {
   return new Promise((resolve, reject) => {
+    // Check if already aborted
+    if (signal?.aborted) {
+      reject(new Error("Request aborted"));
+      return;
+    }
+
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       reject(new Error("WebSocket not connected"));
       return;
@@ -83,6 +89,16 @@ function sendRpc(method: string, params: any): Promise<any> {
     messageId += 1;
     const id = messageId;
     pendingRequests.set(id, resolve);
+
+    // Listen for abort signal
+    const abortHandler = () => {
+      if (pendingRequests.has(id)) {
+        pendingRequests.delete(id);
+        reject(new Error("Request aborted"));
+      }
+    };
+
+    signal?.addEventListener("abort", abortHandler);
 
     ws.send(
       JSON.stringify({
@@ -94,12 +110,23 @@ function sendRpc(method: string, params: any): Promise<any> {
     );
 
     // Timeout after 30 seconds
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       if (pendingRequests.has(id)) {
         pendingRequests.delete(id);
+        signal?.removeEventListener("abort", abortHandler);
         reject(new Error("Request timeout"));
       }
     }, 30_000);
+
+    // Wrap original resolve to cleanup
+    const originalCallback = pendingRequests.get(id);
+    if (originalCallback) {
+      pendingRequests.set(id, (result: any) => {
+        clearTimeout(timeoutId);
+        signal?.removeEventListener("abort", abortHandler);
+        originalCallback(result);
+      });
+    }
   });
 }
 
@@ -141,37 +168,46 @@ export interface SaveImageOptions {
  * @returns The created entity ID
  */
 export async function saveImageAsEntity(
-  sendRpc: (method: string, params: any) => Promise<any>,
+  sendRpc: (method: string, params: any, signal?: AbortSignal) => Promise<any>,
   imageBlob: Blob,
   options: SaveImageOptions,
+  signal?: AbortSignal,
 ): Promise<number> {
   // 1. Get sys.create capability
-  const createCap = await sendRpc("get_capability", { type: "sys.create" });
+  const createCap = await sendRpc("get_capability", { type: "sys.create" }, signal);
 
   // 2. Convert blob to base64
   const imageBase64 = await blobToBase64(imageBlob);
 
   // 3. Create entity
-  const entityId = await sendRpc("std.call_method", {
-    args: [
-      {
-        image: imageBase64,
-        image_type: "generated",
-        metadata: JSON.stringify(options.metadata),
-        name: options.imageName,
-      },
-    ],
-    method: "create",
-    object: createCap,
-  });
+  const entityId = await sendRpc(
+    "std.call_method",
+    {
+      args: [
+        {
+          image: imageBase64,
+          image_type: "generated",
+          metadata: JSON.stringify(options.metadata),
+          name: options.imageName,
+        },
+      ],
+      method: "create",
+      object: createCap,
+    },
+    signal,
+  );
 
   // 4. Optionally attach to room
   if (options.roomId) {
-    await sendRpc("entity.verb", {
-      args: [entityId],
-      entity: options.roomId,
-      verb: "addItem",
-    });
+    await sendRpc(
+      "entity.verb",
+      {
+        args: [entityId],
+        entity: options.roomId,
+        verb: "addItem",
+      },
+      signal,
+    );
   }
 
   return entityId;
