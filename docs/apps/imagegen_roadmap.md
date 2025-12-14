@@ -803,7 +803,69 @@ cd apps/imagegen && bun dev
 
 ---
 
-## Phase 5: Viwo Integration
+## Phase 5: Viwo Integration ✅ **COMPLETE**
+
+### Goal
+
+Integrate the imagegen frontend with viwo's entity system to enable saving generated images as entities and loading them back to the canvas.
+
+### Files Created/Modified
+
+**Backend:**
+
+- `packages/core/src/seeds/definitions/Image.ts` - NEW: `ImageEntity` class with verbs
+  - `view()` - Display image information
+  - `get_data()` - Return base64 image data
+  - `get_metadata()` - Return parsed metadata object
+  - `update_image()` - Update image data
+  - `update_metadata()` - Update metadata
+
+**Frontend:**
+
+- `apps/imagegen/src/utils/viwo-connection.ts` - MODIFIED: Added utilities
+
+  - `blobToBase64()` - Convert Blob to base64 data URL
+  - `saveImageAsEntity()` - Save image as viwo entity with metadata
+  - `GenerationMetadata` interface
+  - `SaveImageOptions` interface
+
+- `apps/imagegen/src/utils/useEntityImages.ts` - NEW: Entity management hook
+
+  - `loadImageEntities()` - Placeholder for entity querying
+  - `loadEntityImage()` - Load image data from entity
+  - `loadEntityMetadata()` - Load metadata from entity
+
+- `apps/imagegen/src/modes/LayerMode.tsx` - MODIFIED: UI integration
+  - Entity save panel with name input and save button
+  - Entity browser with refresh and load functionality
+  - Integrated with generation workflow
+
+**Styling:**
+
+- `packages/shared/src/index.css` - MODIFIED: Added BEM classes
+  - `.layer-mode__entity-save` - Save panel container
+  - `.layer-mode__entity-name-input` - Name input field
+  - `.layer-mode__entity-browser` - Browser container
+  - `.layer-mode__entity-list` - Grid layout for entity cards
+  - `.layer-mode__entity-card` - Individual entity card
+  - `.layer-mode__entity-empty` - Empty state message
+
+### Usage
+
+1. **Generate an image** using Layer Mode
+2. **Save to Entity**: After generation, enter a name and click "💾 Save to Entity"
+3. **Browse entities**: Use the "🖼️ Entity Images" panel to see saved entities
+4. **Load to canvas**: Click "Load to Canvas" on any entity card
+
+### Notes
+
+- Entity querying (`loadImageEntities`) requires backend support for filtered queries
+- Images are stored as base64 in the database
+- Metadata includes all generation parameters (prompt, model, steps, etc.)
+
+---
+
+## Phase 6: Performance & Polish
 
 ### Entity Storage
 

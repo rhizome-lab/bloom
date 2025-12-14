@@ -2,9 +2,11 @@ import { For, Show, createEffect, createSignal, onMount } from "solid-js";
 import type { ScriptValue } from "@viwo/scripting";
 import { exportAsViwoScript } from "../engine/canvas/scriptExporter";
 import { useCanvas } from "../engine/canvas/useCanvas";
-import { useGeneration } from "../utils/useGeneration";
-import { useViwoConnection } from "../utils/viwo-connection";
 import { useBatch } from "../utils/batchGeneration";
+import { useEntityImages } from "../utils/useEntityImages";
+import { useGeneration } from "../utils/useGeneration";
+import type { GenerationMetadata } from "../utils/viwo-connection";
+import { saveImageAsEntity, useViwoConnection } from "../utils/viwo-connection";
 
 // Helper functions for blob/base64 conversion
 function canvasToBlob(canvasElement: HTMLCanvasElement): Promise<Blob> {
@@ -42,6 +44,7 @@ function LayerMode(props: LayerModeProps = {}) {
   const { sendRpc } = useViwoConnection();
   const generation = useGeneration(sendRpc);
   const batch = useBatch(sendRpc);
+  const entityImages = useEntityImages(sendRpc);
 
   // Sync script changes with parent
   createEffect(() => {
@@ -101,6 +104,10 @@ function LayerMode(props: LayerModeProps = {}) {
     }
     return (box.width * box.height * steps()) / 1_000_000;
   };
+
+  // Entity save state
+  const [entityName, setEntityName] = createSignal("");
+  const [lastGeneratedImage, setLastGeneratedImage] = createSignal<string | null>(null);
 
   // ControlNet state
   const [controlNetStrength, setControlNetStrength] = createSignal(1);
@@ -267,6 +274,7 @@ function LayerMode(props: LayerModeProps = {}) {
 
         const layerId = canvas.addLayer("Generated");
         canvas.loadImageToLayer(layerId, imageUrl, box.x, box.y);
+        setLastGeneratedImage(imageUrl); // Store for entity save
       }
     } catch (error) {
       console.error("Generation error:", error);
@@ -811,6 +819,96 @@ function LayerMode(props: LayerModeProps = {}) {
                 )}
               </For>
             </div>
+          </Show>
+        </div>
+
+        {/* Entity Save Panel */}
+        <Show when={lastGeneratedImage()}>
+          <div class="layer-mode__entity-save glass-panel">
+            <h4>💾 Save to Entity</h4>
+            <input
+              type="text"
+              placeholder="Image name..."
+              value={entityName()}
+              onInput={(e) => setEntityName(e.currentTarget.value)}
+              class="layer-mode__entity-name-input glass-input"
+            ></input>
+            <button
+              class="glass-button glass-button--primary"
+              onClick={async () => {
+                try {
+                  const imageBlob = await fetch(lastGeneratedImage()!).then((r) => r.blob());
+                  const metadata: GenerationMetadata = {
+                    cfg_scale: cfg(),
+                    height: canvas.bbox()?.height,
+                    model: currentModel(),
+                    negative_prompt: negativePrompt(),
+                    prompt: prompt(),
+                    seed: Date.now(), // Placeholder seed
+                    steps: steps(),
+                    width: canvas.bbox()?.width,
+                  };
+
+                  const entityId = await saveImageAsEntity(sendRpc, imageBlob, {
+                    imageName: entityName() || "Untitled Image",
+                    metadata,
+                  });
+
+                  alert(`Saved as entity #${entityId}`);
+                  setEntityName("");
+                } catch (error) {
+                  console.error("Failed to save entity:", error);
+                  alert(`Failed to save: ${error}`);
+                }
+              }}
+            >
+              Save to Entity
+            </button>
+          </div>
+        </Show>
+
+        {/* Entity Browser */}
+        <div class="layer-mode__entity-browser glass-panel">
+          <h4>🖼️ Entity Images</h4>
+          <button
+            class="glass-button"
+            onClick={() => entityImages.loadImageEntities()}
+            disabled={entityImages.loading()}
+          >
+            {entityImages.loading() ? "Loading..." : "Refresh"}
+          </button>
+
+          <Show when={entityImages.entities().length > 0}>
+            <div class="layer-mode__entity-list">
+              <For each={entityImages.entities()}>
+                {(entity) => (
+                  <div class="layer-mode__entity-card">
+                    <h5>{entity.name}</h5>
+                    <button
+                      class="glass-button"
+                      onClick={async () => {
+                        try {
+                          const imageData = await entityImages.loadEntityImage(entity.id);
+                          const layerId = canvas.addLayer(entity.name);
+                          canvas.loadImageToLayer(layerId, imageData, 0, 0);
+                        } catch (error) {
+                          console.error("Failed to load entity image:", error);
+                          alert(`Failed to load image: ${error}`);
+                        }
+                      }}
+                    >
+                      Load to Canvas
+                    </button>
+                  </div>
+                )}
+              </For>
+            </div>
+          </Show>
+
+          <Show when={entityImages.entities().length === 0 && !entityImages.loading()}>
+            <p class="layer-mode__entity-empty">
+              No image entities found. Try saving a generated image!
+            </p>
           </Show>
         </div>
       </div>

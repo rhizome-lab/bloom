@@ -102,3 +102,77 @@ function sendRpc(method: string, params: any): Promise<any> {
     }, 30_000);
   });
 }
+
+/**
+ * Convert a Blob to base64 data URL
+ */
+export function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+export interface GenerationMetadata {
+  prompt: string;
+  negative_prompt?: string;
+  seed?: number;
+  model?: string;
+  steps?: number;
+  cfg_scale?: number;
+  width?: number;
+  height?: number;
+  [key: string]: any;
+}
+
+export interface SaveImageOptions {
+  imageName: string;
+  metadata: GenerationMetadata;
+  roomId?: number;
+}
+
+/**
+ * Save an image as a viwo entity
+ * @param sendRpc - RPC send function
+ * @param imageBlob - Image blob to save
+ * @param options - Save options (imageName, metadata, roomId)
+ * @returns The created entity ID
+ */
+export async function saveImageAsEntity(
+  sendRpc: (method: string, params: any) => Promise<any>,
+  imageBlob: Blob,
+  options: SaveImageOptions,
+): Promise<number> {
+  // 1. Get sys.create capability
+  const createCap = await sendRpc("get_capability", { type: "sys.create" });
+
+  // 2. Convert blob to base64
+  const imageBase64 = await blobToBase64(imageBlob);
+
+  // 3. Create entity
+  const entityId = await sendRpc("std.call_method", {
+    args: [
+      {
+        image: imageBase64,
+        image_type: "generated",
+        metadata: JSON.stringify(options.metadata),
+        name: options.imageName,
+      },
+    ],
+    method: "create",
+    object: createCap,
+  });
+
+  // 4. Optionally attach to room
+  if (options.roomId) {
+    await sendRpc("entity.verb", {
+      args: [entityId],
+      entity: options.roomId,
+      verb: "addItem",
+    });
+  }
+
+  return entityId;
+}
