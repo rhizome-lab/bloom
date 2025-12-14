@@ -4,6 +4,8 @@ description: General Guidelines
 ---
 
 # Core Tenets
+- Add to `TODO.md` all the time. If there's a new TODO, it MUST be in `TODO.md`
+- There are zero users. Actively IGNORE preserving backwards compatibility.
 - If you are not sure about something, PLEASE ASK instead of catastrophically failing by risking trying the wrong thing
 - Use `??`, not `||`, for fallbacks
 - Deliberate slowly and thoroughly on matters that require more care/attention.

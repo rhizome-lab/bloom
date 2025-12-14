@@ -46,9 +46,8 @@
 - [ ] **Plugins**: Add capability-based permissions to opcodes defined by plugins
 - [ ] **Scripting**: Add async support to compiler
 - [ ] **Scripting**: Attempt to change BreakSignal and ContinueSignal to not throw, since we use a stack based interpreter so we should be able to simply return them
-- [ ] **Scripting**: Figure out what to do with the duplication of `procgen.random` vs Std `random` opcodes
 - [ ] **Seed**: Fix hotel seed - floors and rooms should be 'ephemeral' - that is, they should be destroyed when a: no longer in use and b: not modified.
-- [ ] **Seed**: Make sure mailbox uses capability based permissions.
+- [ ] **Seed**: Make sure mailbox uses capability based permissions. (And add it back, I guess, and add _new_ tests in `mailbox.test.ts` to verify that functionality works)
 - [ ] **Transpiler**: Handle all compiler constructs
 - [ ] **Compiler**: Consider tracking usages of `__ctx__` and removing it from the parameter list if it is unused
 - [ ] **Scripting**: Either document wildcard capability support (see `packages/core/src/runtime/lib/kernel.ts`), or remove it
@@ -63,4 +62,3 @@
 - [ ] **AI**: Return images and audio in a usable format in `plugins/ai/src/lib.ts`
 - [ ] **AI**: Add support for specifying image size in `plugins/ai/src/lib.ts`
 - [ ] **AI**: Add support for streaming text in `plugins/ai/src/lib.ts`
-- [ ] **Seed**: `player_quest_log` in `packages/core/src/seeds/verbs.ts` should return an object, not text

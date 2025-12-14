@@ -1,4 +1,4 @@
-import { BooleanLib, ListLib, MathLib, ObjectLib, RandomLib, StdLib, StringLib, TimeLib } from ".";
+import { BooleanLib, ListLib, MathLib, ObjectLib, StdLib, StringLib, TimeLib } from ".";
 import { describe, expect, test } from "bun:test";
 import { compile } from "./compiler"; // Standard compile
 import { optimize } from "./optimizer";
@@ -80,12 +80,6 @@ describe("Optimizer", () => {
       const optimized = optimize(MathLib.add(StdLib.var("x"), MathLib.add(1, 2)), compile);
       // ["+", ["std.var", "x"], 3]
       expect(optimized).toEqual(MathLib.add(StdLib.var("x"), 3));
-    });
-
-    test("does NOT fold random", () => {
-      // random is excluded from PURE_OPS
-      const optimized = optimize(RandomLib.between(1, 10), compile);
-      expect(optimized).toEqual(RandomLib.between(1, 10));
     });
 
     test("does NOT fold impure time", () => {

@@ -12,7 +12,6 @@ import {
   TimeLib,
   StdLib,
   generateTypeDefinitions,
-  RandomLib,
   type ClassMetadata,
   type MethodMetadata,
   type PropertyMetadata,
@@ -31,7 +30,6 @@ const libraries = [
   StringLib,
   TimeLib,
   StdLib,
-  RandomLib,
 ];
 const opcodes = libraries.flatMap((lib) => Object.values(lib).map((value) => value.metadata));
 

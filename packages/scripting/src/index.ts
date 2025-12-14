@@ -8,7 +8,6 @@ export * as BooleanLib from "./lib/boolean";
 export * as ListLib from "./lib/list";
 export * as MathLib from "./lib/math";
 export * as ObjectLib from "./lib/object";
-export * as RandomLib from "./lib/random";
 export * as StdLib from "./lib/std";
 export * as StringLib from "./lib/string";
 export * as TimeLib from "./lib/time";

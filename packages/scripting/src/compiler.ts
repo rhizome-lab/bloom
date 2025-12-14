@@ -42,21 +42,6 @@ const HELPERS = {
     }
     return key;
   },
-  "random.between": (min: number, max: number) => {
-    if (min > max) {
-      throw new ScriptError("random: min must be less than or equal to max");
-    }
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  },
-  "random.choice": (list: any[]) => {
-    if (!Array.isArray(list)) {
-      return null;
-    }
-    if (list.length === 0) {
-      return null;
-    }
-    return list[Math.floor(Math.random() * list.length)];
-  },
   timeOffset: (amount: number, unit: string, base?: string) => {
     const date = new Date(base !== undefined ? base : new Date().toISOString());
     switch (unit) {
@@ -488,16 +473,6 @@ ${compileValue(args[1], ops, true)}}`;
     }
     case "math.sign": {
       return `${prefix}Math.sign(${compiledArgs[0]})`;
-    }
-    case "random.number": {
-      return `${prefix}Math.random()`;
-    }
-    case "random.between": {
-      // Inline optimization for constant 0 min?
-      return `${prefix}__helpers__["random.between"](${compiledArgs.join(", ")})`;
-    }
-    case "random.choice": {
-      return `${prefix}__helpers__["random.choice"](${compiledArgs[0]})`;
     }
     case "list.len": {
       return `${prefix}${compiledArgs[0]}.length`;

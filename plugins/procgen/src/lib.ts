@@ -87,3 +87,55 @@ export const random = defineFullOpcode<[min?: number, max?: number], number>("pr
     ],
   },
 });
+
+/**
+ * Generates a seeded random integer between min and max (inclusive).
+ * Equivalent to the deprecated random.between().
+ */
+export const between = defineFullOpcode<[min: number, max: number], number>("procgen.between", {
+  handler: ([min, max], _ctx) => {
+    if (min > max) {
+      throw new Error("procgen.between: min must be less than or equal to max");
+    }
+    return Math.floor(prng.range(min, max + 1));
+  },
+  metadata: {
+    category: "procgen",
+    description: "Generates a seeded random integer between min and max (inclusive).",
+    label: "Seeded Integer",
+    parameters: [
+      { description: "Minimum value (inclusive).", name: "min", type: "number" },
+      { description: "Maximum value (inclusive).", name: "max", type: "number" },
+    ],
+    returnType: "number",
+    slots: [
+      { name: "Min", type: "number" },
+      { name: "Max", type: "number" },
+    ],
+  },
+});
+
+/**
+ * Returns a random item from a list using the seeded PRNG.
+ * Equivalent to the deprecated random.choice().
+ */
+export const choice = defineFullOpcode<[list: unknown[]], unknown>("procgen.choice", {
+  handler: ([list], _ctx) => {
+    if (!Array.isArray(list)) {
+      throw new TypeError("procgen.choice: argument must be a list");
+    }
+    if (list.length === 0) {
+      return null;
+    }
+    const idx = Math.floor(prng.float() * list.length);
+    return list[idx];
+  },
+  metadata: {
+    category: "procgen",
+    description: "Returns a random item from a list using the seeded PRNG.",
+    label: "Seeded Choice",
+    parameters: [{ description: "The list to pick from.", name: "list", type: "any[]" }],
+    returnType: "any",
+    slots: [{ name: "List", type: "block" }],
+  },
+});

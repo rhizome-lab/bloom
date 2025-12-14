@@ -3,7 +3,6 @@ import * as BooleanLib from "./lib/boolean";
 import * as ListLib from "./lib/list";
 import * as MathLib from "./lib/math";
 import * as ObjectLib from "./lib/object";
-import * as RandomLib from "./lib/random";
 import * as StdLib from "./lib/std";
 import * as StringLib from "./lib/string";
 import { type ScriptContext, createOpcodeRegistry, createScriptContext } from "./interpreter";
@@ -251,28 +250,6 @@ describe("Compiler", () => {
       StdLib.lambda(["x"], ListLib.listNew(StdLib.var("x"), StdLib.var("x"))),
     );
     expect(run(script)).toEqual([1, 1, 2, 2]);
-  });
-
-  test("random", () => {
-    // Check that random returns a number
-    const r1 = run(RandomLib.number()); // 0-1
-    expect(typeof r1).toBe("number");
-    expect(r1).toBeGreaterThanOrEqual(0);
-    expect(r1).toBeLessThan(1);
-
-    // random(max)
-    const r2 = run(RandomLib.between(0, 10)); // 0-10 int
-    expect(typeof r2).toBe("number");
-    expect(Number.isInteger(r2)).toBe(true);
-    expect(r2).toBeGreaterThanOrEqual(0);
-    expect(r2).toBeLessThanOrEqual(10);
-
-    // random(min, max)
-    const r3 = run(RandomLib.between(5, 10)); // 5-10 int
-    expect(typeof r3).toBe("number");
-    expect(Number.isInteger(r3)).toBe(true);
-    expect(r3).toBeGreaterThanOrEqual(5);
-    expect(r3).toBeLessThanOrEqual(10);
   });
 
   test("obj.map", () => {

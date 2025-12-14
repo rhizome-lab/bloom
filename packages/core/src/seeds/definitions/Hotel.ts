@@ -97,12 +97,11 @@ export class HotelManager extends EntityBase {
     }
 
     const roomProtoId = this.room_proto_id;
-    const roomData: Record<string, any> = {};
-    roomData["name"] = params["name"] ?? "Hotel Room";
-    roomData["description"] = params["description"] ?? "A generic hotel room.";
-    roomData["location"] = this.location; // Temporary location
-
-    const roomId = createCap.create(roomData);
+    const roomId = createCap.create({
+      description: params["description"] ?? "A generic hotel room.",
+      location: this.location,
+      name: params["name"] ?? "Hotel Room",
+    });
     if (roomProtoId) {
       controlCap.setPrototype(roomId, roomProtoId);
     }
@@ -113,12 +112,10 @@ export class HotelManager extends EntityBase {
       managed_by: this.id,
     });
 
-    // Pick random furniture
+    // Select random theme using room ID as seed (multiply by prime for better distribution)
     const themes = ["modern", "victorian", "scifi", "rustic"];
-    const themeCount = list.len(themes);
-    const maxThemeIdx = themeCount - 1;
-    const themeIdx = random.between(0, maxThemeIdx);
-    const selectedTheme = list.get(themes, themeIdx);
+    const themeIdx = (roomId * 7919) % list.len(themes);
+    const selectedTheme = themes[themeIdx];
 
     call(this, "generate_content", roomId, selectedTheme);
 
@@ -134,7 +131,7 @@ export class HotelManager extends EntityBase {
       if (loc) {
         const contents = (loc["contents"] as number[]) ?? [];
         list.push(contents, roomId);
-        controlCap.update(loc.id, { contents });
+        controlCap.update(loc.id, {});
       }
     }
 
@@ -218,8 +215,8 @@ export class HotelManager extends EntityBase {
       theme: selectedTheme,
     });
 
-    // 2. Generate Furniture
-    const furnitureCount = random.between(2, 5); // 2 to 5 items
+    // 2. Generate Furniture (2-5 items, determined by roomId)
+    const furnitureCount = 2 + ((roomId * 7919) % 4); // 2 to 5 items
     // Pick random furniture
     const common = ["Chair", "Table", "Lamp", "Rug"];
     let idx = 0;
@@ -240,9 +237,7 @@ export class HotelManager extends EntityBase {
       }
 
       const allOptions = list.concat(common, specific);
-      const count = list.len(allOptions);
-      const maxIdx = count - 1;
-      const furnitureIdx = random.between(0, maxIdx);
+      const furnitureIdx = ((roomId + idx) * 7919) % list.len(allOptions);
       const furnitureType = list.get(allOptions, furnitureIdx) as string;
 
       const itemName = `${selectedTheme} ${furnitureType}`;

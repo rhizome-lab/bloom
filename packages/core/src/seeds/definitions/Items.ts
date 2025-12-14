@@ -31,7 +31,8 @@ export class ColorLibrary extends EntityBase {
 
   random_color() {
     const { colors } = this;
-    list.get(colors, random.between(0, list.len(colors) - 1));
+    const idx = (this.id * 7919) % list.len(colors);
+    list.get(colors, idx);
   }
 }
 
@@ -137,7 +138,8 @@ Generate a single sentence of atmospheric prose describing a subtle event in thi
       }
     }
 
-    const delay = random.between(20_000, 60_000);
+    // Random delay between 20-60 seconds
+    const delay = 20_000 + (Date.now() % 40_000);
     (globalThis as any).schedule("tick", [], delay);
   }
 
