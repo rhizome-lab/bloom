@@ -25,20 +25,29 @@ export interface BatchOptions {
   cancelSignal?: { cancelled: boolean };
 }
 
-/**
- * Batch generation hook for generating multiple images with progress tracking
- */
+/** Create prompt variations from an array of prompts */
+function createPromptVariations(
+  prompts: string[],
+  baseParams: Partial<GenerationRequest>,
+): GenerationRequest[] {
+  return prompts.map((prompt) => ({
+    height: 512,
+    prompt,
+    width: 512,
+    ...baseParams,
+  }));
+}
+
+/** Batch generation hook for generating multiple images with progress tracking */
 export function useBatch(sendRpc: (method: string, params: any) => Promise<any>) {
   const [isRunning, setIsRunning] = createSignal(false);
   const [progress, setProgress] = createSignal({ current: 0, total: 0 });
   const [results, setResults] = createSignal<GenerationResult[]>([]);
   const [errors, setErrors] = createSignal<
-    Array<{ error: Error; request: GenerationRequest; idx: number }>
+    { error: Error; request: GenerationRequest; idx: number }[]
   >([]);
 
-  /**
-   * Generate multiple images in sequence
-   */
+  /** Generate multiple images in sequence */
   async function generateBatch(
     requests: GenerationRequest[],
     options: BatchOptions = {},
@@ -49,7 +58,7 @@ export function useBatch(sendRpc: (method: string, params: any) => Promise<any>)
     setErrors([]);
 
     const batchResults: GenerationResult[] = [];
-    const batchErrors: Array<{ error: Error; request: GenerationRequest; idx: number }> = [];
+    const batchErrors: { error: Error; request: GenerationRequest; idx: number }[] = [];
 
     for (let idx = 0; idx < requests.length; idx += 1) {
       // Check cancellation
@@ -58,10 +67,15 @@ export function useBatch(sendRpc: (method: string, params: any) => Promise<any>)
       }
 
       const request = requests[idx];
+      if (!request) {
+        throw new Error(`Invalid request at index ${idx}`);
+      }
 
       try {
         // Call the diffusers.generate capability
+        // oxlint-disable-next-line no-await-in-loop
         const capability = await sendRpc("get_capability", { type: "diffusers.generate" });
+        // oxlint-disable-next-line no-await-in-loop
         const result = await sendRpc("std.call_method", {
           args: [
             request.prompt,
@@ -108,9 +122,7 @@ export function useBatch(sendRpc: (method: string, params: any) => Promise<any>)
     return batchResults;
   }
 
-  /**
-   * Cancel the current batch operation
-   */
+  /** Cancel the current batch operation */
   function cancel() {
     // Note: This requires the caller to pass a cancelSignal object
     // and check it in their loop
@@ -134,21 +146,6 @@ export function useBatch(sendRpc: (method: string, params: any) => Promise<any>)
     }
 
     return requests;
-  }
-
-  /**
-   * Create prompt variations from an array of prompts
-   */
-  function createPromptVariations(
-    prompts: string[],
-    baseParams: Partial<GenerationRequest>,
-  ): GenerationRequest[] {
-    return prompts.map((prompt) => ({
-      height: 512,
-      prompt,
-      width: 512,
-      ...baseParams,
-    }));
   }
 
   return {

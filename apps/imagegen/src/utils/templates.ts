@@ -1,6 +1,5 @@
-import { createSignal } from "solid-js";
 import type { ScriptValue } from "@viwo/scripting";
-import type { Layer } from "../engine/canvas/useCanvas";
+import { createSignal } from "solid-js";
 
 export interface WorkflowTemplate {
   id: string;
@@ -77,8 +76,8 @@ export function useTemplates() {
       id,
       metadata: {
         tags: [],
-        thumbnail,
         version: "1.0",
+        ...(thumbnail ? { thumbnail } : {}),
       },
       name,
       script,
@@ -163,7 +162,7 @@ export function useTemplates() {
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${template.name.replace(/\s+/g, "_")}.viwo-template.json`;
+    a.download = `${template.name.replaceAll(/\s+/g, "_")}.viwo-template.json`;
     a.click();
 
     URL.revokeObjectURL(url);

@@ -54,7 +54,7 @@ describe("SQLite Plugin", () => {
 
         expect(() => cap.open("/etc/passwd", ctx)).toThrow("path not allowed");
       } finally {
-        rmSync(tempDir, { recursive: true, force: true });
+        rmSync(tempDir, { force: true, recursive: true });
       }
     });
 
@@ -93,7 +93,7 @@ describe("SQLite Plugin", () => {
 
         db.__db.close();
       } finally {
-        rmSync(tempDir, { recursive: true, force: true });
+        rmSync(tempDir, { force: true, recursive: true });
       }
     });
   });

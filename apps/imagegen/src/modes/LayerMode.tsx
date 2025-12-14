@@ -1,12 +1,15 @@
 import { For, Show, createEffect, createSignal, onMount } from "solid-js";
+import {
+  type GenerationMetadata,
+  saveImageAsEntity,
+  useViwoConnection,
+} from "../utils/viwo-connection";
 import type { ScriptValue } from "@viwo/scripting";
 import { exportAsViwoScript } from "../engine/canvas/scriptExporter";
-import { useCanvas } from "../engine/canvas/useCanvas";
 import { useBatch } from "../utils/batchGeneration";
+import { useCanvas } from "../engine/canvas/useCanvas";
 import { useEntityImages } from "../utils/useEntityImages";
 import { useGeneration } from "../utils/useGeneration";
-import type { GenerationMetadata } from "../utils/viwo-connection";
-import { saveImageAsEntity, useViwoConnection } from "../utils/viwo-connection";
 
 // Helper functions for blob/base64 conversion
 function canvasToBlob(canvasElement: HTMLCanvasElement): Promise<Blob> {
@@ -96,7 +99,7 @@ function LayerMode(props: LayerModeProps = {}) {
   const [upscaleFactor, setUpscaleFactor] = createSignal<2 | 4>(2);
 
   // Compute tracking
-  const [maxCompute, setMaxCompute] = createSignal(100);
+  const [maxCompute, _setMaxCompute] = createSignal(100);
   const computeCost = () => {
     const box = canvas.bbox();
     if (!box) {
@@ -224,7 +227,7 @@ function LayerMode(props: LayerModeProps = {}) {
       if (controlLayers.length > 0) {
         // ControlNet generation
         // For now, use the first control layer (TODO: support multiple)
-        const [controlLayer] = controlLayers;
+        const controlLayer = controlLayers[0]!;
 
         if (!controlLayer.controlType) {
           alert("Control layer missing type information");
@@ -263,7 +266,6 @@ function LayerMode(props: LayerModeProps = {}) {
       } else {
         // Standard generation (no ControlNet)
         const imageUrl = await generation.generate({
-          cfg: cfg(),
           height: Math.max(64, Math.round(box.height / 8) * 8),
           negativePrompt: negativePrompt(),
           prompt: prompt(),
@@ -759,8 +761,7 @@ function LayerMode(props: LayerModeProps = {}) {
               min="1"
               max="20"
               class="glass-input"
-              onInput={(e) => {
-                const count = Number(e.currentTarget.value);
+              onInput={() => {
                 // Store in local state if needed
               }}
             />
@@ -776,12 +777,12 @@ function LayerMode(props: LayerModeProps = {}) {
 
               const requests = batch.createSeedVariations(
                 {
-                  prompt: prompt(),
-                  negativePrompt: negativePrompt(),
-                  width: 1024,
-                  height: 1024,
-                  steps: steps(),
                   cfg: cfg(),
+                  height: 1024,
+                  negativePrompt: negativePrompt(),
+                  prompt: prompt(),
+                  steps: steps(),
+                  width: 1024,
                 },
                 4, // seed count
               );
@@ -838,15 +839,16 @@ function LayerMode(props: LayerModeProps = {}) {
               onClick={async () => {
                 try {
                   const imageBlob = await fetch(lastGeneratedImage()!).then((r) => r.blob());
+                  const bbox = canvas.bbox();
                   const metadata: GenerationMetadata = {
                     cfg_scale: cfg(),
-                    height: canvas.bbox()?.height,
                     model: currentModel(),
                     negative_prompt: negativePrompt(),
                     prompt: prompt(),
                     seed: Date.now(), // Placeholder seed
                     steps: steps(),
-                    width: canvas.bbox()?.width,
+                    ...(bbox?.width !== undefined ? { width: bbox.width } : {}),
+                    ...(bbox?.height !== undefined ? { height: bbox.height } : {}),
                   };
 
                   const entityId = await saveImageAsEntity(sendRpc, imageBlob, {

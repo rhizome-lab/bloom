@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import { type ScriptValue, StdLib } from "@viwo/scripting";
 import BlocksMode from "./modes/BlocksMode";
 import LayerMode from "./modes/LayerMode";

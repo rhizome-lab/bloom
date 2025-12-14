@@ -7,11 +7,14 @@ export async function filterImage(
   const pipeline = sharp(image);
 
   switch (type) {
-    case "blur":
+    case "blur": {
       return pipeline.blur(5).toBuffer();
-    case "sharpen":
+    }
+    case "sharpen": {
       return pipeline.sharpen().toBuffer();
-    case "grayscale":
+    }
+    case "grayscale": {
       return pipeline.grayscale().toBuffer();
+    }
   }
 }

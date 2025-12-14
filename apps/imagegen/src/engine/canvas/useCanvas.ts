@@ -1,6 +1,6 @@
-import { createSignal } from "solid-js";
 import { CanvasOps, type Point } from "./operations";
-import { StdLib } from "@viwo/scripting";
+import { type ScriptValue, StdLib } from "@viwo/scripting";
+import { createSignal } from "solid-js";
 
 export interface Layer {
   id: string;
@@ -32,7 +32,7 @@ export function useCanvas(width: number, height: number) {
   const [color, setColor] = createSignal("#ffffff");
   const [bbox, setBbox] = createSignal<BoundingBox | null>(null);
   const [bboxDraft, setBboxDraft] = createSignal<BoundingBox | null>(null);
-  const [script, setScript] = createSignal(StdLib.seq());
+  const [script, setScript] = createSignal<ScriptValue<unknown>>(StdLib.seq());
   const [currentStroke, setCurrentStroke] = createSignal<Point[]>([]);
 
   let compositeCanvas: HTMLCanvasElement | null = null;
@@ -84,8 +84,11 @@ export function useCanvas(width: number, height: number) {
   }
 
   function addMaskLayer(name: string, targetLayerId?: string) {
-    const layer = createLayer(name, "mask");
-    layer.maskFor = targetLayerId;
+    const layer = createLayer(name, "raster"); // Changed from "mask" to "raster"
+    layer.type = "mask"; // Set type after creation
+    if (targetLayerId) {
+      layer.maskFor = targetLayerId;
+    }
     setLayers([...layers(), layer]);
     setActiveLayerId(layer.id);
 

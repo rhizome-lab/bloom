@@ -17,20 +17,23 @@ async function createTestImage(
 ): Promise<Buffer> {
   const pipeline = sharp({
     create: {
-      width,
-      height,
+      background: { b: 0, g: 0, r: 255 },
       channels: 3,
-      background: { r: 255, g: 0, b: 0 },
+      height,
+      width,
     },
   });
 
   switch (format) {
-    case "png":
+    case "png": {
       return pipeline.png().toBuffer();
-    case "jpeg":
+    }
+    case "jpeg": {
       return pipeline.jpeg().toBuffer();
-    case "webp":
+    }
+    case "webp": {
       return pipeline.webp().toBuffer();
+    }
   }
 }
 
@@ -47,7 +50,7 @@ describe("metadata", () => {
 
   test("embedMetadata and readMetadata for JPEG", async () => {
     const image = await createTestImage(100, 100, "jpeg");
-    const metadata = { prompt: "jpeg test", model: "sd1.5" };
+    const metadata = { model: "sd1.5", prompt: "jpeg test" };
 
     const withMetadata = await embedMetadata(image, "jpeg", metadata);
     const extracted = await readMetadata(withMetadata);
@@ -57,7 +60,7 @@ describe("metadata", () => {
 
   test("embedMetadata and readMetadata for WebP", async () => {
     const image = await createTestImage(100, 100, "webp");
-    const metadata = { prompt: "webp test", cfg: 7.5 };
+    const metadata = { cfg: 7.5, prompt: "webp test" };
 
     const withMetadata = await embedMetadata(image, "webp", metadata);
     const extracted = await readMetadata(withMetadata);
@@ -115,7 +118,7 @@ describe("convertImage", () => {
 describe("transformImage", () => {
   test("rotate image by 90 degrees", async () => {
     const image = await createTestImage(100, 50);
-    const rotated = await transformImage(image, 90, 1.0);
+    const rotated = await transformImage(image, 90, 1);
 
     const info = await sharp(rotated).metadata();
     // After 90° rotation, width and height should swap
@@ -125,7 +128,7 @@ describe("transformImage", () => {
 
   test("scale image by 2x", async () => {
     const image = await createTestImage(100, 100);
-    const scaled = await transformImage(image, 0, 2.0);
+    const scaled = await transformImage(image, 0, 2);
 
     const info = await sharp(scaled).metadata();
     expect(info.width).toBe(200);
@@ -143,7 +146,7 @@ describe("transformImage", () => {
 
   test("rotate and scale together", async () => {
     const image = await createTestImage(100, 50);
-    const transformed = await transformImage(image, 90, 2.0);
+    const transformed = await transformImage(image, 90, 2);
 
     const info = await sharp(transformed).metadata();
     // After 90° rotation and 2x scale
@@ -153,7 +156,7 @@ describe("transformImage", () => {
 
   test("no transformation when rotation=0 and scale=1", async () => {
     const image = await createTestImage(100, 100);
-    const transformed = await transformImage(image, 0, 1.0);
+    const transformed = await transformImage(image, 0, 1);
 
     const info = await sharp(transformed).metadata();
     expect(info.width).toBe(100);

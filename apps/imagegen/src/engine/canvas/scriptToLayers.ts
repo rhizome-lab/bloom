@@ -1,10 +1,8 @@
-import type { ScriptValue } from "@viwo/scripting";
 import type { Layer } from "./useCanvas";
 import type { Point } from "./operations";
+import type { ScriptValue } from "@viwo/scripting";
 
-/**
- * Extended layer interface for script-visualized layers
- */
+/** Extended layer interface for script-visualized layers */
 export interface ScriptLayer extends Layer {
   source?: "script" | "user";
   scriptNode?: ScriptValue<unknown>; // Original S-expression for re-export
@@ -53,16 +51,16 @@ export function scriptToLayers(
         canvas.height = height;
 
         layers.push({
+          canvas,
+          editable: true,
           id: id as string,
+          locked: false,
           name: name as string,
+          opacity: 1,
+          scriptNode: expr as unknown as ScriptValue<unknown>,
+          source: "script",
           type: type as "raster" | "control" | "mask",
           visible: true,
-          opacity: 1,
-          canvas,
-          locked: false,
-          source: "script",
-          scriptNode: expr,
-          editable: true,
         });
         break;
       }
@@ -96,11 +94,15 @@ export function scriptToLayers(
 
             // Draw the stroke
             const stroke = points as Point[];
-            if (stroke.length > 0) {
+            if (stroke[0] && stroke[1]) {
+              const [firstPoint] = stroke;
               ctx.beginPath();
-              ctx.moveTo(stroke[0].x, stroke[0].y);
+              ctx.moveTo(firstPoint.x, firstPoint.y);
               for (let idx = 1; idx < stroke.length; idx += 1) {
-                ctx.lineTo(stroke[idx].x, stroke[idx].y);
+                const point = stroke[idx];
+                if (point) {
+                  ctx.lineTo(point.x, point.y);
+                }
               }
               ctx.stroke();
             }
@@ -124,16 +126,16 @@ export function scriptToLayers(
         }
 
         layers.push({
+          canvas,
+          editable: false,
           id: crypto.randomUUID(),
+          locked: true,
           name: `Generated: ${promptText}`,
+          opacity: 1,
+          scriptNode: expr as unknown as ScriptValue<unknown>,
+          source: "script",
           type: "raster",
           visible: true,
-          opacity: 1,
-          canvas,
-          locked: true, // Generated layers are locked
-          source: "script",
-          scriptNode: expr,
-          editable: false, // Can't edit the generation params visually
         });
         break;
       }
@@ -147,16 +149,16 @@ export function scriptToLayers(
         canvas.height = height;
 
         layers.push({
-          id: crypto.randomUUID(),
-          name: `Opaque: ${op}`,
-          type: "opaque" as any, // Special type for unrecognized ops
-          visible: true,
-          opacity: 1,
           canvas,
-          locked: true,
-          source: "script",
-          scriptNode: expr,
           editable: false,
+          id: crypto.randomUUID(),
+          locked: true,
+          name: `Opaque: ${op}`,
+          opacity: 1,
+          scriptNode: expr as unknown as ScriptValue<unknown>,
+          source: "script",
+          type: "opaque" as any,
+          visible: true,
         });
         break;
       }
@@ -168,16 +170,16 @@ export function scriptToLayers(
         canvas.height = height;
 
         layers.push({
+          canvas,
+          editable: false,
           id: crypto.randomUUID(),
+          locked: true,
           name: `Opaque: ${op}`,
+          opacity: 1,
+          scriptNode: expr as unknown as ScriptValue<unknown>,
+          source: "script",
           type: "opaque" as any,
           visible: true,
-          opacity: 1,
-          canvas,
-          locked: true,
-          source: "script",
-          scriptNode: expr,
-          editable: false,
         });
       }
     }
@@ -190,18 +192,19 @@ export function scriptToLayers(
  * Replay a script to rebuild canvas state.
  * This is used when importing a script to restore the exact canvas state.
  */
-export async function replayScript(
+export function replayScript(
   script: ScriptValue<unknown>,
   onLayerCreate: (layer: ScriptLayer) => void,
   onProgress?: (current: number, total: number) => void,
-): Promise<void> {
+): void {
   const layers = scriptToLayers(script, 1024, 1024);
 
   for (let idx = 0; idx < layers.length; idx += 1) {
-    onLayerCreate(layers[idx]);
+    const layer = layers[idx];
+    if (!layer) {
+      continue;
+    }
+    onLayerCreate(layer);
     onProgress?.(idx + 1, layers.length);
-
-    // Small delay to allow UI to update
-    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 }

@@ -14,42 +14,8 @@ export interface Point {
 }
 
 export const CanvasOps = {
-  /**
-   * Create a new layer
-   */
-  layerCreate: (
-    id: string,
-    name: string,
-    type: "raster" | "control" | "mask" = "raster",
-  ): ScriptValue<void> => ["canvas.layer.create", id, name, type] as ScriptValue<void>,
-
-  /**
-   * Remove a layer
-   */
-  layerRemove: (id: string): ScriptValue<void> => ["canvas.layer.remove", id] as ScriptValue<void>,
-
-  /**
-   * Update layer properties
-   */
-  layerUpdate: (id: string, props: Record<string, unknown>): ScriptValue<void> =>
-    ["canvas.layer.update", id, props] as ScriptValue<void>,
-
-  /**
-   * Set the active layer
-   */
-  layerSetActive: (id: string): ScriptValue<void> =>
-    ["canvas.layer.set_active", id] as ScriptValue<void>,
-
-  /**
-   * Load an image onto a layer
-   */
-  layerLoadImage: (layerId: string, imageUrl: string, x = 0, y = 0): ScriptValue<void> =>
-    ["canvas.layer.load_image", layerId, imageUrl, x, y] as ScriptValue<void>,
-
-  /**
-   * Record a drawing stroke on a layer
-   * Points array contains the stroke path
-   */
+  /** Record a drawing stroke on a layer */
+  // oxlint-disable-next-line max-params
   drawStroke: (
     layerId: string,
     points: Point[],
@@ -57,10 +23,26 @@ export const CanvasOps = {
     size: number,
     tool: "brush" | "eraser" = "brush",
   ): ScriptValue<void> =>
-    ["canvas.draw_stroke", layerId, points, color, size, tool] as ScriptValue<void>,
-
-  /**
-   * Clear a layer
-   */
-  layerClear: (id: string): ScriptValue<void> => ["canvas.layer.clear", id] as ScriptValue<void>,
+    ["canvas.draw_stroke", layerId, points, color, size, tool] as unknown as ScriptValue<void>,
+  /** Clear a layer */
+  layerClear: (id: string): ScriptValue<void> =>
+    ["canvas.layer.clear", id] as unknown as ScriptValue<void>,
+  /** Create a new layer */
+  layerCreate: (
+    id: string,
+    name: string,
+    type: "raster" | "control" | "mask" = "raster",
+  ): ScriptValue<void> => ["canvas.layer.create", id, name, type] as unknown as ScriptValue<void>,
+  /** Load an image onto a layer */
+  layerLoadImage: (layerId: string, imageUrl: string, x = 0, y = 0): ScriptValue<void> =>
+    ["canvas.layer.load_image", layerId, imageUrl, x, y] as unknown as ScriptValue<void>,
+  /** Remove a layer */
+  layerRemove: (id: string): ScriptValue<void> =>
+    ["canvas.layer.remove", id] as unknown as ScriptValue<void>,
+  /** Set the active layer */
+  layerSetActive: (id: string): ScriptValue<void> =>
+    ["canvas.layer.set_active", id] as unknown as ScriptValue<void>,
+  /** Update layer properties */
+  layerUpdate: (id: string, props: Record<string, unknown>): ScriptValue<void> =>
+    ["canvas.layer.update", id, props] as unknown as ScriptValue<void>,
 } as const;
