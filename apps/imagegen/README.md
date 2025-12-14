@@ -35,4 +35,4 @@ The app will be available at `http://localhost:3002`.
 
 ## Documentation
 
-See [docs/apps/imagegen.md](../../docs/apps/imagegen.md) for detailed documentation and [imagegen_roadmap.md](../../docs/apps/imagegen_roadmap.md) for implementation details.
+See [docs/apps/imagegen.md](../../docs/apps/imagegen.md) for detailed documentation.
