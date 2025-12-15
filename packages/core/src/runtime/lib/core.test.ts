@@ -106,11 +106,12 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
 
   test("set_entity (via EntityControl.update)", () => {
     // Should return the merged entity object
+    const entity = getEntity(id)!;
     const result = evaluate(
       StdLib.callMethod(
         KernelLib.getCapability("entity.control", { target_id: id }),
         "update",
-        id,
+        entity,
         { name: "updated" },
       ),
       ctx,
@@ -122,12 +123,13 @@ createLibraryTester(CoreLib, "Core Library", (test) => {
     expect(getEntity(id)?.["name"]).toBe("updated");
 
     // Should fail if id is in updates (caught by capability class logic)
+    const entity2 = getEntity(id)!;
     expect(() =>
       evaluate(
         StdLib.callMethod(
           KernelLib.getCapability("entity.control", { target_id: id }),
           "update",
-          id,
+          entity2,
           { id: 123 },
         ),
         ctx,

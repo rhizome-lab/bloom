@@ -1,8 +1,8 @@
-import { addVerb, createEntity } from "../repo";
+import { addVerb, createCapability, createEntity } from "../repo";
 import { loadEntityDefinition } from "./loader";
 import { resolve } from "node:path";
 
-export function seedChatTree(voidId: number, playerId: number) {
+export function seedChatTree(playerId: number) {
   // Load ChatTree Definition
   const chatTreeDef = loadEntityDefinition(
     resolve(__dirname, "./definitions/ChatTree.ts"),
@@ -14,6 +14,10 @@ export function seedChatTree(voidId: number, playerId: number) {
     description: "A branching conversation tree for roleplay.",
     name: "Chat Tree Prototype",
   });
+
+  // Grant capabilities to prototype
+  createCapability(chatTreeProtoId, "sys.create", {});
+  createCapability(chatTreeProtoId, "entity.control", { "*": true });
 
   // Add verbs to prototype
   for (const [name, code] of chatTreeDef.verbs) {
@@ -33,6 +37,10 @@ export function seedChatTree(voidId: number, playerId: number) {
     },
     chatTreeProtoId,
   );
+
+  // Grant capabilities to instance (capabilities don't inherit from prototypes)
+  createCapability(exampleTreeId, "sys.create", {});
+  createCapability(exampleTreeId, "entity.control", { "*": true });
 
   return { chatTreeProtoId, exampleTreeId };
 }

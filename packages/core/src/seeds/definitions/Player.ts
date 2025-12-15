@@ -84,7 +84,7 @@ export class Player extends EntityBase {
         const currentRoom = entity(caller.location!) as EntityBase;
         const exits = currentRoom.exits ?? [];
         list.push(exits, exitId);
-        controlCap.update(currentRoom.id, { exits });
+        controlCap.update(currentRoom, { exits });
 
         // Back exit
         const backExitData: Record<string, any> = {};
@@ -102,7 +102,7 @@ export class Player extends EntityBase {
           target_id: newRoomId,
         });
         if (newRoomCap) {
-          newRoomCap.update(newRoom.id, { exits: newExits });
+          newRoomCap.update(newRoom, { exits: newExits });
         }
 
         send("message", "You dig a new room.");
@@ -145,7 +145,7 @@ export class Player extends EntityBase {
     }
     const contents = room.contents ?? [];
     const newContents = list.concat(contents, [itemId]);
-    controlCap.update(roomId, { contents: newContents });
+    controlCap.update(room, { contents: newContents });
     send("message", `You create ${name}.`);
     call(std.caller(), "look");
     return itemId;
@@ -172,7 +172,10 @@ export class Player extends EntityBase {
       send("message", "You do not have permission to modify this object.");
       return;
     }
-    controlCap.update(targetId, { [propName]: value });
+    const target = entity(targetId);
+    if (target) {
+      controlCap.update(target, { [propName]: value });
+    }
     send("message", "Property set.");
   }
 
@@ -222,7 +225,7 @@ export class Player extends EntityBase {
     const rootId = structure.id;
     questState.tasks[rootId] = { status: "active" };
     quests[String(questId)] = questState;
-    controlCap.update(player.id, { quests });
+    controlCap.update(player, { quests });
     send("message", `Quest Started: ${structure.description || questEnt["name"]}`);
 
     call(player, "quest_update", questId, rootId, "active");
@@ -257,7 +260,7 @@ export class Player extends EntityBase {
 
     qState.tasks[taskId] = { ...currentTaskState, status: status };
 
-    controlCap.update(player.id, { quests });
+    controlCap.update(player, { quests });
 
     const questEnt = entity(questId);
     const structure = call(questEnt, "get_structure") as any;
@@ -328,7 +331,7 @@ export class Player extends EntityBase {
         if (taskId === structure.id) {
           qState.status = "completed";
           qState.completed_at = time.to_timestamp(time.now());
-          controlCap.update(player.id, { quests });
+          controlCap.update(player, { quests });
           send("message", `Quest Completed: ${structure.description || questEnt["name"]}!`);
         }
       }

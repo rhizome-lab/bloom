@@ -16,6 +16,7 @@ import {
   updateCapabilityOwner,
   updateEntity,
 } from "../repo";
+import type { Entity } from "@viwo/shared/jsonrpc";
 
 export abstract class BaseCapability implements Capability {
   static readonly type: string;
@@ -60,10 +61,12 @@ export class EntityControl extends BaseCapability {
     return true;
   }
 
-  update(targetId: number, updates: object, _ctx: ScriptContext) {
-    if (!targetId && targetId !== 0) {
-      throw new ScriptError("EntityControl.update: targetId is required");
+  update(target: Entity, updates: object, _ctx: ScriptContext) {
+    if (!target || typeof target.id !== "number") {
+      throw new ScriptError("EntityControl.update: target must be an entity with an id");
     }
+
+    const targetId = target.id;
     const entity = getEntity(targetId);
     if (!entity) {
       throw new ScriptError(`EntityControl.update: entity ${targetId} not found`);
@@ -81,7 +84,11 @@ export class EntityControl extends BaseCapability {
     }
 
     updateEntity({ id: targetId, ...updates });
-    return { ...entity, ...updates };
+
+    // Mutate the target object in-place to keep it in sync with DB
+    Object.assign(target, updates);
+
+    return target;
   }
 
   setPrototype(targetId: number, protoId: number | null, _ctx: ScriptContext) {

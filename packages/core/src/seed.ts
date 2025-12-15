@@ -729,7 +729,7 @@ export function seed() {
   seedHotel(voidId, lobbyId);
 
   // 13. Chat Tree Seed
-  seedChatTree(voidId, playerId);
+  seedChatTree(playerId);
 
   if (process.env.NODE_ENV !== "test") {
     console.log("Seeding complete!");

@@ -90,13 +90,14 @@ describe("Capability Security", () => {
   test("Core.set_entity requires capability", async () => {
     const ctx = createScriptContext({ args: [], caller: user, ops: GameOpcodes, this: user });
     const targetId = createEntity({ name: "Target" });
+    const target = getEntity(targetId)!;
 
     try {
       await evaluate(
         StdLib.callMethod(
           ObjectLib.objNew(["name", "Fail"]), // Invalid cap
           "update",
-          targetId,
+          target,
           ObjectLib.objNew(), // updates
         ),
         ctx,
@@ -110,12 +111,13 @@ describe("Capability Security", () => {
   test("Core.set_entity with capability", async () => {
     const ctx = createScriptContext({ args: [], caller: admin, ops: GameOpcodes, this: admin });
     const targetId = createEntity({ name: "Target" });
+    const target = getEntity(targetId)!;
 
     await evaluate(
       StdLib.callMethod(
         KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true])),
         "update",
-        targetId,
+        target,
         ObjectLib.objNew(["name", "Modified"]),
       ),
       ctx,

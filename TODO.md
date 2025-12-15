@@ -45,6 +45,10 @@
 - [ ] **Scripting**: Add async support to compiler
 - [ ] **Seed**: Make sure mailbox uses capability based permissions. (And add it back, I guess, and add _new_ tests in `mailbox.test.ts` to verify that functionality works)
 - [ ] **Transpiler**: Handle all compiler constructs
+- [ ] **Transpiler**: Support ES6 shorthand property syntax (`{ content, role }` currently drops properties)
+- [ ] **Transpiler**: Support native array methods (`.push()`, `.reverse()` currently not transpiled)
+- [ ] **Transpiler**: Fix for-in loop transpilation (currently causes `obj.get` errors during iteration)
+- [ ] **Transpiler**: Make dictionary/object access safer (bracket notation `obj[key]` throws if key missing - should use `obj.get` with defaults or add null-safe operator support)
 - [ ] **Compiler**: Consider tracking usages of `__ctx__` and removing it from the parameter list if it is unused
 - [ ] **Scripting**: Either document wildcard capability support (see `packages/core/src/runtime/lib/kernel.ts`), or remove it
 - [ ] **Lint**: Enable type-aware linting: https://oxc.rs/docs/guide/usage/linter/type-aware.html

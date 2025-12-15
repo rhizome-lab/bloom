@@ -1,10 +1,38 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import type { Entity } from "@viwo/shared/jsonrpc";
+import { createEntity, getEntity, getVerb, updateEntity } from "../repo";
 import { createScriptContext, evaluate } from "@viwo/scripting";
-import { db } from "../db";
-import { createEntity, getEntity, getVerb } from "../repo";
+import type { Entity } from "@viwo/shared/jsonrpc";
 import { GameOpcodes } from "../runtime/opcodes";
+import { db } from "../db";
 import { seedChatTree } from "./chat_tree";
+
+interface ChatMessage {
+  id: number; // Unique message ID
+  content: string; // Message text
+  role: string; // Arbitrary: 'user', 'assistant', 'system', 'narrator', etc.
+  parent_id: number | null; // null for root message(s)
+  metadata?: {
+    // Optional, extensible
+    model?: string;
+    temperature?: number;
+    timestamp?: number; // Optional - can use if needed
+    [key: string]: any;
+  };
+}
+
+interface ChatTree {
+  id: number; // Entity ID
+  prototype_id?: number;
+  name: string; // Chat tree name
+  messages: {
+    // Map for O(1) lookups
+    [message_id: number]: ChatMessage;
+  };
+  next_message_id: number; // Auto-increment counter
+  active_branch: string | null; // Currently active branch name (null = "main")
+  // Branch name → leaf message ID
+  branches: Record<string, number | null>;
+}
 
 describe("ChatTree", () => {
   let voidId: number;
@@ -38,7 +66,7 @@ describe("ChatTree", () => {
     });
 
     // Seed chat tree
-    const { exampleTreeId } = seedChatTree(voidId, playerId);
+    const { exampleTreeId } = seedChatTree(playerId);
     chatTreeId = exampleTreeId;
   });
 
@@ -68,7 +96,7 @@ describe("ChatTree", () => {
   };
 
   test("should create chat tree with initial state", () => {
-    const tree = getEntity(chatTreeId);
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
     expect(tree).toBeDefined();
     expect(tree!.name).toBe("Example Chat Tree");
     expect(tree!.messages).toEqual({});
@@ -80,28 +108,28 @@ describe("ChatTree", () => {
   test("should add messages to tree", async () => {
     // Add first message
     const msg1_id = await callVerb(chatTreeId, "add_message", "Hello!", "user");
-    expect(msg1_id).toBe("1");
+    expect(msg1_id).toBe(1);
 
     // Add second message
     const msg2_id = await callVerb(chatTreeId, "add_message", "Hi there!", "assistant");
-    expect(msg2_id).toBe("2");
+    expect(msg2_id).toBe(2);
 
     // Check tree state
-    const tree = getEntity(chatTreeId);
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
     expect(tree!.next_message_id).toBe(3);
     expect(tree!["messages"]["1"]).toEqual({
       content: "Hello!",
-      id: "1",
+      id: 1,
       parent_id: null,
       role: "user",
     });
     expect(tree!["messages"]["2"]).toEqual({
       content: "Hi there!",
-      id: "2",
-      parent_id: "1",
+      id: 2,
+      parent_id: 1,
       role: "assistant",
     });
-    expect(tree!["branches"]["main"]).toBe("2");
+    expect(tree!["branches"]["main"]).toBe(2);
   });
 
   test("should support arbitrary role strings", async () => {
@@ -109,10 +137,10 @@ describe("ChatTree", () => {
     await callVerb(chatTreeId, "add_message", "OOC comment", "ooc");
     await callVerb(chatTreeId, "add_message", "System message", "system");
 
-    const tree = getEntity(chatTreeId);
-    expect(tree!["messages"]["1"].role).toBe("narrator");
-    expect(tree!["messages"]["2"].role).toBe("ooc");
-    expect(tree!["messages"]["3"].role).toBe("system");
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree!["messages"][1]?.role).toBe("narrator");
+    expect(tree!["messages"][2]?.role).toBe("ooc");
+    expect(tree!["messages"][3]?.role).toBe("system");
   });
 
   test("should get conversation for main branch", async () => {
@@ -120,24 +148,26 @@ describe("ChatTree", () => {
     await callVerb(chatTreeId, "add_message", "Message 2", "assistant");
     await callVerb(chatTreeId, "add_message", "Message 3", "user");
 
-    const conversation = await callVerb(chatTreeId, "get_conversation");
+    const conversation = (await callVerb(chatTreeId, "get_conversation")) as readonly ChatMessage[];
     expect(conversation).toHaveLength(3);
-    expect(conversation[0].content).toBe("Message 1");
-    expect(conversation[1].content).toBe("Message 2");
-    expect(conversation[2].content).toBe("Message 3");
+    expect(conversation[0]?.content).toBe("Message 1");
+    expect(conversation[1]?.content).toBe("Message 2");
+    expect(conversation[2]?.content).toBe("Message 3");
   });
 
   test("should create branch from message", async () => {
     // Create initial conversation
     await callVerb(chatTreeId, "add_message", "Hello!", "user");
-    const msg2_id = await callVerb(chatTreeId, "add_message", "Hi there!", "assistant");
+    const msg2_id = (await callVerb(chatTreeId, "add_message", "Hi there!", "assistant")) as
+      | number
+      | undefined;
 
     // Branch from second message
     const branch_name = await callVerb(chatTreeId, "branch_from", msg2_id, "alternate");
     expect(branch_name).toBe("alternate");
 
-    const tree = getEntity(chatTreeId);
-    expect(tree!["branches"]["alternate"]).toBe(msg2_id);
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree!.branches["alternate"]).toBe(msg2_id);
   });
 
   test("should switch between branches", async () => {
@@ -149,15 +179,15 @@ describe("ChatTree", () => {
     await callVerb(chatTreeId, "branch_from", msg2_id, "alternate");
     await callVerb(chatTreeId, "switch_branch", "alternate");
 
-    const tree = getEntity(chatTreeId);
-    expect(tree!["active_branch"]).toBe("alternate");
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree!.active_branch).toBe("alternate");
 
     // Add message to alternate branch
     await callVerb(chatTreeId, "add_message", "Greetings!", "assistant");
 
     // Check that alternate branch was updated
-    const tree2 = getEntity(chatTreeId);
-    expect(tree2!["branches"]["alternate"]).toBe("3");
+    const tree2 = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree2!.branches["alternate"]).toBe(3);
   });
 
   test("should get conversation for specific branch", async () => {
@@ -172,18 +202,26 @@ describe("ChatTree", () => {
     await callVerb(chatTreeId, "add_message", "Greetings, traveler!", "assistant");
 
     // Get main conversation
-    const main_conv = await callVerb(chatTreeId, "get_conversation", "main");
+    const main_conv = (await callVerb(
+      chatTreeId,
+      "get_conversation",
+      "main",
+    )) as readonly ChatMessage[];
     expect(main_conv).toHaveLength(3);
-    expect(main_conv[2].content).toBe("How are you?");
+    expect(main_conv[2]?.content).toBe("How are you?");
 
     // Get alternate conversation
-    const alt_conv = await callVerb(chatTreeId, "get_conversation", "alternate");
+    const alt_conv = (await callVerb(
+      chatTreeId,
+      "get_conversation",
+      "alternate",
+    )) as readonly ChatMessage[];
     expect(alt_conv).toHaveLength(3);
-    expect(alt_conv[2].content).toBe("Greetings, traveler!");
+    expect(alt_conv[2]?.content).toBe("Greetings, traveler!");
 
     // Both should share first two messages
-    expect(main_conv[0].id).toBe(alt_conv[0].id);
-    expect(main_conv[1].id).toBe(alt_conv[1].id);
+    expect(main_conv[0]?.id).toBe(alt_conv[0]?.id);
+    expect(main_conv[1]?.id).toBe(alt_conv[1]?.id);
   });
 
   test("should get full tree structure", async () => {
@@ -191,7 +229,7 @@ describe("ChatTree", () => {
     const msg2_id = await callVerb(chatTreeId, "add_message", "Hi!", "assistant");
     await callVerb(chatTreeId, "branch_from", msg2_id, "alt");
 
-    const tree_data = await callVerb(chatTreeId, "get_tree");
+    const tree_data = (await callVerb(chatTreeId, "get_tree")) as ChatTree;
     expect(tree_data.active_branch).toBe("main");
     expect(tree_data.branches).toHaveProperty("main");
     expect(tree_data.branches).toHaveProperty("alt");
@@ -207,17 +245,17 @@ describe("ChatTree", () => {
     // Delete alternate branch
     await callVerb(chatTreeId, "delete_branch", "alternate");
 
-    const tree = getEntity(chatTreeId);
-    expect(tree!["branches"]["alternate"]).toBeUndefined();
-    expect(tree!["branches"]["main"]).toBeDefined();
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree!.branches["alternate"]).toBeUndefined();
+    expect(tree!.branches["main"]).toBeDefined();
   });
 
   test("should not delete main branch", async () => {
     // This should fail or return error
     await callVerb(chatTreeId, "delete_branch", "main");
 
-    const tree = getEntity(chatTreeId);
-    expect(tree!["branches"]["main"]).toBeDefined();
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree!.branches["main"]).toBeDefined();
   });
 
   test("should switch to main when deleting active branch", async () => {
@@ -229,14 +267,14 @@ describe("ChatTree", () => {
     // Delete the active branch
     await callVerb(chatTreeId, "delete_branch", "alternate");
 
-    const tree = getEntity(chatTreeId);
-    expect(tree!["active_branch"]).toBe("main");
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree!.active_branch).toBe("main");
   });
 
   test("should prune orphaned messages", async () => {
     // Create messages
     await callVerb(chatTreeId, "add_message", "Message 1", "user");
-    const msg2_id = await callVerb(chatTreeId, "add_message", "Message 2", "assistant");
+    const msg2_id = (await callVerb(chatTreeId, "add_message", "Message 2", "assistant")) as number;
     await callVerb(chatTreeId, "add_message", "Message 3", "user");
 
     // Create branch
@@ -246,16 +284,18 @@ describe("ChatTree", () => {
 
     // Now delete main branch's reference by manually setting it
     // This simulates orphaning message 3
-    const tree = getEntity(chatTreeId);
-    tree!["branches"]["main"] = msg2_id;
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    tree!.branches["main"] = msg2_id;
+    // Persist the change to the database
+    updateEntity({ branches: tree.branches, id: chatTreeId });
 
     // Prune orphans
     const deleted_count = await callVerb(chatTreeId, "prune_orphans");
     expect(deleted_count).toBe(1); // Message 3 should be pruned
 
-    const tree2 = getEntity(chatTreeId);
-    expect(tree2!["messages"]["3"]).toBeUndefined();
-    expect(tree2!["messages"]["4"]).toBeDefined(); // Alternate message
+    const tree2 = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree2!.messages["3"]).toBeUndefined();
+    expect(tree2!.messages["4"]).toBeDefined(); // Alternate message
   });
 
   test("should handle empty branch conversation", async () => {
@@ -265,20 +305,22 @@ describe("ChatTree", () => {
   });
 
   test("should allow explicit parent_id when adding message", async () => {
-    const msg1_id = await callVerb(chatTreeId, "add_message", "Message 1", "user");
+    const msg1_id = (await callVerb(chatTreeId, "add_message", "Message 1", "user")) as
+      | number
+      | undefined;
     await callVerb(chatTreeId, "add_message", "Message 2", "assistant");
 
     // Add a message with explicit parent (creating a branch point)
-    const msg3_id = await callVerb(
+    const msg3_id = (await callVerb(
       chatTreeId,
       "add_message",
       "Alt Message 2",
       "assistant",
       msg1_id,
-    );
+    )) as number;
 
-    const tree = getEntity(chatTreeId);
-    expect(tree!["messages"][msg3_id]["parent_id"]).toBe(msg1_id);
+    const tree = getEntity(chatTreeId) as unknown as ChatTree;
+    expect(tree!.messages[msg3_id]?.parent_id).toBe(msg1_id);
   });
 
   test("should handle complex branching tree", async () => {
@@ -289,7 +331,7 @@ describe("ChatTree", () => {
     //    / \\
     //   3   4 (both user messages, different branches)
 
-    const _msg1_id = await callVerb(chatTreeId, "add_message", "Start", "user");
+    await callVerb(chatTreeId, "add_message", "Start", "user");
     const msg2_id = await callVerb(chatTreeId, "add_message", "Response", "assistant");
     await callVerb(chatTreeId, "add_message", "Continue main", "user");
 
@@ -298,12 +340,20 @@ describe("ChatTree", () => {
     await callVerb(chatTreeId, "add_message", "Branch A response", "user");
 
     // Verify both branches exist and are different
-    const main_conv = await callVerb(chatTreeId, "get_conversation", "main");
-    const branch_a_conv = await callVerb(chatTreeId, "get_conversation", "branch_a");
+    const main_conv = (await callVerb(
+      chatTreeId,
+      "get_conversation",
+      "main",
+    )) as readonly ChatMessage[];
+    const branch_a_conv = (await callVerb(
+      chatTreeId,
+      "get_conversation",
+      "branch_a",
+    )) as readonly ChatMessage[];
 
     expect(main_conv).toHaveLength(3);
     expect(branch_a_conv).toHaveLength(3);
-    expect(main_conv[2].content).toBe("Continue main");
-    expect(branch_a_conv[2].content).toBe("Branch A response");
+    expect(main_conv[2]?.content).toBe("Continue main");
+    expect(branch_a_conv[2]?.content).toBe("Branch A response");
   });
 });

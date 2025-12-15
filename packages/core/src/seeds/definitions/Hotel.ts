@@ -60,13 +60,16 @@ export class HotelManager extends EntityBase {
     }
 
     // Store lobby ID on manager
-    controlCap.update(this.id, { lobby_id: lobbyId });
+    controlCap.update(this, { lobby_id: lobbyId });
 
     // Tag the lobby so we know it belongs to the hotel
-    controlCap.update(lobbyId, {
-      hotel_entity_type: "lobby",
-      managed_by: this.id,
-    });
+    const lobby = entity(lobbyId);
+    if (lobby) {
+      controlCap.update(lobby, {
+        hotel_entity_type: "lobby",
+        managed_by: this.id,
+      });
+    }
 
     // Manual location handling: Add lobby to manager's location (Void?)
     const locId = this.location;
@@ -75,7 +78,7 @@ export class HotelManager extends EntityBase {
       if (loc) {
         const contents = (loc["contents"] as number[]) ?? [];
         list.push(contents, lobbyId);
-        controlCap.update(loc.id, { contents });
+        controlCap.update(loc, { contents });
       }
     }
 
@@ -106,11 +109,14 @@ export class HotelManager extends EntityBase {
       controlCap.setPrototype(roomId, roomProtoId);
     }
 
-    controlCap.update(roomId, {
-      hotel_entity_type: "room",
-      last_occupied: time.now(), // timestamp
-      managed_by: this.id,
-    });
+    const room = entity(roomId);
+    if (room) {
+      controlCap.update(room, {
+        hotel_entity_type: "room",
+        last_occupied: time.now(), // timestamp
+        managed_by: this.id,
+      });
+    }
 
     // Select random theme using room ID as seed (multiply by prime for better distribution)
     const themes = ["modern", "victorian", "scifi", "rustic"];
@@ -122,7 +128,7 @@ export class HotelManager extends EntityBase {
     // Track the room
     const activeRooms = (this.active_rooms as number[]) ?? [];
     list.push(activeRooms, roomId);
-    controlCap.update(this.id, { active_rooms: activeRooms });
+    controlCap.update(this, { active_rooms: activeRooms });
 
     // Manual location handling: Add room to manager's location
     const locId = this.location;
@@ -131,7 +137,7 @@ export class HotelManager extends EntityBase {
       if (loc) {
         const contents = (loc["contents"] as number[]) ?? [];
         list.push(contents, roomId);
-        controlCap.update(loc.id, {});
+        controlCap.update(loc, { contents });
       }
     }
 
@@ -175,7 +181,7 @@ export class HotelManager extends EntityBase {
       }
     }
 
-    controlCap.update(this.id, { active_rooms: stillActiveRooms });
+    controlCap.update(this, { active_rooms: stillActiveRooms });
     schedule("cleanup_loop", [], 5000);
   }
 
@@ -210,7 +216,7 @@ export class HotelManager extends EntityBase {
       themeDesc = "Rough-hewn wood and cozy fabrics.";
     }
 
-    controlCap.update(roomId, {
+    controlCap.update(room, {
       description: `${room["description"]} It has a ${selectedTheme} style. ${themeDesc}`,
       theme: selectedTheme,
     });
@@ -256,7 +262,7 @@ export class HotelManager extends EntityBase {
     // Batch update contents once
     const contents = (room["contents"] as number[]) ?? [];
     const newContents = list.concat(contents, newItems);
-    controlCap.update(roomId, { contents: newContents });
+    controlCap.update(room, { contents: newContents });
   }
 
   gc() {

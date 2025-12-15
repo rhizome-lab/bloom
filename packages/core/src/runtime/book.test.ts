@@ -143,7 +143,7 @@ describe("Book Item Scripting", () => {
       StdLib.callMethod(
         StdLib.var("cap"),
         "update",
-        ObjectLib.objGet(StdLib.this(), "id"),
+        StdLib.this(),
         ObjectLib.objNew(["chapters", StdLib.var("chapters")]),
       ),
       CoreLib.call(StdLib.caller(), "tell", "Chapter added."),

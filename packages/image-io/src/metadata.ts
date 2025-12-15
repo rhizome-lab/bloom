@@ -1,10 +1,8 @@
+import { load } from "exifreader";
 import sharp from "sharp";
-import ExifReader from "exifreader";
 
-/**
- * Embed custom metadata into an image using EXIF UserComment
- */
-export async function embedMetadata(
+/** Embed custom metadata into an image using EXIF UserComment */
+export function embedMetadata(
   image: Buffer,
   format: "png" | "jpeg" | "webp",
   metadata: object,
@@ -38,37 +36,31 @@ export async function embedMetadata(
     .toBuffer();
 }
 
-/**
- * Read custom metadata from an image
- */
-export async function readMetadata(image: Buffer): Promise<object | null> {
+/** Read custom metadata from an image */
+export function readMetadata(image: Buffer): object | null {
   try {
-    const tags = ExifReader.load(image);
-
+    const tags = load(image);
     // Try to read UserComment
-    if (tags.UserComment?.value) {
+    if (typeof tags.UserComment === "object" && tags.UserComment && "value" in tags.UserComment) {
       try {
         let value: string;
-        if (typeof tags.UserComment.value === "string") {
-          value = tags.UserComment.value;
-        } else if (Array.isArray(tags.UserComment.value)) {
+        if (typeof tags.UserComment["value"] === "string") {
+          ({ value } = tags.UserComment);
+        } else if (Array.isArray(tags.UserComment["value"])) {
           // UserComment is often an array of character codes
           // Skip the first 8 bytes (character code specification)
-          const charCodes = tags.UserComment.value.slice(8);
-          value = String.fromCharCode(...charCodes);
+          const charCodes = tags.UserComment["value"].slice(8);
+          value = String.fromCodePoint(...charCodes);
         } else {
           return null;
         }
-
         // Trim null bytes
-        value = value.replace(/\u0000/g, "");
-
+        value = value.replaceAll("\0", "");
         return JSON.parse(value);
       } catch {
         return null;
       }
     }
-
     return null;
   } catch {
     return null;

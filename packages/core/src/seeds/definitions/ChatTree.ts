@@ -19,6 +19,12 @@ export class ChatTree extends EntityBase {
       return;
     }
 
+    const controlCap = get_capability("entity.control", { "*": true });
+    if (!controlCap) {
+      send("message", "Error: Missing entity.control capability");
+      return;
+    }
+
     // Initialize on first use
     if (!this.messages) {
       this.messages = {};
@@ -27,14 +33,14 @@ export class ChatTree extends EntityBase {
       this.next_message_id = 1;
     }
     if (!this.branches) {
-      this.branches = { main: null };
+      this.branches = { main: null! };
     }
     if (this.active_branch === undefined) {
       this.active_branch = "main";
     }
 
     // Generate new message ID
-    const msg_id = String(this.next_message_id);
+    const msg_id = this.next_message_id;
     this.next_message_id += 1;
 
     // Determine parent
@@ -45,20 +51,27 @@ export class ChatTree extends EntityBase {
       actual_parent_id = this.branches[branch_name] ?? null;
     }
 
-    // Create message
+    // Create message - use string key for consistency with DB retrieval
     const message = {
-      content,
+      content: content,
       id: msg_id,
       parent_id: actual_parent_id,
-      role,
+      role: role,
     };
 
-    // Add to messages map
-    this.messages[msg_id] = message;
+    // Add to messages map using string key
+    this.messages[String(msg_id)] = message;
 
     // Update active branch head
     const branch_name = this.active_branch ?? "main";
     this.branches[branch_name] = msg_id;
+
+    // Persist changes to database
+    controlCap.update(this, {
+      branches: this.branches,
+      messages: this.messages,
+      next_message_id: this.next_message_id,
+    });
 
     send("message", `Added message ${msg_id} to branch '${branch_name}'`);
     return msg_id;
@@ -73,12 +86,18 @@ export class ChatTree extends EntityBase {
       return;
     }
 
+    const controlCap = get_capability("entity.control", { "*": true });
+    if (!controlCap) {
+      send("message", "Error: Missing entity.control capability");
+      return;
+    }
+
     if (!this.messages || !this.messages[String(message_id)]) {
       send("message", `Error: Message ${message_id} not found`);
       return;
     }
 
-    if (this.branches && this.branches[branch_name]) {
+    if (this.branches && branch_name in this.branches) {
       send("message", `Error: Branch '${branch_name}' already exists`);
       return;
     }
@@ -88,6 +107,9 @@ export class ChatTree extends EntityBase {
       this.branches = {};
     }
     this.branches[branch_name] = message_id;
+
+    // Persist changes
+    controlCap.update(this, { branches: this.branches });
 
     send("message", `Created branch '${branch_name}' at message ${message_id}`);
     return branch_name;
@@ -101,12 +123,22 @@ export class ChatTree extends EntityBase {
       return;
     }
 
+    const controlCap = get_capability("entity.control", { "*": true });
+    if (!controlCap) {
+      send("message", "Error: Missing entity.control capability");
+      return;
+    }
+
     if (!this.branches || !this.branches[branch_name]) {
       send("message", `Error: Branch '${branch_name}' not found`);
       return;
     }
 
     this.active_branch = branch_name;
+
+    // Persist changes
+    controlCap.update(this, { active_branch: this.active_branch });
+
     send("message", `Switched to branch '${branch_name}'`);
     return branch_name;
   }
@@ -119,13 +151,13 @@ export class ChatTree extends EntityBase {
       this.messages = {};
     }
     if (!this.branches) {
-      this.branches = { main: null };
+      this.branches = { main: null! };
     }
 
     // Use active branch if not specified
     const target_branch = branch_name ?? this.active_branch ?? "main";
 
-    if (this.branches[target_branch] === undefined) {
+    if (!(target_branch in this.branches)) {
       send("message", `Error: Branch '${target_branch}' not found`);
       return [];
     }
@@ -139,23 +171,22 @@ export class ChatTree extends EntityBase {
     }
 
     // Walk backwards from head
-    const conversation = [];
+    const conversation: any[] = [];
     let current_id: string | number | null = head_id;
 
     while (current_id !== null && current_id !== undefined) {
-      const msg = messages_map[String(current_id)];
+      const msg = messages_map[String(current_id)] as any;
       if (!msg) {
         send("message", `Warning: Message ${current_id} not found in chain`);
         break;
       }
 
-      conversation.push(msg);
+      list.push(conversation, msg);
       current_id = msg.parent_id;
     }
 
     // Reverse for chronological order
-    conversation.reverse();
-    return conversation;
+    return list.reverse(conversation);
   }
 
   get_tree() {
@@ -178,6 +209,12 @@ export class ChatTree extends EntityBase {
       return;
     }
 
+    const controlCap = get_capability("entity.control", { "*": true });
+    if (!controlCap) {
+      send("message", "Error: Missing entity.control capability");
+      return;
+    }
+
     if (branch_name === "main") {
       send("message", "Error: Cannot delete 'main' branch");
       return;
@@ -194,8 +231,15 @@ export class ChatTree extends EntityBase {
     // If this was the active branch, switch to main
     if (this.active_branch === branch_name) {
       this.active_branch = "main";
+      // Persist both changes
+      controlCap.update(this, {
+        active_branch: this.active_branch,
+        branches: this.branches,
+      });
       send("message", `Deleted branch '${branch_name}' and switched to 'main'`);
     } else {
+      // Just persist branch deletion
+      controlCap.update(this, { branches: this.branches });
       send("message", `Deleted branch '${branch_name}'`);
     }
 
@@ -203,39 +247,50 @@ export class ChatTree extends EntityBase {
   }
 
   prune_orphans() {
+    const controlCap = get_capability("entity.control", { "*": true });
+    if (!controlCap) {
+      send("message", "Error: Missing entity.control capability");
+      return 0;
+    }
+
     // Mark all reachable messages
     const reachable: Record<string, boolean> = {};
     const branches = this.branches ?? {};
     const messages_map = this.messages ?? {};
 
     // Walk from each branch head
-    for (const branch_name in branches) {
-      let current_id: string | number | null = branches[branch_name];
+    const branch_names = obj.keys(branches);
+    for (const branch_name of branch_names) {
+      let current_id: string | number | null = obj.get(branches, branch_name, null);
 
       while (current_id !== null && current_id !== undefined) {
         const id_str = String(current_id);
-        if (reachable[id_str]) {
+        if (obj.get(reachable, id_str, false)) {
           break; // Already processed this path
         }
 
-        reachable[id_str] = true;
-        const msg = messages_map[id_str];
+        obj.set(reachable, id_str, true);
+        const msg = obj.get(messages_map, id_str, null);
         if (!msg) {
           break;
         }
 
-        current_id = msg.parent_id;
+        current_id = obj.get(msg, "parent_id", null);
       }
     }
 
     // Delete unreachable messages
     let deleted_count = 0;
-    for (const msg_id in messages_map) {
-      if (!reachable[msg_id]) {
-        delete messages_map[msg_id];
+    const msg_ids = obj.keys(messages_map);
+    for (const msg_id of msg_ids) {
+      if (!obj.get(reachable, msg_id, false)) {
+        obj.del(messages_map, msg_id);
         deleted_count += 1;
       }
     }
+
+    // Persist changes
+    controlCap.update(this, { messages: messages_map });
 
     send("message", `Pruned ${deleted_count} orphaned message(s)`);
     return deleted_count;

@@ -131,9 +131,7 @@ export const entity = defineFullOpcode<[number], Entity>("entity", {
   },
 });
 
-/**
- * Gets the prototype ID of an entity.
- */
+/** Gets the prototype ID of an entity. */
 export const getPrototype = defineFullOpcode<[Entity], number | null>("get_prototype", {
   handler: ([entity], _ctx) => {
     if (!entity || typeof entity.id !== "number") {

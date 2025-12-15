@@ -37,7 +37,7 @@ export class EntityBase implements Entity {
     }
     const contents = this.contents ?? [];
     list.push(contents, mover.id);
-    cap.update(this.id, { contents: contents });
+    cap.update(this, { contents: contents });
   }
 
   on_leave(mover: Entity, authCap: EntityControl | null) {
@@ -48,7 +48,7 @@ export class EntityBase implements Entity {
     }
     const contents = this.contents ?? [];
     const newContents = list.filter(contents, (id: number) => id !== mover.id);
-    cap.update(this.id, { contents: newContents });
+    cap.update(this, { contents: newContents });
   }
 
   teleport(destEntity: Entity) {
@@ -97,7 +97,7 @@ export class EntityBase implements Entity {
       send("message", "You cannot move yourself.");
       return;
     }
-    selfCap.update(mover.id, { location: destId });
+    selfCap.update(mover, { location: destId });
     send("room_id", { roomId: destId });
     call(std.caller(), "look");
   }

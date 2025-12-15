@@ -44,7 +44,7 @@ export class MoodRing extends EntityBase {
     const newColor = call(entity(libId), "random_color");
     const cap = get_capability("entity.control", { target_id: this.id });
     if (cap) {
-      std.call_method(cap, "update", this.id, {
+      std.call_method(cap, "update", this, {
         adjectives: [`color:${newColor}`, "material:silver"],
       });
     }
@@ -201,7 +201,7 @@ export class CombatManager extends EntityBase {
       if (index >= list.len(order)) {
         index = 0;
         const round = session["round"] as number;
-        controlCap.update(session.id, { round: round + 1 });
+        controlCap.update(session, { round: round + 1 });
       }
 
       const candidateId = order[index]!;
@@ -216,7 +216,7 @@ export class CombatManager extends EntityBase {
 
       attempts += 1;
     }
-    controlCap.update(session.id, { current_turn_index: index });
+    controlCap.update(session, { current_turn_index: index });
     return nextId;
   }
 
@@ -254,7 +254,7 @@ export class CombatManager extends EntityBase {
     }
 
     if (targetCap) {
-      targetCap.update(target.id, { hp: newHp });
+      targetCap.update(target, { hp: newHp });
 
       let msg = `You attack ${defProps.name} with ${element} for ${finalDamage} damage!`;
       if (resMod > 1) {
@@ -320,7 +320,7 @@ export class CombatManager extends EntityBase {
     if (!controlCap) {
       return;
     }
-    controlCap.update(target.id, { status_effects: effects });
+    controlCap.update(target, { status_effects: effects });
     call(effectEntity, "on_apply", target, newEffect);
     call(target, "tell", `Applied ${effectEntity.name}.`);
   }
@@ -366,7 +366,7 @@ export class CombatManager extends EntityBase {
       }
     }
 
-    controlCap.update(target.id, { status_effects: effects });
+    controlCap.update(target, { status_effects: effects });
     return canAct;
   }
 
@@ -425,7 +425,7 @@ export class Poison extends EffectBase {
     const hp = (resolve_props(target)["hp"] as number) ?? 100;
     const newHp = hp - magnitude;
 
-    controlCap.update(target.id, { hp: newHp });
+    controlCap.update(target, { hp: newHp });
     call(target, "tell", `You take ${magnitude} poison damage!`);
 
     if (newHp <= 0) {
@@ -453,7 +453,7 @@ export class Regen extends EffectBase {
       return;
     }
 
-    controlCap.update(target.id, { hp: newHp });
+    controlCap.update(target, { hp: newHp });
     call(target, "tell", `You regenerate ${magnitude} HP.`);
   }
 }

@@ -37,7 +37,7 @@ describe("Scheduler Verification", () => {
         StdLib.callMethod(
           StdLib.var("cap"),
           "update",
-          ObjectLib.objGet(StdLib.this(), "id"),
+          StdLib.this(),
           ObjectLib.objNew(["count", MathLib.add(ObjectLib.objGet(StdLib.this(), "count"), 1)]),
         ),
       ),

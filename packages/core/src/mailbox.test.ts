@@ -115,7 +115,7 @@ describe("Mailbox Verification", () => {
           StdLib.callMethod(
             StdLib.var("cap"),
             "update",
-            ObjectLib.objGet(StdLib.var("item"), "id"),
+            StdLib.var("item"),
             ObjectLib.objNew(
               ["location", ObjectLib.objGet(StdLib.var("dest"), "id")],
               ["owner", StdLib.var("newOwner")],

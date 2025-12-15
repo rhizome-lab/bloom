@@ -40,7 +40,7 @@ describe("Capability Permissions", () => {
 
   const tryRename = (actor: Entity, target: Entity, newName: string) => {
     // Script to rename entity:
-    // std.callMethod(get_capability("entity.control", { target_id: target.id }), "update", [target.id, { name: newName }])
+    // std.callMethod(get_capability("entity.control", { target_id: target.id }), "update", [target, { name: newName }])
     const script = StdLib.seq(
       StdLib.let(
         "cap",
@@ -51,12 +51,7 @@ describe("Capability Permissions", () => {
         BooleanLib.not(StdLib.var("cap")),
         StdLib.set("cap", KernelLib.getCapability("entity.control", ObjectLib.objNew(["*", true]))),
       ),
-      StdLib.callMethod(
-        StdLib.var("cap"),
-        "update",
-        target.id,
-        ObjectLib.objNew(["name", newName]),
-      ),
+      StdLib.callMethod(StdLib.var("cap"), "update", target, ObjectLib.objNew(["name", newName])),
     );
 
     const ctx = createScriptContext({ args: [], caller: actor, ops: GameOpcodes, this: actor });
