@@ -63,17 +63,93 @@ const EXTENDED_PURE_OPS = createOpcodeRegistry(
 const CREATES_NEW_SCOPE = new Set(["std.for", "std.while", "std.if", "std.seq"]);
 
 /**
+ * Callback for optimization warnings (e.g., when partial evaluation fails).
+ */
+export type OptimizeWarningCallback = (warning: {
+  message: string;
+  script: ScriptValue<any>;
+  error: unknown;
+}) => void;
+
+/**
+ * Options for the optimize function.
+ */
+export interface OptimizeOptions {
+  /** Callback for warnings during optimization. If not provided, warnings are logged to console.error. */
+  onWarning?: OptimizeWarningCallback;
+}
+
+/**
  * Optimizes a script by partially evaluating pure expressions with constant arguments.
  *
  * @param script - The script AST to optimize.
  * @param compileFn - The compile function to use for partial evaluation.
+ * @param options - Optimization options including warning callback.
  * @returns The optimized script AST.
  */
 export function optimize<Type>(
   script: ScriptValue<Type>,
   compileFn: CompileFn,
-  isTopLevel = true,
+  options: OptimizeOptions | boolean = {},
 ): ScriptValue<Type> {
+  // Handle legacy boolean isTopLevel parameter for backwards compatibility
+  const isTopLevel = typeof options === "boolean" ? options : true;
+  const onWarning = typeof options === "object" ? options.onWarning : undefined;
+  // If it's a primitive value, it's already constant
+  if (!Array.isArray(script) || typeof script[0] !== "string") {
+    return script;
+  }
+  if (!isPureSubtree(script, isTopLevel)) {
+    switch (script[0]) {
+      case "std.quote":
+      case "std.lambda":
+      case "obj.new": {
+        return script;
+      }
+    }
+    // 1. Recursively optimize children (pass options for warning callback)
+    const childOptions = { onWarning };
+    return [
+      script[0],
+      ...script.slice(1).map((child) => optimizeInternal(child, compileFn, false, childOptions)),
+    ] as ScriptValue<Type>;
+  }
+  // Try to evaluate
+  try {
+    // Disable optimization to avoid infinite recursion
+    const fn = compileFn(script, PURE_OPS, { optimize: false });
+    const ctx = createScriptContext({ caller: { id: 1 }, ops: PURE_OPS, this: { id: 1 } });
+    const result = fn(ctx);
+    // Quote the result back to AST
+    return quote(result) as ScriptValue<Type>;
+  } catch (error) {
+    // Surface optimization failure via callback or console
+    const warning = {
+      error,
+      message: "Optimization failed for pure expression",
+      script,
+    };
+    if (onWarning) {
+      onWarning(warning);
+    } else {
+      console.error("Could not optimize script:", script);
+      console.error("Error:", error);
+    }
+    // Failed to compile or run (e.g. type error, runtime error), keep original
+    return script;
+  }
+}
+
+/**
+ * Internal optimization function that accepts isTopLevel as a separate parameter.
+ */
+function optimizeInternal<Type>(
+  script: ScriptValue<Type>,
+  compileFn: CompileFn,
+  isTopLevel: boolean,
+  options: OptimizeOptions,
+): ScriptValue<Type> {
+  const { onWarning } = options;
   // If it's a primitive value, it's already constant
   if (!Array.isArray(script) || typeof script[0] !== "string") {
     return script;
@@ -89,7 +165,7 @@ export function optimize<Type>(
     // 1. Recursively optimize children
     return [
       script[0],
-      ...script.slice(1).map((child) => optimize(child, compileFn, false)),
+      ...script.slice(1).map((child) => optimizeInternal(child, compileFn, false, options)),
     ] as ScriptValue<Type>;
   }
   // Try to evaluate
@@ -101,8 +177,18 @@ export function optimize<Type>(
     // Quote the result back to AST
     return quote(result) as ScriptValue<Type>;
   } catch (error) {
-    console.error("Could not optimize script:", script);
-    console.error("Error:", error);
+    // Surface optimization failure via callback or console
+    const warning = {
+      error,
+      message: "Optimization failed for pure expression",
+      script,
+    };
+    if (onWarning) {
+      onWarning(warning);
+    } else {
+      console.error("Could not optimize script:", script);
+      console.error("Error:", error);
+    }
     // Failed to compile or run (e.g. type error, runtime error), keep original
     return script;
   }

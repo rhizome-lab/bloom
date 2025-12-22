@@ -4,6 +4,7 @@ export * from "./type_generator";
 export * from "./decompiler";
 export * from "./transpiler";
 export * from "./compiler";
+export { optimize, type OptimizeOptions, type OptimizeWarningCallback } from "./optimizer";
 export * as BooleanLib from "./lib/boolean";
 export * as ListLib from "./lib/list";
 export * as MathLib from "./lib/math";

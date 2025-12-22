@@ -92,4 +92,39 @@ describe("Optimizer", () => {
       expect(optimized).toEqual("2020-09-13T12:26:40.000Z");
     });
   });
+
+  describe("Warning Callback", () => {
+    test("calls onWarning when optimization fails", () => {
+      // Create a script that will fail to optimize due to runtime error
+      // std.throw will cause an error that triggers the warning callback
+      const script = StdLib.throw("test error");
+      const warnings: Array<{ message: string; script: any; error: unknown }> = [];
+
+      const result = optimize(script, compile, {
+        onWarning: (warning) => warnings.push(warning),
+      });
+
+      // Should return original script unchanged
+      expect(result).toEqual(script);
+      // Should have called warning callback
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]!.message).toBe("Optimization failed for pure expression");
+      expect(warnings[0]!.script).toEqual(script);
+      expect(warnings[0]!.error).toBeDefined();
+    });
+
+    test("does not call onWarning when optimization succeeds", () => {
+      const script = MathLib.add(1, 2);
+      const warnings: Array<{ message: string; script: any; error: unknown }> = [];
+
+      const result = optimize(script, compile, {
+        onWarning: (warning) => warnings.push(warning),
+      });
+
+      // Should optimize successfully
+      expect(result).toEqual(3);
+      // Should not have called warning callback
+      expect(warnings.length).toBe(0);
+    });
+  });
 });
