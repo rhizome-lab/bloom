@@ -90,6 +90,9 @@ export function evaluate<Type>(
     return ast as Type;
   }
 
+  // Track initial gas for debugging
+  const initialGas = ctx.gas;
+
   // SOA Stack (Dynamic)
   const stackOp: string[] = [];
   const stackArgs: unknown[][] = [];
@@ -109,7 +112,7 @@ export function evaluate<Type>(
   stackIdx[0] = 1;
   sp = 1;
 
-  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx, { catchReturn });
+  return executeLoop(ctx, sp, stackOp, stackArgs, stackAst, stackIdx, { catchReturn, initialGas });
 }
 
 // oxlint-disable-next-line max-params
@@ -120,13 +123,18 @@ function executeLoop(
   stackArgs: unknown[][],
   stackAst: any[][],
   stackIdx: number[],
-  options: { catchReturn?: boolean },
+  options: { catchReturn?: boolean; initialGas?: number },
 ): any {
   while (sp > 0) {
     if (ctx.gas !== undefined) {
       ctx.gas -= 1;
       if (ctx.gas < 0) {
-        throw new ScriptError("Script ran out of gas!");
+        const error = new ScriptError("Script ran out of gas!");
+        if (options.initialGas !== undefined) {
+          error.gasLimit = options.initialGas;
+          error.gasUsed = options.initialGas;
+        }
+        throw error;
       }
     }
 
@@ -253,7 +261,7 @@ async function handleAsyncResult(
   stackArgs: unknown[][],
   stackAst: any[][],
   stackIdx: number[],
-  options: { catchReturn?: boolean },
+  options: { catchReturn?: boolean; initialGas?: number },
 ): Promise<unknown> {
   let currentResult = await promise;
   // Push result to parent frame and continue loop

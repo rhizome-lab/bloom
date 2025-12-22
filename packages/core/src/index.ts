@@ -320,7 +320,7 @@ export async function handleJsonRpcRequest(
         createScriptContext({
           args: [],
           caller: system,
-          gas: 10000, // Higher gas limit for verb retrieval
+          gas: 10000, // Verb retrieval gas limit
           ops: GameOpcodes,
           send: createSendFunction(ws),
           this: system,

@@ -41,6 +41,8 @@ export type ScriptLibraryDefinition = Record<
 export class ScriptError extends Error {
   public stackTrace: StackFrame[] = [];
   public context?: { op: string; args: unknown[] };
+  public gasUsed?: number;
+  public gasLimit?: number;
 
   constructor(message: string, stack: StackFrame[] = []) {
     super(message);
@@ -50,6 +52,9 @@ export class ScriptError extends Error {
 
   override toString() {
     let str = `ScriptError: ${this.message}`;
+    if (this.gasUsed !== undefined) {
+      str += ` [gas: ${this.gasUsed}/${this.gasLimit}]`;
+    }
     if (this.context) {
       str += `\nAt: (${this.context.op} ...)\n`;
     }
