@@ -2,7 +2,7 @@
 
 ## Next Up
 
-1. Transpiler: Support ES6 shorthand property syntax (`{ content, role }` drops properties)
+(All items completed)
 
 ## 1. Deep Simulation (Sandbox)
 
@@ -51,7 +51,7 @@
 - [ ] **Seed**: Make sure mailbox uses capability based permissions. (And add it back, I guess, and add _new_ tests in `mailbox.test.ts` to verify that functionality works)
 - [ ] **Seed**: Add object literal support to `extractLiteral` in `packages/core/src/seeds/loader.ts` (currently only supports strings, numbers, booleans, null, and arrays)
 - [ ] **Transpiler**: Handle all compiler constructs
-- [ ] **Transpiler**: Support ES6 shorthand property syntax (`{ content, role }` currently drops properties)
+- [x] **Transpiler**: Support ES6 shorthand property syntax - FIXED: now handles ShorthandPropertyAssignment
 - [ ] **Transpiler**: Support native array methods (`.push()`, `.reverse()` currently not transpiled)
 - [ ] **Transpiler**: Fix for-in loop transpilation (currently causes `obj.get` errors during iteration)
 - [ ] **Transpiler**: Make dictionary/object access safer (bracket notation `obj[key]` throws if key missing - should use `obj.get` with defaults or add null-safe operator support)

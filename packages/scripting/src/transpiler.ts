@@ -393,6 +393,11 @@ function transpileNode(node: ts.Node, scope: Set<string>): any {
         }
         const val = transpileNode(prop.initializer, scope);
         props.push([key, val]);
+      } else if (ts.isShorthandPropertyAssignment(prop)) {
+        // Handle ES6 shorthand: { content } is equivalent to { content: content }
+        const key = prop.name.getText();
+        const val = transpileNode(prop.name, scope);
+        props.push([key, val]);
       }
     });
     return ObjectLib.objNew(...props);

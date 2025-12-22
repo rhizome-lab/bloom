@@ -62,6 +62,34 @@ describe("transpiler", () => {
     expect(transpile("delete obj['x']")).toEqual(ObjectLib.objDel(StdLib.var("obj"), "x"));
   });
 
+  test("object shorthand properties", () => {
+    // ES6 shorthand: { content } is equivalent to { content: content }
+    const code = `
+      let content = "hello";
+      let role = "user";
+      ({ content, role })
+    `;
+    const expected = StdLib.seq(
+      StdLib.let("content", "hello"),
+      StdLib.let("role", "user"),
+      ObjectLib.objNew(["content", StdLib.var("content")], ["role", StdLib.var("role")]),
+    );
+    expect(transpile(code)).toEqual(expected);
+  });
+
+  test("object mixed shorthand and regular properties", () => {
+    // Mix of shorthand and regular properties
+    const code = `
+      let name = "test";
+      ({ name, value: 42 })
+    `;
+    const expected = StdLib.seq(
+      StdLib.let("name", "test"),
+      ObjectLib.objNew(["name", StdLib.var("name")], ["value", 42]),
+    );
+    expect(transpile(code)).toEqual(expected);
+  });
+
   test("property access", () => {
     expect(transpile("obj.x")).toEqual(ObjectLib.objGet(StdLib.var("obj"), "x"));
     expect(transpile("obj['x']")).toEqual(ObjectLib.objGet(StdLib.var("obj"), "x"));
