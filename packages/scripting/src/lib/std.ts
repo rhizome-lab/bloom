@@ -20,25 +20,16 @@ function exitScope(ctx: ScriptContext, snapshot: { vars: Record<string, unknown>
   ctx.cow = snapshot.cow;
 }
 
-function setVar(ctx: ScriptContext, name: string, value: any) {
+function setVar(ctx: ScriptContext, name: string, value: any): boolean {
   let scope = ctx.vars;
   while (scope) {
     if (Object.hasOwn(scope, name)) {
       scope[name] = value;
-      return;
+      return true;
     }
     scope = Object.getPrototypeOf(scope);
   }
-  // If not found, do nothing (match existing behavior of checking `in`)
-  // Or should we set on global? We don't have a global scope object separate from top-level vars.
-  // If we are at top level, `scope` becomes null.
-  // Existing behavior: `if (ctx.vars && name in ctx.vars) { ctx.vars[name] = value; }`
-  // `in` checks prototype chain.
-  // If it is in prototype chain, `ctx.vars[name] = value` would shadow it.
-  // We want to update the original.
-  // So if we didn't find it in the loop (which checks own property up the chain), it means it's not in the chain?
-  // Wait, `Object.getPrototypeOf` eventually returns null.
-  // If we fall through, it's not defined anywhere.
+  return false;
 }
 
 // Values
@@ -587,8 +578,8 @@ export { var_ as var };
  */
 const set_ = defineFullOpcode<[name: string, value: unknown], any>("std.set", {
   handler: ([name, value], ctx) => {
-    if (ctx.vars) {
-      setVar(ctx, name, value);
+    if (!ctx.vars || !setVar(ctx, name, value)) {
+      throw new ScriptError(`Cannot set undefined variable '${name}'`);
     }
     return value;
   },

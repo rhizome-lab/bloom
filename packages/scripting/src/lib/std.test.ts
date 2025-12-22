@@ -182,6 +182,13 @@ createLibraryTester(StdLib, "Standard Library", (test) => {
     expect(localCtx.vars?.x).toBe(20);
   });
 
+  test("std.set throws on undefined variable", () => {
+    const localCtx = { ...ctx, locals: {}, vars: {} };
+    expect(() => evaluate(StdLib.set("undefinedVar", 10), localCtx)).toThrow(
+      "Cannot set undefined variable 'undefinedVar'",
+    );
+  });
+
   // Arithmetic
 
   test("std.typeof", () => {
