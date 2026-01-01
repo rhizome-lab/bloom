@@ -212,7 +212,7 @@ describe("Game Loop E2E", () => {
     it("should add created items to room contents and emit updates", async () => {
       const itemId = (await runVerb(player1, "create", ["Lantern"], player1, send1)) as number;
       const updatedRoom = getEntity(room.id)!;
-      expect(updatedRoom.contents).toContain(itemId);
+      expect(updatedRoom["contents"]).toContain(itemId);
 
       const message = messages1.find(
         (msg) => msg.type === "message" && msg.payload === "You create Lantern.",
@@ -336,8 +336,8 @@ describe("Game Loop E2E", () => {
 
       const caps = getCapabilities(player1.id);
       expect(caps.find((cap) => cap.type === "evil.cap")).toBeUndefined();
-      // cleanup
-      deleteEntity(nonMintCapId);
+      // cleanup capability directly
+      db.query("DELETE FROM capabilities WHERE id = ?").run(nonMintCapId);
     });
 
     it("should enforce namespace when minting capabilities", async () => {
@@ -363,13 +363,14 @@ describe("Game Loop E2E", () => {
       db.query("DELETE FROM capabilities WHERE owner_id = ? AND type = 'sys.create'").run(
         player2.id,
       );
-      const beforeContents = (getEntity(room.id)?.contents ?? []).length;
+      const beforeContents = (getEntity(room.id)?.["contents"] as number[] | undefined) ?? [];
 
       const result = await runVerb(player2, "create", ["Forbidden"], player2, send2);
       expect(result).toBeUndefined();
 
       const after = getEntity(room.id)!;
-      expect(after.contents ?? []).toHaveLength(beforeContents);
+      const afterContents = (after["contents"] as number[] | undefined) ?? [];
+      expect(afterContents).toHaveLength(beforeContents.length);
       const msg = messages2.find(
         (m) => m.type === "message" && m.payload === "You do not have permission to create here.",
       );
@@ -377,7 +378,7 @@ describe("Game Loop E2E", () => {
     });
 
     it("should block recursive teleport into self", async () => {
-      const originalLocation = player1.location;
+      const originalLocation = player1["location"];
       await runVerb(player1, "teleport", [getEntity(player1.id)!], player1, send1);
 
       const msg = messages1.find(
@@ -385,12 +386,12 @@ describe("Game Loop E2E", () => {
       );
       expect(msg).toBeDefined();
       const updated = getEntity(player1.id)!;
-      expect(updated.location).toBe(originalLocation);
+      expect(updated["location"]).toBe(originalLocation);
     });
 
     it("should refuse dig without required capabilities", async () => {
       db.query("DELETE FROM capabilities WHERE owner_id = ?").run(player2.id);
-      const beforeExits = getEntity(room.id)?.exits ?? [];
+      const beforeExits = (getEntity(room.id)?.["exits"] as number[] | undefined) ?? [];
 
       const result = await runVerb(player2, "dig", ["east", "Honeypot"], player2, send2);
       expect(result).toBeNull();
@@ -400,7 +401,8 @@ describe("Game Loop E2E", () => {
       );
       expect(message).toBeDefined();
       const after = getEntity(room.id)!;
-      expect(after.exits ?? []).toHaveLength(beforeExits.length);
+      const afterExits = (after["exits"] as number[] | undefined) ?? [];
+      expect(afterExits).toHaveLength(beforeExits.length);
     });
   });
 
@@ -530,9 +532,9 @@ describe("Game Loop E2E", () => {
       const updatedPlayer = getEntity(player1.id)!;
       expect(updatedPlayer["location"]).toBe(room2Id);
       const updatedRoom = getEntity(room.id)!;
-      expect(updatedRoom.contents ?? []).not.toContain(player1.id);
+      expect((updatedRoom["contents"] as number[] | undefined) ?? []).not.toContain(player1.id);
       const newRoom = getEntity(room2Id)!;
-      expect(newRoom.contents ?? []).toContain(player1.id);
+      expect((newRoom["contents"] as number[] | undefined) ?? []).toContain(player1.id);
     });
   });
 });
