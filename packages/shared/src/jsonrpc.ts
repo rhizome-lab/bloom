@@ -169,3 +169,96 @@ export interface PlayerIdNotification extends JsonRpcNotification {
   method: "player_id";
   params: PlayerIdNotificationParams;
 }
+
+// File Browser Message Types
+
+/** A file/directory entry in a directory listing. */
+export interface FileEntry {
+  /** File or directory name (basename) */
+  name: string;
+  /** Absolute path */
+  path: string;
+  /** Whether this is a directory */
+  isDirectory: boolean;
+  /** File size in bytes (undefined for directories) */
+  size?: number;
+  /** Last modified time as ISO 8601 string */
+  mtime?: string;
+  /** User-defined tags (from metadata overlay) */
+  tags?: string[];
+}
+
+/** Parameters for a 'directory_listing' notification. */
+export interface DirectoryListingParams {
+  type: "directory_listing";
+  /** Current directory path */
+  path: string;
+  /** List of entries in the directory */
+  entries: FileEntry[];
+}
+
+/** A notification containing directory contents. */
+export interface DirectoryListingNotification extends JsonRpcNotification {
+  method: "directory_listing";
+  params: DirectoryListingParams;
+}
+
+/** Parameters for a 'file_content' notification. */
+export interface FileContentParams {
+  type: "file_content";
+  /** Full path to the file */
+  path: string;
+  /** File name (basename) */
+  name: string;
+  /** File contents as UTF-8 string */
+  content: string;
+  /** File size in bytes */
+  size: number;
+}
+
+/** A notification containing file contents. */
+export interface FileContentNotification extends JsonRpcNotification {
+  method: "file_content";
+  params: FileContentParams;
+}
+
+/** Parameters for a 'pwd' notification. */
+export interface PwdParams {
+  type: "pwd";
+  /** Current working directory path */
+  path: string;
+}
+
+/** A notification with the current working directory. */
+export interface PwdNotification extends JsonRpcNotification {
+  method: "pwd";
+  params: PwdParams;
+}
+
+/** Parameters for bookmark-related notifications. */
+export interface BookmarksParams {
+  type: "bookmarks";
+  /** Map of bookmark name to path */
+  bookmarks: Record<string, string>;
+}
+
+/** A notification with user bookmarks. */
+export interface BookmarksNotification extends JsonRpcNotification {
+  method: "bookmarks";
+  params: BookmarksParams;
+}
+
+/** Parameters for tag-related notifications. */
+export interface TagsParams {
+  type: "tags";
+  /** Path the tags are for */
+  path: string;
+  /** List of tags */
+  tags: string[];
+}
+
+/** A notification with tags for a path. */
+export interface TagsNotification extends JsonRpcNotification {
+  method: "tags";
+  params: TagsParams;
+}

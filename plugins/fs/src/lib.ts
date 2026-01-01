@@ -1,5 +1,5 @@
 import { BaseCapability, registerCapabilityClass } from "@viwo/core";
-import { readFile, readdir, writeFile } from "node:fs/promises";
+import { readFile, readdir, writeFile, stat as fsStat } from "node:fs/promises";
 import { ScriptError } from "@viwo/scripting";
 import { resolve } from "node:path";
 
@@ -57,6 +57,63 @@ export class FsRead extends BaseCapability {
       return await readdir(dirPath);
     } catch (error: any) {
       throw new ScriptError(`fs.list failed: ${error.message}`);
+    }
+  }
+
+  async stat(filePath: string, ctx: any) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("fs.stat: missing capability");
+    }
+    if (typeof filePath !== "string") {
+      throw new ScriptError("fs.stat: path must be a string");
+    }
+
+    const allowedPath = this.params["path"];
+    if (!allowedPath || typeof allowedPath !== "string") {
+      throw new ScriptError("fs.stat: invalid capability params");
+    }
+    const resolvedTarget = resolve(filePath);
+    const resolvedAllowed = resolve(allowedPath);
+    if (!resolvedTarget.startsWith(resolvedAllowed)) {
+      throw new ScriptError("fs.stat: path not allowed");
+    }
+
+    try {
+      const stats = await fsStat(filePath);
+      return {
+        size: stats.size,
+        mtime: stats.mtime.toISOString(),
+        isDirectory: stats.isDirectory(),
+        isFile: stats.isFile(),
+      };
+    } catch (error: any) {
+      throw new ScriptError(`fs.stat failed: ${error.message}`);
+    }
+  }
+
+  async exists(filePath: string, ctx: any) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("fs.exists: missing capability");
+    }
+    if (typeof filePath !== "string") {
+      throw new ScriptError("fs.exists: path must be a string");
+    }
+
+    const allowedPath = this.params["path"];
+    if (!allowedPath || typeof allowedPath !== "string") {
+      throw new ScriptError("fs.exists: invalid capability params");
+    }
+    const resolvedTarget = resolve(filePath);
+    const resolvedAllowed = resolve(allowedPath);
+    if (!resolvedTarget.startsWith(resolvedAllowed)) {
+      throw new ScriptError("fs.exists: path not allowed");
+    }
+
+    try {
+      await fsStat(filePath);
+      return true;
+    } catch {
+      return false;
     }
   }
 }

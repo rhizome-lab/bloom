@@ -554,7 +554,15 @@ function executeVerb(
   }
 
   if (compiled) {
-    compiled(ctx);
+    const result = compiled(ctx);
+    // Auto-send rich return values
+    if (result !== null && result !== undefined && typeof result === "object") {
+      const type =
+        typeof (result as Record<string, unknown>)["type"] === "string"
+          ? ((result as Record<string, unknown>)["type"] as string)
+          : "value";
+      createSendFunction(ws)(type, result);
+    }
   }
 }
 
