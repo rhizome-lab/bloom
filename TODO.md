@@ -23,6 +23,7 @@
 - [ ] **Rich Embeds**: Map game state to platform-specific UI (Discord Embeds, Slack Blocks).
 - [ ] **Async Play**: Design mechanics suitable for slow, correspondence-style gameplay.
 - [ ] **Discord Bot**: Flesh out full feature parity with Web client.
+- [ ] **Integration Tests**: Add end-to-end `bun:test` harness for core: boot server, seed minimal world, connect via `packages/client`, exercise login/move/verb flow, assert DB state/events/capability enforcement.
 
 ## 4. Knowledge & Productivity (Notion)
 
