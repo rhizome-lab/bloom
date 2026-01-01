@@ -24,7 +24,9 @@
               nodePackages.typescript-language-server
               psmisc # for fuser
               ripgrep
+              stdenv.cc.cc # runtime libs (libstdc++ for sharp/vips)
             ];
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath packages}:$LD_LIBRARY_PATH";
           };
 
           # Full: TypeScript + Python for diffusers server
