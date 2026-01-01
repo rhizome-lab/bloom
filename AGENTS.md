@@ -37,3 +37,8 @@
 ## Security & Data Notes
 - Do not commit secrets or generated SQLite files (`world.sqlite*`). Use local env vars for tokens.
 - Treat `db:wipe` as destructive; back up any local state in `backups/` before running.
+
+## Agent Notes
+- Keep commits scoped to one logical change; run `bun lint`, `bun format`, and `bun test` (or targeted package tests) before pushing.
+- Record discovered issues or design decisions in `TODO.md` or docs so they’re not lost between sessions.
+- Prefer the provided Bun scripts over ad-hoc commands to avoid diverging from expected workflows.
