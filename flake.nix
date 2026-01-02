@@ -17,7 +17,7 @@
         in
         {
           # Default: TypeScript development only (fast)
-          default = pkgs.mkShell {
+          default = pkgs.mkShell rec {
             packages = with pkgs; [
               bun
               nodePackages.typescript
@@ -38,7 +38,7 @@
               psmisc
               ripgrep
               # Python for diffusers server
-              stdenv.cc.cc
+              stdenv.cc.cc # also runtime libs (libstdc++ for sharp/vips)
               python313
               uv
               ruff
