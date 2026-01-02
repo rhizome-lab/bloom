@@ -24,6 +24,10 @@
 - [ ] **Async Play**: Design mechanics suitable for slow, correspondence-style gameplay.
 - [ ] **Discord Bot**: Flesh out full feature parity with Web client.
 - [ ] **Integration Tests**: Add end-to-end `bun:test` harness for core: boot server, seed minimal world, connect via `packages/client`, exercise login/move/verb flow, assert DB state/events/capability enforcement.
+- [x] **File Browser App**: Sandboxed file browser paradigm.
+  - `apps/filebrowser-server/`: Server with FileBrowserUser entity, CRUD + bookmarks + tags
+  - `apps/filebrowser/`: SolidJS client with toolbar, preview, bookmarks panel
+  - Run: `bun dev:filebrowser-server` (port 8080) + `bun dev:filebrowser` (port 3003)
 
 ## Testing & Hardening
 
@@ -34,7 +38,11 @@
 
 - [x] **Vector Plugin**: Core integration with `sqlite-vec` for semantic search.
 - [ ] **Graph Queries**: Standard library functions for traversing entity relationships (backlinks, children, parents). (Status: Deferred, awaiting further design. We do not want to have a single fixed schema.)
-- [ ] **Wiki Features**: Bi-directional linking, revision history, and transclusion support.
+- [x] **Wiki Notes App**: Obsidian-style notes with wikilinks and backlinks.
+  - `apps/notes-server/`: Server with NotesUser entity, CRUD verbs, backlinks via stored links array
+  - `apps/notes/`: SolidJS client with remark-gfm + remark-wiki-link + rehype pipeline
+  - Run: `bun dev:notes-server` (port 8081) + `bun dev:notes` (port 3004)
+- [ ] **Wiki Features (Extended)**: Revision history and transclusion support.
 - [ ] **Custom Views**: Support for defining custom DB views/indexes for performance.
 - [ ] **Cloud Sync**: Plugins to sync whole DB (e.g. notes) to cloud storage (S3-compatible, Backblaze B2, Cloudflare R2, Google Drive, Dropbox, OneDrive etc.)
 
