@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { createScriptContext, evaluate } from "@viwo/scripting";
 import { db, GameOpcodes, getEntity, getVerb } from "@viwo/core";
 import type { Entity } from "@viwo/shared/jsonrpc";
@@ -212,8 +212,8 @@ describe("Notes Seed", () => {
 
       expect(result.type).toBe("backlinks");
       expect(result.backlinks.length).toBe(1);
-      expect(result.backlinks[0].title).toBe("Linking Note");
-      expect(result.backlinks[0].context).toContain("[[Target Note]]");
+      expect(result.backlinks[0]!.title).toBe("Linking Note");
+      expect(result.backlinks[0]!.context).toContain("[[Target Note]]");
     });
 
     it("should find backlinks via aliases", async () => {
@@ -241,7 +241,7 @@ describe("Notes Seed", () => {
       };
 
       expect(result.backlinks.length).toBe(1);
-      expect(result.backlinks[0].title).toBe("Linker");
+      expect(result.backlinks[0]!.title).toBe("Linker");
     });
 
     it("should include backlinks when getting a note", async () => {
@@ -267,7 +267,7 @@ describe("Notes Seed", () => {
       };
 
       expect(result.backlinks.length).toBe(1);
-      expect(result.backlinks[0].title).toBe("Note B");
+      expect(result.backlinks[0]!.title).toBe("Note B");
     });
   });
 
@@ -344,7 +344,7 @@ describe("Notes Seed", () => {
       };
 
       expect(result.notes.length).toBe(1);
-      expect(result.notes[0].title).toBe("Note One");
+      expect(result.notes[0]!.title).toBe("Note One");
     });
   });
 
@@ -397,8 +397,6 @@ describe("Notes Seed", () => {
     });
 
     it("should return null for non-existent note", async () => {
-      const user = getEntity(userId)!;
-
       const result = await runVerb(getEntity(userId)!, "find_note_by_title", ["Nonexistent"]);
 
       expect(result).toBeNull();

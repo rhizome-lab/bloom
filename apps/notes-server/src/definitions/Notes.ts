@@ -94,10 +94,10 @@ export class NotesUser extends NotesBase {
   list_notes() {
     const user = std.caller() as NotesUserProps;
     const notesMap = user.notes ?? {};
-    const keys = obj.keys(notesMap);
+    const keys = obj.keys(notesMap) as string[];
 
     // Map keys to notes
-    const notesList = list.map(keys, (key: string) => obj.get(notesMap, key) as Note);
+    const notesList = list.map(keys, (key: string) => obj.get(notesMap, key) as Note) as Note[];
 
     // Notes are returned in key order (no custom sort comparator available)
 
@@ -120,7 +120,7 @@ export class NotesUser extends NotesBase {
 
     const user = std.caller() as NotesUserProps;
     const notesMap = user.notes ?? {};
-    const now = time.now();
+    const now = time.to_timestamp(time.now());
     const noteId = call(std.this_(), "_generate_note_id") as string;
 
     const note: Note = {
@@ -128,7 +128,7 @@ export class NotesUser extends NotesBase {
       content: content ?? "",
       created: now,
       id: noteId,
-      links: links ?? [],
+      links: (links ?? []) as string[],
       modified: now,
       tags: [],
       title: title,
@@ -202,7 +202,7 @@ export class NotesUser extends NotesBase {
     }
 
     const note = obj.get(notesMap, noteId) as Note;
-    const now = time.now();
+    const now = time.to_timestamp(time.now());
 
     const updatedNote: Note = {
       aliases: note.aliases,
@@ -303,11 +303,11 @@ export class NotesUser extends NotesBase {
   _get_backlinks_for(title: string, aliases: string[]) {
     const user = std.caller() as NotesUserProps;
     const notesMap = user.notes ?? {};
-    const keys = obj.keys(notesMap);
+    const keys = obj.keys(notesMap) as string[];
     const lowerTitle = str.lower(title);
 
     // Build lowercase aliases list for matching
-    const lowerAliases = list.map(aliases, (a: string) => str.lower(a));
+    const lowerAliases = list.map(aliases, (a: string) => str.lower(a)) as string[];
 
     // Filter notes that have a link matching title or aliases
     const matchingKeys = list.filter(keys, (key: string) => {
@@ -336,7 +336,7 @@ export class NotesUser extends NotesBase {
         id: note.id,
         title: note.title,
       };
-    });
+    }) as Array<{ id: string; title: string; context: string }>;
 
     return backlinks;
   }
@@ -368,7 +368,8 @@ export class NotesUser extends NotesBase {
       content: note.content,
       created: note.created,
       id: note.id,
-      modified: time.now(),
+      links: note.links ?? [],
+      modified: time.to_timestamp(time.now()),
       tags: tags,
       title: note.title,
     };
@@ -404,14 +405,15 @@ export class NotesUser extends NotesBase {
 
     const note = obj.get(notesMap, noteId) as Note;
     const tags = note.tags ?? [];
-    const newTags = list.filter(tags, (tag: string) => tag !== tagName);
+    const newTags = list.filter(tags, (tag: string) => tag !== tagName) as string[];
 
     const updatedNote: Note = {
       aliases: note.aliases,
       content: note.content,
       created: note.created,
       id: note.id,
-      modified: time.now(),
+      links: note.links ?? [],
+      modified: time.to_timestamp(time.now()),
       tags: newTags,
       title: note.title,
     };
@@ -457,7 +459,8 @@ export class NotesUser extends NotesBase {
       content: note.content,
       created: note.created,
       id: note.id,
-      modified: time.now(),
+      links: note.links ?? [],
+      modified: time.to_timestamp(time.now()),
       tags: note.tags,
       title: note.title,
     };
@@ -487,7 +490,7 @@ export class NotesUser extends NotesBase {
     const user = std.caller() as NotesUserProps;
     const notesMap = user.notes ?? {};
     const lowerQuery = str.lower(query);
-    const keys = obj.keys(notesMap);
+    const keys = obj.keys(notesMap) as string[];
 
     // Filter notes that match query in title, content, or tags
     const matchingKeys = list.filter(keys, (key: string) => {
@@ -508,7 +511,7 @@ export class NotesUser extends NotesBase {
       return matchingTag !== null;
     });
 
-    const results = list.map(matchingKeys, (key: string) => obj.get(notesMap, key) as Note);
+    const results = list.map(matchingKeys, (key: string) => obj.get(notesMap, key) as Note) as Note[];
 
     return {
       notes: results,
@@ -528,7 +531,7 @@ export class NotesUser extends NotesBase {
     const user = std.caller() as NotesUserProps;
     const notesMap = user.notes ?? {};
     const lowerTitle = str.lower(title);
-    const keys = obj.keys(notesMap);
+    const keys = obj.keys(notesMap) as string[];
 
     // Find first note that matches title or has matching alias
     const matchingKey = list.find(keys, (key: string) => {
