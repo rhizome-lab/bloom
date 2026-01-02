@@ -1,5 +1,5 @@
 import { BaseCapability, registerCapabilityClass } from "@viwo/core";
-import { readFile, readdir, writeFile, stat as fsStat } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, stat as fsStat, writeFile } from "node:fs/promises";
 import { ScriptError } from "@viwo/scripting";
 import { resolve } from "node:path";
 
@@ -147,6 +147,58 @@ export class FsWrite extends BaseCapability {
       return null;
     } catch (error: any) {
       throw new ScriptError(`fs.write failed: ${error.message}`);
+    }
+  }
+
+  async mkdir(dirPath: string, ctx: any) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("fs.mkdir: missing capability");
+    }
+    if (typeof dirPath !== "string") {
+      throw new ScriptError("fs.mkdir: path must be a string");
+    }
+
+    const allowedPath = this.params["path"];
+    if (!allowedPath || typeof allowedPath !== "string") {
+      throw new ScriptError("fs.mkdir: invalid capability params");
+    }
+    const resolvedTarget = resolve(dirPath);
+    const resolvedAllowed = resolve(allowedPath);
+    if (!resolvedTarget.startsWith(resolvedAllowed)) {
+      throw new ScriptError("fs.mkdir: path not allowed");
+    }
+
+    try {
+      await mkdir(dirPath, { recursive: true });
+      return null;
+    } catch (error: any) {
+      throw new ScriptError(`fs.mkdir failed: ${error.message}`);
+    }
+  }
+
+  async remove(targetPath: string, ctx: any) {
+    if (this.ownerId !== ctx.this.id) {
+      throw new ScriptError("fs.remove: missing capability");
+    }
+    if (typeof targetPath !== "string") {
+      throw new ScriptError("fs.remove: path must be a string");
+    }
+
+    const allowedPath = this.params["path"];
+    if (!allowedPath || typeof allowedPath !== "string") {
+      throw new ScriptError("fs.remove: invalid capability params");
+    }
+    const resolvedTarget = resolve(targetPath);
+    const resolvedAllowed = resolve(allowedPath);
+    if (!resolvedTarget.startsWith(resolvedAllowed)) {
+      throw new ScriptError("fs.remove: path not allowed");
+    }
+
+    try {
+      await rm(targetPath, { recursive: true });
+      return null;
+    } catch (error: any) {
+      throw new ScriptError(`fs.remove failed: ${error.message}`);
     }
   }
 }

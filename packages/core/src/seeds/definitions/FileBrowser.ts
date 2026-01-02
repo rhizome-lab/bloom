@@ -12,6 +12,8 @@ declare class FsRead {
 
 declare class FsWrite {
   write(path: string, content: string): null;
+  mkdir(path: string): null;
+  remove(path: string): null;
 }
 
 // Augment the capability registry
@@ -113,13 +115,13 @@ export class FileBrowserBase extends EntityBase {
   }
 
   /**
-   * Print working directory.
+   * Show current location.
    */
-  pwd() {
+  where() {
     const user = std.caller() as FileBrowserUserProps;
     const cwd = user.cwd ?? user.fs_root ?? "/";
     return {
-      type: "pwd",
+      type: "where",
       path: cwd,
     };
   }
@@ -267,6 +269,86 @@ export class FileBrowserBase extends EntityBase {
 
     return {
       type: "write_success",
+      path: resolved,
+    };
+  }
+
+  /**
+   * Create a new directory.
+   */
+  create_dir(name: string) {
+    if (!name) {
+      std.throw_("Usage: create_dir <dirname>");
+    }
+
+    const cap = get_capability("fs.write", {});
+    if (!cap) {
+      std.throw_("No write access.");
+    }
+
+    const resolved = call(std.this_(), "resolve_path", name) as string;
+    cap.mkdir(resolved);
+
+    return {
+      type: "dir_created",
+      path: resolved,
+    };
+  }
+
+  /**
+   * Create a new empty file.
+   */
+  create_file(name: string) {
+    if (!name) {
+      std.throw_("Usage: create_file <filename>");
+    }
+
+    const cap = get_capability("fs.write", {});
+    if (!cap) {
+      std.throw_("No write access.");
+    }
+
+    const resolved = call(std.this_(), "resolve_path", name) as string;
+
+    // Check if already exists
+    const readCap = get_capability("fs.read", {});
+    if (readCap && readCap.exists(resolved)) {
+      std.throw_(str.concat("File already exists: ", resolved));
+    }
+
+    cap.write(resolved, "");
+
+    return {
+      type: "file_created",
+      path: resolved,
+    };
+  }
+
+  /**
+   * Remove a file or directory.
+   */
+  remove(name: string) {
+    if (!name) {
+      std.throw_("Usage: remove <path>");
+    }
+
+    const cap = get_capability("fs.write", {});
+    if (!cap) {
+      std.throw_("No write access.");
+    }
+
+    const resolved = call(std.this_(), "resolve_path", name) as string;
+
+    // Check if exists
+    const readCap = get_capability("fs.read", {});
+    if (readCap && !readCap.exists(resolved)) {
+      std.throw_(str.concat("Path does not exist: ", resolved));
+    }
+
+    cap.remove(resolved);
+
+    return {
+      type: "removed",
       path: resolved,
     };
   }
