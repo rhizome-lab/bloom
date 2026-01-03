@@ -43,6 +43,12 @@ Working autonomously to port Viwo to a Rust-based runtime with LuaJIT execution.
 
 See [`docs/design/rust-port.md`](docs/design/rust-port.md) for architecture decisions.
 
+**Autonomous mode**: Always maintain a todo list with next items. Only stop when:
+- Stuck on a design issue requiring user input
+- Port is complete
+
+Write tests for all new code (`cargo test`). Each crate should have tests.
+
 Crate structure in `crates/`:
 - `viwo-ir` - S-expression types and validation
 - `viwo-core` - Entity system, capabilities, SQLite storage
