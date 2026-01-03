@@ -37,6 +37,29 @@ See `docs/session-modes.md` to switch modes.
 
 Self-evaluate constantly: note friction points and areas for improvement in TODO.md.
 
+## Current Focus: Rust Port
+
+Working autonomously to port Viwo to a Rust-based runtime with LuaJIT execution.
+
+See [`docs/design/rust-port.md`](docs/design/rust-port.md) for architecture decisions.
+
+Crate structure in `crates/`:
+- `viwo-ir` - S-expression types and validation
+- `viwo-core` - Entity system, capabilities, SQLite storage
+- `viwo-plugin-abi` - Stable ABI for dynamic plugins
+- `viwo-server` - WebSocket server, plugin loader
+- `viwo-cli` - CLI binary
+- `syntax/typescript` - TS → S-expr transpiler
+- `runtime/luajit` - S-expr → Lua codegen + mlua runtime
+
+Rust commands:
+```bash
+cargo check              # Type check
+cargo build              # Build all crates
+cargo test               # Run tests
+cargo xtask <task>       # Build automation
+```
+
 ## Commits
 
 Commit after each logical unit of work. Each commit = one logical change.
