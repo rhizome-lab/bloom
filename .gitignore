@@ -1,5 +1,9 @@
 # build output
 dist/
+target/
+
+# Rust
+Cargo.lock
 # generated types
 .astro/
 

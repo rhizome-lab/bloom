@@ -1,0 +1,11 @@
+[package]
+name = "viwo-runtime-luajit"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "LuaJIT runtime for Viwo"
+
+[dependencies]
+viwo-ir.workspace = true
+mlua.workspace = true
+thiserror.workspace = true

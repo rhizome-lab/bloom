@@ -1,0 +1,18 @@
+[package]
+name = "viwo-server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "WebSocket server for Viwo"
+
+[dependencies]
+viwo-core.workspace = true
+viwo-ir.workspace = true
+viwo-plugin-abi.workspace = true
+viwo-runtime-luajit.workspace = true
+tokio.workspace = true
+tokio-tungstenite.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+libloading.workspace = true
+thiserror.workspace = true

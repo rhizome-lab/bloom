@@ -16,34 +16,56 @@
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
-          # Default: TypeScript development only (fast)
+          # Default: TypeScript + Rust development
           default = pkgs.mkShell rec {
-            packages = with pkgs; [
+            buildInputs = with pkgs; [
+              # TypeScript
               bun
               nodePackages.typescript
               nodePackages.typescript-language-server
               psmisc # for fuser
               ripgrep
               stdenv.cc.cc # runtime libs (libstdc++ for sharp/vips)
+              # Rust toolchain
+              rustc
+              cargo
+              rust-analyzer
+              clippy
+              rustfmt
+              # Fast linker
+              mold
+              clang
+              # SQLite (for rusqlite)
+              sqlite
             ];
-            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath packages}:$LD_LIBRARY_PATH";
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH";
           };
 
-          # Full: TypeScript + Python for diffusers server
+          # Full: TypeScript + Rust + Python for diffusers server
           full = pkgs.mkShell rec {
-            packages = with pkgs; [
+            buildInputs = with pkgs; [
+              # TypeScript
               bun
               nodePackages.typescript
               nodePackages.typescript-language-server
               psmisc
               ripgrep
+              stdenv.cc.cc # runtime libs (libstdc++ for sharp/vips)
+              # Rust toolchain
+              rustc
+              cargo
+              rust-analyzer
+              clippy
+              rustfmt
+              mold
+              clang
+              sqlite
               # Python for diffusers server
-              stdenv.cc.cc # also runtime libs (libstdc++ for sharp/vips)
               python313
               uv
               ruff
             ];
-            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath packages}:$LD_LIBRARY_PATH";
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}:$LD_LIBRARY_PATH";
           };
         }
       );
