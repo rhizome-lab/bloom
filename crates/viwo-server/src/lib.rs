@@ -1,5 +1,9 @@
 //! WebSocket server for Viwo.
 
+pub mod plugin_loader;
 pub mod server;
 pub mod session;
-pub mod plugin_loader;
+
+pub use plugin_loader::{PluginError, PluginLoader};
+pub use server::{Server, ServerConfig};
+pub use session::{Session, SessionId};

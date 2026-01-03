@@ -28,6 +28,9 @@ thiserror = "2"
 # Async
 tokio = { version = "1", features = ["full"] }
 tokio-tungstenite = "0.26"
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Database
 rusqlite = { version = "0.32", features = ["bundled"] }
