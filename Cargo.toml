@@ -11,6 +11,7 @@ members = [
     "crates/runtime/luajit",
     "crates/transport/websocket-jsonrpc",
     "crates/plugins/procgen",
+    "crates/plugins/fs",
     "xtask",
 ]
 
