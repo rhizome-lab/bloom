@@ -51,6 +51,14 @@ local __args = json.decode('{}')
 
         // Execute the wrapped code
         let result = runtime.execute_lua(&wrapped_code)?;
+
+        // TODO: Check if __this was modified and persist changes
+        // For now, mutations are not persisted back to storage
+        // This requires either:
+        // 1. Explicit update opcode
+        // 2. Post-execution diff of __this
+        // 3. Proxy/metatable tracking
+
         Ok(result)
     }
 
