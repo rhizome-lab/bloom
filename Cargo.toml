@@ -5,10 +5,10 @@ members = [
     "crates/viwo-ir",
     "crates/viwo-core",
     "crates/viwo-plugin-abi",
-    "crates/viwo-server",
     "crates/viwo-cli",
     "crates/syntax/typescript",
     "crates/runtime/luajit",
+    "crates/transport/websocket-jsonrpc",
     "xtask",
 ]
 
@@ -54,7 +54,7 @@ libloading = "0.8"
 viwo-ir = { path = "crates/viwo-ir" }
 viwo-core = { path = "crates/viwo-core" }
 viwo-plugin-abi = { path = "crates/viwo-plugin-abi" }
-viwo-server = { path = "crates/viwo-server" }
+viwo-transport-websocket-jsonrpc = { path = "crates/transport/websocket-jsonrpc" }
 viwo-syntax-typescript = { path = "crates/syntax/typescript" }
 viwo-runtime-luajit = { path = "crates/runtime/luajit" }
 

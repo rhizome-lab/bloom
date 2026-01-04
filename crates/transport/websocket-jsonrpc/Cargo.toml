@@ -1,9 +1,9 @@
 [package]
-name = "viwo-server"
+name = "viwo-transport-websocket-jsonrpc"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "WebSocket server for Viwo"
+description = "WebSocket JSON-RPC transport for Viwo"
 
 [dependencies]
 viwo-core.workspace = true

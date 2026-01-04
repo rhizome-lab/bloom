@@ -6,7 +6,8 @@ use clap::{Parser, Subcommand};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 use viwo_runtime_luajit::compile;
-use viwo_server::{Server, ServerConfig};
+use viwo_syntax_typescript::transpile;
+use viwo_transport_websocket_jsonrpc::{Server, ServerConfig};
 
 #[derive(Parser)]
 #[command(name = "viwo")]
@@ -93,13 +94,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         Commands::Transpile { files, out } => {
-            println!("Transpiling {} file(s)", files.len());
-            if let Some(ref output_dir) = out {
-                println!("Output: {}", output_dir);
+            for file in files {
+                let source = std::fs::read_to_string(&file)?;
+                let sexpr = transpile(&source)?;
+                let json = serde_json::to_string_pretty(&sexpr)?;
+
+                let out_path = if let Some(ref output_dir) = out {
+                    let filename = std::path::Path::new(&file)
+                        .file_stem()
+                        .unwrap_or_default()
+                        .to_string_lossy();
+                    format!("{}/{}.json", output_dir, filename)
+                } else {
+                    file.replace(".ts", ".json").replace(".tsx", ".json")
+                };
+
+                std::fs::write(&out_path, &json)?;
+                println!("{} -> {}", file, out_path);
             }
-            // TODO: implement transpiler
-            eprintln!("Transpiler not yet implemented");
-            std::process::exit(1);
         }
 
         Commands::Compile { file, stdout } => {
