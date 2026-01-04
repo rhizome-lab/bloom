@@ -438,6 +438,42 @@ return {{ result = __result, this = __this }}
         })?;
         lua.globals().set("__viwo_sqlite_execute", sqlite_execute_fn)?;
 
+        // net.get opcode - HTTP GET request with capability
+        let this_id = self.this.id;
+        let net_get_fn = lua.create_function(move |lua_ctx, (capability, url, headers): (mlua::Value, String, mlua::Value)| {
+            let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
+            let headers_json: serde_json::Value = lua_ctx.from_value(headers)?;
+            let headers_map: std::collections::HashMap<String, String> = serde_json::from_value(headers_json)
+                .map_err(|e| mlua::Error::external(format!("net.get: invalid headers: {}", e)))?;
+
+            // Block on async operation
+            let result = tokio::runtime::Handle::try_current()
+                .map_err(|_| mlua::Error::external("net.get: no tokio runtime found"))?
+                .block_on(viwo_plugin_net::net_get(&cap_json, this_id, &url, headers_map))
+                .map_err(mlua::Error::external)?;
+
+            lua_ctx.to_value(&result)
+        })?;
+        lua.globals().set("__viwo_net_get", net_get_fn)?;
+
+        // net.post opcode - HTTP POST request with capability
+        let this_id = self.this.id;
+        let net_post_fn = lua.create_function(move |lua_ctx, (capability, url, headers, body): (mlua::Value, String, mlua::Value, String)| {
+            let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
+            let headers_json: serde_json::Value = lua_ctx.from_value(headers)?;
+            let headers_map: std::collections::HashMap<String, String> = serde_json::from_value(headers_json)
+                .map_err(|e| mlua::Error::external(format!("net.post: invalid headers: {}", e)))?;
+
+            // Block on async operation
+            let result = tokio::runtime::Handle::try_current()
+                .map_err(|_| mlua::Error::external("net.post: no tokio runtime found"))?
+                .block_on(viwo_plugin_net::net_post(&cap_json, this_id, &url, headers_map, &body))
+                .map_err(mlua::Error::external)?;
+
+            lua_ctx.to_value(&result)
+        })?;
+        lua.globals().set("__viwo_net_post", net_post_fn)?;
+
         // Register procgen plugin opcodes (if loaded)
         let plugins = self.plugins.lock().unwrap();
         if plugins.get_plugin("procgen").is_some() {

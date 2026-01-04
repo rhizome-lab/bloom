@@ -6,6 +6,7 @@ mod game;
 mod json;
 mod list;
 mod math;
+mod net;
 mod obj;
 mod procgen;
 mod sqlite;
@@ -176,6 +177,9 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
         return Ok(result);
     }
     if let Some(result) = sqlite::compile_sqlite(op, args, prefix)? {
+        return Ok(result);
+    }
+    if let Some(result) = net::compile_net(op, args, prefix)? {
         return Ok(result);
     }
 
