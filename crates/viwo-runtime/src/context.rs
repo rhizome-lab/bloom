@@ -31,6 +31,9 @@ impl ExecutionContext {
         // Compile to Lua code first
         let lua_code = viwo_runtime_luajit::compile(expr)?;
 
+        // Flatten entity for Lua (merge props into top level like TypeScript does)
+        let flattened_this = self.flatten_entity(&self.this);
+
         // Wrap in function that sets up context variables
         // Use json.decode to parse the JSON strings
         let wrapped_code = format!(
@@ -40,7 +43,7 @@ local __caller = json.decode('{}')
 local __args = json.decode('{}')
 {}
 "#,
-            serde_json::to_string(&self.this).unwrap().replace('\\', "\\\\").replace('\'', "\\'"),
+            serde_json::to_string(&flattened_this).unwrap().replace('\\', "\\\\").replace('\'', "\\'"),
             serde_json::to_string(&self.caller_id).unwrap().replace('\\', "\\\\").replace('\'', "\\'"),
             serde_json::to_string(&self.args).unwrap().replace('\\', "\\\\").replace('\'', "\\'"),
             lua_code
@@ -49,5 +52,22 @@ local __args = json.decode('{}')
         // Execute the wrapped code
         let result = runtime.execute_lua(&wrapped_code)?;
         Ok(result)
+    }
+
+    /// Flatten an entity's props to match TypeScript behavior.
+    /// Returns: { id, prototype_id, ...props }
+    fn flatten_entity(&self, entity: &Entity) -> serde_json::Value {
+        let mut result = serde_json::Map::new();
+        result.insert("id".to_string(), serde_json::json!(entity.id));
+        result.insert("prototype_id".to_string(), serde_json::to_value(entity.prototype_id).unwrap());
+
+        // Merge props
+        if let serde_json::Value::Object(props) = &entity.props {
+            for (key, value) in props {
+                result.insert(key.clone(), value.clone());
+            }
+        }
+
+        serde_json::Value::Object(result)
     }
 }
