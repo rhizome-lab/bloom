@@ -76,6 +76,30 @@ pub fn compile_game(
             format!("{}__viwo_call({}, {}, {})", prefix, target, verb, args_list)
         }
 
+        // Schedule a verb call for future execution
+        "schedule" => {
+            if args.len() < 3 {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 3,
+                    got: args.len(),
+                });
+            }
+            let verb = compile_value(&args[0], false)?;
+
+            // Args can be either a list or individual arguments
+            let args_list = if let Some(list) = args[1].as_list() {
+                let call_args: Result<Vec<_>, _> = list.iter().map(|a| compile_value(a, false)).collect();
+                format!("{{ {} }}", call_args?.join(", "))
+            } else {
+                compile_value(&args[1], false)?
+            };
+
+            let delay = compile_value(&args[2], false)?;
+
+            format!("{}__viwo_schedule({}, {}, {})", prefix, verb, args_list, delay)
+        }
+
         _ => return Ok(None),
     };
 
@@ -169,5 +193,21 @@ mod tests {
         assert!(code.contains("greet"));
         assert!(code.contains("Alice"));
         assert!(code.contains("42"));
+    }
+
+    #[test]
+    fn test_schedule() {
+        let expr = SExpr::call(
+            "schedule",
+            vec![
+                SExpr::string("tick"),
+                SExpr::List(vec![SExpr::number(1), SExpr::number(2)]),
+                SExpr::number(1000),
+            ],
+        );
+        let code = compile(&expr).unwrap();
+        assert!(code.contains("__viwo_schedule"));
+        assert!(code.contains("tick"));
+        assert!(code.contains("1000"));
     }
 }

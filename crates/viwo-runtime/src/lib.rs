@@ -60,6 +60,7 @@ impl ViwoRuntime {
             caller_id: caller_id.or(Some(entity_id)),
             args,
             storage: self.storage.clone(),
+            scheduler: self.scheduler.clone(),
         };
 
         // Execute in Lua

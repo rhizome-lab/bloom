@@ -2,7 +2,7 @@
 
 use std::sync::{Arc, Mutex};
 use mlua::LuaSerdeExt;
-use viwo_core::{Entity, EntityId, WorldStorage};
+use viwo_core::{Entity, EntityId, WorldStorage, Scheduler};
 use viwo_ir::SExpr;
 use viwo_runtime_luajit::Runtime as LuaRuntime;
 
@@ -16,6 +16,8 @@ pub struct ExecutionContext {
     pub args: Vec<serde_json::Value>,
     /// Storage backend.
     pub storage: Arc<Mutex<WorldStorage>>,
+    /// Task scheduler.
+    pub scheduler: Arc<Scheduler>,
 }
 
 impl ExecutionContext {
@@ -101,6 +103,7 @@ local __args = json.decode('{}')
 
         // call opcode - call a verb on an entity
         let storage_clone = storage.clone();
+        let scheduler_clone = self.scheduler.clone();
         let caller_id = self.this.id;
         let call_fn = lua.create_function(move |lua_ctx, (target_entity, verb_name, args): (mlua::Value, String, mlua::Value)| {
             // Convert entity to get ID
@@ -136,6 +139,7 @@ local __args = json.decode('{}')
                 caller_id: Some(caller_id),
                 args: args_vec,
                 storage: storage_clone.clone(),
+                scheduler: scheduler_clone.clone(),
             };
 
             // Execute the verb
@@ -146,6 +150,21 @@ local __args = json.decode('{}')
             lua_ctx.to_value(&result)
         })?;
         lua.globals().set("__viwo_call", call_fn)?;
+
+        // schedule opcode - schedule a verb call for future execution
+        let this_id = self.this.id;
+        let scheduler_clone = self.scheduler.clone();
+        let schedule_fn = lua.create_function(move |lua_ctx, (verb_name, args, delay_ms): (String, mlua::Value, i64)| {
+            // Convert args to JSON
+            let args_json: serde_json::Value = lua_ctx.from_value(args)?;
+
+            // Schedule the task
+            scheduler_clone.schedule(this_id, &verb_name, args_json, delay_ms)
+                .map_err(mlua::Error::external)?;
+
+            Ok(lua_ctx.null())
+        })?;
+        lua.globals().set("__viwo_schedule", schedule_fn)?;
 
         Ok(())
     }

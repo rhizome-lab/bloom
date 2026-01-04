@@ -4,7 +4,6 @@
 
 use std::sync::{Arc, Mutex};
 use viwo_core::{Entity, EntityId, WorldStorage};
-use viwo_ir::SExpr;
 
 /// Update opcode - persist entity changes.
 /// Usage: ["update", entity_id, {"prop": value}]
