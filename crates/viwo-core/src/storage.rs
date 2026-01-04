@@ -316,6 +316,162 @@ impl WorldStorage {
         self.conn.execute("DELETE FROM verbs WHERE id = ?1", params![id])?;
         Ok(())
     }
+
+    // =========================================================================
+    // Capabilities
+    // =========================================================================
+
+    /// Create a new capability.
+    pub fn create_capability(
+        &self,
+        owner_id: EntityId,
+        cap_type: &str,
+        params: serde_json::Value,
+    ) -> Result<String, StorageError> {
+        let id = uuid::Uuid::new_v4().to_string();
+        let params_str = serde_json::to_string(&params)?;
+        self.conn.execute(
+            "INSERT INTO capabilities (id, owner_id, type, params) VALUES (?1, ?2, ?3, ?4)",
+            params![&id, owner_id, cap_type, params_str],
+        )?;
+        Ok(id)
+    }
+
+    /// Get a capability by ID.
+    pub fn get_capability(&self, id: &str) -> Result<Option<crate::Capability>, StorageError> {
+        let result = self
+            .conn
+            .query_row(
+                "SELECT id, owner_id, type, params FROM capabilities WHERE id = ?1",
+                params![id],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, EntityId>(1)?,
+                        row.get::<_, String>(2)?,
+                        row.get::<_, String>(3)?,
+                    ))
+                },
+            )
+            .optional()?;
+
+        match result {
+            Some((id, owner_id, cap_type, params_str)) => {
+                let params: serde_json::Value = serde_json::from_str(&params_str)?;
+                Ok(Some(crate::Capability {
+                    id,
+                    owner_id,
+                    cap_type,
+                    params,
+                }))
+            }
+            None => Ok(None),
+        }
+    }
+
+    /// Get all capabilities owned by an entity.
+    pub fn get_capabilities(&self, owner_id: EntityId) -> Result<Vec<crate::Capability>, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, owner_id, type, params FROM capabilities WHERE owner_id = ?1")?;
+
+        let rows: Vec<(String, EntityId, String, String)> = stmt
+            .query_map(params![owner_id], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut caps = Vec::new();
+        for (id, owner_id, cap_type, params_str) in rows {
+            let params: serde_json::Value = serde_json::from_str(&params_str)?;
+            caps.push(crate::Capability {
+                id,
+                owner_id,
+                cap_type,
+                params,
+            });
+        }
+
+        Ok(caps)
+    }
+
+    /// Update the owner of a capability.
+    pub fn update_capability_owner(&self, id: &str, new_owner_id: EntityId) -> Result<(), StorageError> {
+        self.conn.execute(
+            "UPDATE capabilities SET owner_id = ?1 WHERE id = ?2",
+            params![new_owner_id, id],
+        )?;
+        Ok(())
+    }
+
+    /// Delete a capability.
+    pub fn delete_capability(&self, id: &str) -> Result<(), StorageError> {
+        self.conn.execute("DELETE FROM capabilities WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
+    // =========================================================================
+    // Scheduled Tasks
+    // =========================================================================
+
+    /// Schedule a task for future execution.
+    pub fn schedule_task(
+        &self,
+        entity_id: EntityId,
+        verb: &str,
+        args: serde_json::Value,
+        execute_at: i64,
+    ) -> Result<i64, StorageError> {
+        let args_str = serde_json::to_string(&args)?;
+        self.conn.execute(
+            "INSERT INTO scheduled_tasks (entity_id, verb, args, execute_at) VALUES (?1, ?2, ?3, ?4)",
+            params![entity_id, verb, args_str, execute_at],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    /// Get all tasks that are due (execute_at <= now).
+    pub fn get_due_tasks(&self, now: i64) -> Result<Vec<ScheduledTask>, StorageError> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, entity_id, verb, args, execute_at FROM scheduled_tasks WHERE execute_at <= ?1 ORDER BY execute_at ASC",
+        )?;
+
+        let rows: Vec<(i64, EntityId, String, String, i64)> = stmt
+            .query_map(params![now], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut tasks = Vec::new();
+        for (id, entity_id, verb, args_str, execute_at) in rows {
+            let args: serde_json::Value = serde_json::from_str(&args_str)?;
+            tasks.push(ScheduledTask {
+                id,
+                entity_id,
+                verb,
+                args,
+                execute_at,
+            });
+        }
+
+        Ok(tasks)
+    }
+
+    /// Delete a scheduled task.
+    pub fn delete_task(&self, id: i64) -> Result<(), StorageError> {
+        self.conn.execute("DELETE FROM scheduled_tasks WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+}
+
+/// A scheduled task.
+#[derive(Debug, Clone)]
+pub struct ScheduledTask {
+    pub id: i64,
+    pub entity_id: EntityId,
+    pub verb: String,
+    pub args: serde_json::Value,
+    pub execute_at: i64,
 }
 
 #[cfg(test)]

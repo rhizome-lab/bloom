@@ -2,12 +2,12 @@
 
 ## Next Up
 
-### Rust Port
+### Rust Port - Scripting Layer ✅ COMPLETE
 
 Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 
 - [x] **Codegen**: Split codegen.rs into per-library modules (math, list, str, obj, std, bool)
-- [x] **Tests**: Port tests from TypeScript (143 tests passing, see `crates/viwo-cli/tests/integration.rs`)
+- [x] **Tests**: Port tests from TypeScript (285 tests passing total)
 - [x] **Transpiler**: Support `while_statement`, `for_in_statement`, `break_statement`, `continue_statement`
 - [x] **Transpiler**: Support `parenthesized_expression` as call target (e.g. `((x) => x + 1)(5)`)
 - [x] **Transpiler**: Support `assignment_expression` for `i = i + 1` in loops
@@ -26,6 +26,40 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Codegen**: Type coercion (`std.string`, `std.number`, `std.boolean`)
 - [x] **Codegen**: Error handling (`std.throw`, `std.try`)
 - [x] **Codegen**: Logging (`std.log`, `std.warn`)
+
+### Rust Port - Game Engine (IN PROGRESS)
+
+**Core Infrastructure:**
+- [ ] **viwo-core**: Port entity repository (create, read, update, delete with SQLite)
+- [ ] **viwo-core**: Port verb resolution via prototype chain
+- [ ] **viwo-core**: Port capability enforcement and validation
+- [ ] **viwo-core**: Port kernel opcodes (`send`, `get_capability`, `mint`, `delegate`, etc.)
+- [ ] **viwo-core**: Port scheduler system with task queue
+- [ ] **viwo-core**: Port game opcodes integration with runtime
+- [ ] **viwo-core**: Port seed system (load entities/verbs from TypeScript DSL)
+
+**Tests to Port:**
+- [ ] **Tests**: Port `gameloop.test.ts` (20+ integration tests, 616 lines)
+- [ ] **Tests**: Port `scheduler.test.ts` (task scheduling verification)
+
+**Plugin System:**
+- [ ] **Plugins**: Implement plugin opcode registry in viwo-runtime-luajit
+- [ ] **Plugins**: Complete plugin loader (load .so/.dll/.dylib, call on_load)
+- [ ] **Plugins**: Port `fs` plugin (filesystem access)
+- [ ] **Plugins**: Port `net` plugin (HTTP/WebSocket client)
+- [ ] **Plugins**: Port `sqlite` plugin (direct SQL access)
+- [ ] **Plugins**: Port `procgen` plugin (seeded random, noise)
+- [ ] **Plugins**: Port `ai` plugin (LLM integration via Vercel AI SDK)
+- [ ] **Plugins**: Port `vector` plugin (sqlite-vec embeddings)
+- [ ] **Plugins**: Port `memory` plugin (RAG with vector search)
+- [ ] **Plugins**: Port `diffusers` plugin (image generation)
+
+**Server & Transport:**
+- [ ] **Server**: Expand JSON-RPC handlers (look, create, dig, go, set, teleport, etc.)
+- [ ] **Server**: Implement authentication system
+- [ ] **Server**: Session management with player entity association
+- [ ] **Server**: Broadcast system for multi-client updates
+- [ ] **Server**: Hook scheduler into server tick loop
 
 ## 1. Deep Simulation (Sandbox)
 
