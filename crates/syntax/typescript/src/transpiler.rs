@@ -354,13 +354,18 @@ impl<'a> TranspileContext<'a> {
                     }
                 };
 
-                pairs.push(SExpr::string(key_str));
-                pairs.push(self.transpile_node(value)?);
+                // Generate pair as [key, value]
+                pairs.push(SExpr::List(vec![
+                    SExpr::string(key_str),
+                    self.transpile_node(value)?,
+                ]));
             } else if child.kind() == "shorthand_property_identifier" {
                 // { foo } is shorthand for { foo: foo }
                 let name = self.node_text(child);
-                pairs.push(SExpr::string(name));
-                pairs.push(SExpr::call("std.var", vec![SExpr::string(name)]));
+                pairs.push(SExpr::List(vec![
+                    SExpr::string(name),
+                    SExpr::call("std.var", vec![SExpr::string(name)]),
+                ]));
             }
         }
 
@@ -388,9 +393,9 @@ impl<'a> TranspileContext<'a> {
 
         let body_expr = self.transpile_node(body)?;
 
-        // Create std.fn: ["std.fn", [...params], body]
+        // Create std.lambda: ["std.lambda", [...params], body]
         Ok(SExpr::call(
-            "std.fn",
+            "std.lambda",
             vec![SExpr::List(param_names), body_expr],
         ))
     }

@@ -174,17 +174,18 @@ fn test_array_literal() {
 fn test_object_literal() {
     assert_transpile(
         "{ x: 1 }",
-        SExpr::call("obj.new", vec![SExpr::string("x"), SExpr::Number(1.0)]),
+        SExpr::call(
+            "obj.new",
+            vec![SExpr::List(vec![SExpr::string("x"), SExpr::Number(1.0)])],
+        ),
     );
     assert_transpile(
         "{ a: 1, b: 2 }",
         SExpr::call(
             "obj.new",
             vec![
-                SExpr::string("a"),
-                SExpr::Number(1.0),
-                SExpr::string("b"),
-                SExpr::Number(2.0),
+                SExpr::List(vec![SExpr::string("a"), SExpr::Number(1.0)]),
+                SExpr::List(vec![SExpr::string("b"), SExpr::Number(2.0)]),
             ],
         ),
     );
@@ -224,7 +225,7 @@ fn test_arrow_function() {
     assert_transpile(
         "x => x + 1",
         SExpr::call(
-            "std.fn",
+            "std.lambda",
             vec![
                 SExpr::List(vec![SExpr::string("x")]),
                 SExpr::call(

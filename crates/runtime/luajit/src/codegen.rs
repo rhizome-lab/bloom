@@ -155,20 +155,20 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
             let cond = compile_value(&args[0], false)?;
             let then_branch = compile_value(&args[1], should_return)?;
             let else_branch = if args.len() > 2 {
-                compile_value(&args[2], should_return)?
+                Some(compile_value(&args[2], should_return)?)
             } else if should_return {
-                "return nil".to_string()
+                Some("return nil".to_string())
             } else {
-                String::new()
+                None
             };
 
-            if else_branch.is_empty() {
-                Ok(format!("if {} then\n{}\nend", cond, then_branch))
-            } else {
+            if let Some(else_code) = else_branch {
                 Ok(format!(
                     "if {} then\n{}\nelse\n{}\nend",
-                    cond, then_branch, else_branch
+                    cond, then_branch, else_code
                 ))
+            } else {
+                Ok(format!("if {} then\n{}\nend", cond, then_branch))
             }
         }
 
@@ -336,6 +336,18 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
             Ok(format!("{}not {}", prefix, arg))
         }
 
+        "math.neg" => {
+            if args.is_empty() {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 1,
+                    got: 0,
+                });
+            }
+            let arg = compile_value(&args[0], false)?;
+            Ok(format!("{}(-{})", prefix, arg))
+        }
+
         // String operations
         "str.concat" => {
             let compiled: Result<Vec<_>, _> =
@@ -417,6 +429,7 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
         }
 
         "obj.new" => {
+            // obj.new accepts pairs: ["obj.new", [key1, val1], [key2, val2], ...]
             let mut pairs = Vec::new();
             for arg in args {
                 let pair = arg
