@@ -21,6 +21,9 @@ pub struct ViwoRuntime {
 impl ViwoRuntime {
     /// Create a new runtime with the given storage.
     pub fn new(storage: WorldStorage) -> Self {
+        // Initialize procgen plugin
+        viwo_plugin_procgen::plugin_init();
+
         let storage = Arc::new(Mutex::new(storage));
         let scheduler = Arc::new(viwo_core::Scheduler::new(storage.clone()));
         Self { storage, scheduler }

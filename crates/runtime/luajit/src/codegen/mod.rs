@@ -6,6 +6,7 @@ mod json;
 mod list;
 mod math;
 mod obj;
+mod procgen;
 mod std;
 mod str;
 
@@ -161,6 +162,9 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
         return Ok(result);
     }
     if let Some(result) = json::compile_json(op, args, prefix)? {
+        return Ok(result);
+    }
+    if let Some(result) = procgen::compile_procgen(op, args, prefix)? {
         return Ok(result);
     }
 

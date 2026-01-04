@@ -318,6 +318,33 @@ return {{ result = __result, this = __this }}
         })?;
         lua.globals().set("__viwo_delegate", delegate_fn)?;
 
+        // Register procgen plugin opcodes
+        let procgen_seed_fn = lua.create_function(|_lua_ctx, seed: u64| {
+            viwo_plugin_procgen::procgen_seed(seed);
+            Ok(())
+        })?;
+        lua.globals().set("__viwo_procgen_seed", procgen_seed_fn)?;
+
+        let procgen_noise_fn = lua.create_function(|_lua_ctx, (x, y): (f64, f64)| {
+            Ok(viwo_plugin_procgen::procgen_noise(x, y))
+        })?;
+        lua.globals().set("__viwo_procgen_noise", procgen_noise_fn)?;
+
+        let procgen_random_fn = lua.create_function(|_lua_ctx, ()| {
+            Ok(viwo_plugin_procgen::procgen_random())
+        })?;
+        lua.globals().set("__viwo_procgen_random", procgen_random_fn)?;
+
+        let procgen_random_range_fn = lua.create_function(|_lua_ctx, (min, max): (f64, f64)| {
+            Ok(viwo_plugin_procgen::procgen_random_range(min, max))
+        })?;
+        lua.globals().set("__viwo_procgen_random_range", procgen_random_range_fn)?;
+
+        let procgen_between_fn = lua.create_function(|_lua_ctx, (min, max): (i64, i64)| {
+            Ok(viwo_plugin_procgen::procgen_between(min, max))
+        })?;
+        lua.globals().set("__viwo_procgen_between", procgen_between_fn)?;
+
         Ok(())
     }
 
