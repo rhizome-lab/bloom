@@ -5,14 +5,14 @@ use viwo_core::WorldStorage;
 use viwo_ir::SExpr;
 use viwo_runtime::ViwoRuntime;
 
-#[tokio::test]
+#[test]
 #[ignore] // TODO: Implement obj.set for updating __this
-async fn test_update_entity_from_verb() {
+fn test_update_entity_from_verb() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage
             .create_entity(json!({"name": "Counter", "count": 0}), None)
             .unwrap()
@@ -57,7 +57,7 @@ async fn test_update_entity_from_verb() {
     );
 
     {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage
             .add_verb(entity_id, "increment", &increment_verb)
             .unwrap();
@@ -66,28 +66,27 @@ async fn test_update_entity_from_verb() {
     // Execute increment
     let result = runtime
         .execute_verb(entity_id, "increment", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_f64().unwrap(), 1.0);
 
     // Verify persistence
     let entity = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage.get_entity(entity_id).unwrap().unwrap()
     };
 
     assert_eq!(entity.props["count"], 1);
 }
 
-#[tokio::test]
-#[ignore] // TODO: Implement call opcode
-async fn test_call_another_verb() {
+#[test]
+fn test_call_another_verb() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id = storage
             .create_entity(json!({"name": "Test"}), None)
             .unwrap();
@@ -113,7 +112,7 @@ async fn test_call_another_verb() {
     // Execute caller - should return helper's result
     let result = runtime
         .execute_verb(entity_id, "caller", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_str().unwrap(), "helper_result");

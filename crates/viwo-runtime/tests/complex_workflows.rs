@@ -5,14 +5,14 @@ use viwo_core::WorldStorage;
 use viwo_ir::SExpr;
 use viwo_runtime::ViwoRuntime;
 
-#[tokio::test]
-async fn test_multi_verb_workflow() {
+#[test]
+fn test_multi_verb_workflow() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     // Create an entity with multiple interacting verbs
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id = storage
             .create_entity(json!({"name": "Calculator", "value": 0}), None)
             .unwrap();
@@ -56,7 +56,7 @@ async fn test_multi_verb_workflow() {
     // Initial value should be 0
     let result = runtime
         .execute_verb(entity_id, "get_value", vec![], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_f64().unwrap(), 0.0);
 
@@ -64,18 +64,18 @@ async fn test_multi_verb_workflow() {
     // This test documents current behavior
     let result = runtime
         .execute_verb(entity_id, "set_value", vec![json!(42)], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_f64().unwrap(), 42.0);
 }
 
-#[tokio::test]
-async fn test_conditional_verb() {
+#[test]
+fn test_conditional_verb() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id = storage
             .create_entity(json!({"name": "Checker"}), None)
             .unwrap();
@@ -102,24 +102,24 @@ async fn test_conditional_verb() {
 
     let result = runtime
         .execute_verb(entity_id, "check_size", vec![json!(5)], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_str().unwrap(), "small");
 
     let result = runtime
         .execute_verb(entity_id, "check_size", vec![json!(15)], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_str().unwrap(), "big");
 }
 
-#[tokio::test]
-async fn test_loop_in_verb() {
+#[test]
+fn test_loop_in_verb() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id = storage
             .create_entity(json!({"name": "Counter"}), None)
             .unwrap();
@@ -196,25 +196,25 @@ async fn test_loop_in_verb() {
     // Sum 1 to 5 = 15
     let result = runtime
         .execute_verb(entity_id, "sum", vec![json!(5)], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_f64().unwrap(), 15.0);
 
     // Sum 1 to 10 = 55
     let result = runtime
         .execute_verb(entity_id, "sum", vec![json!(10)], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_f64().unwrap(), 55.0);
 }
 
-#[tokio::test]
-async fn test_lambda_in_verb() {
+#[test]
+fn test_lambda_in_verb() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id = storage
             .create_entity(json!({"name": "Mapper"}), None)
             .unwrap();
@@ -260,18 +260,18 @@ async fn test_lambda_in_verb() {
 
     let result = runtime
         .execute_verb(entity_id, "double", vec![json!(7)], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_f64().unwrap(), 14.0);
 }
 
-#[tokio::test]
-async fn test_list_operations_in_verb() {
+#[test]
+fn test_list_operations_in_verb() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id = storage
             .create_entity(json!({"name": "ListOps"}), None)
             .unwrap();
@@ -307,7 +307,7 @@ async fn test_list_operations_in_verb() {
 
     let result = runtime
         .execute_verb(entity_id, "list_len", vec![], None)
-        .await
+        
         .unwrap();
     assert_eq!(result.as_f64().unwrap(), 3.0);
 }

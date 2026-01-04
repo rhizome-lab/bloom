@@ -1,0 +1,173 @@
+//! Game world opcode compilation.
+//!
+//! These opcodes interact with the game world state (entities, verbs, etc).
+
+use super::{compile_value, CompileError};
+use viwo_ir::SExpr;
+
+/// Compile game world opcodes. Returns None if opcode doesn't match.
+pub fn compile_game(
+    op: &str,
+    args: &[SExpr],
+    prefix: &str,
+) -> Result<Option<String>, CompileError> {
+    let result = match op {
+        // Get entity by ID
+        "entity" => {
+            if args.is_empty() {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 1,
+                    got: 0,
+                });
+            }
+            let id = compile_value(&args[0], false)?;
+            format!("{}__viwo_entity({})", prefix, id)
+        }
+
+        // Update entity properties
+        "update" => {
+            if args.len() < 2 {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 2,
+                    got: args.len(),
+                });
+            }
+            let entity_id = compile_value(&args[0], false)?;
+            let updates = compile_value(&args[1], false)?;
+            format!("{}__viwo_update({}, {})", prefix, entity_id, updates)
+        }
+
+        // Create new entity
+        "create" => {
+            if args.is_empty() {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 1,
+                    got: 0,
+                });
+            }
+            let props = compile_value(&args[0], false)?;
+            if args.len() > 1 {
+                let prototype_id = compile_value(&args[1], false)?;
+                format!("{}__viwo_create({}, {})", prefix, props, prototype_id)
+            } else {
+                format!("{}__viwo_create({}, nil)", prefix, props)
+            }
+        }
+
+        // Call verb on entity
+        "call" => {
+            if args.len() < 2 {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 2,
+                    got: args.len(),
+                });
+            }
+            let target = compile_value(&args[0], false)?;
+            let verb = compile_value(&args[1], false)?;
+
+            // Remaining args are passed to the verb
+            let call_args: Result<Vec<_>, _> = args[2..].iter().map(|a| compile_value(a, false)).collect();
+            let args_list = format!("{{ {} }}", call_args?.join(", "));
+
+            format!("{}__viwo_call({}, {}, {})", prefix, target, verb, args_list)
+        }
+
+        _ => return Ok(None),
+    };
+
+    Ok(Some(result))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::super::compile;
+    use std::collections::HashMap;
+    use viwo_ir::SExpr;
+
+    #[test]
+    fn test_entity() {
+        let expr = SExpr::call("entity", vec![SExpr::number(42)]);
+        assert_eq!(compile(&expr).unwrap(), "return __viwo_entity(42)");
+    }
+
+    #[test]
+    fn test_update() {
+        let mut props = HashMap::new();
+        props.insert("name".to_string(), SExpr::string("Updated"));
+
+        let expr = SExpr::call(
+            "update",
+            vec![
+                SExpr::number(1),
+                SExpr::Object(props),
+            ],
+        );
+        let code = compile(&expr).unwrap();
+        assert!(code.contains("__viwo_update"));
+        assert!(code.contains("1"));
+    }
+
+    #[test]
+    fn test_create() {
+        let mut props = HashMap::new();
+        props.insert("name".to_string(), SExpr::string("New Entity"));
+
+        let expr = SExpr::call("create", vec![SExpr::Object(props)]);
+        let code = compile(&expr).unwrap();
+        assert!(code.contains("__viwo_create"));
+        assert!(code.contains("nil")); // No prototype
+    }
+
+    #[test]
+    fn test_create_with_prototype() {
+        let mut props = HashMap::new();
+        props.insert("name".to_string(), SExpr::string("New Entity"));
+
+        let expr = SExpr::call(
+            "create",
+            vec![
+                SExpr::Object(props),
+                SExpr::number(10),
+            ],
+        );
+        let code = compile(&expr).unwrap();
+        assert!(code.contains("__viwo_create"));
+        assert!(code.contains("10")); // Has prototype
+    }
+
+    #[test]
+    fn test_call() {
+        let expr = SExpr::call(
+            "call",
+            vec![
+                SExpr::call("std.this", vec![]),
+                SExpr::string("helper"),
+            ],
+        );
+        let code = compile(&expr).unwrap();
+        assert!(code.contains("__viwo_call"));
+        assert!(code.contains("helper"));
+    }
+
+    #[test]
+    fn test_call_with_args() {
+        let expr = SExpr::call(
+            "call",
+            vec![
+                SExpr::call("std.this", vec![]),
+                SExpr::string("greet"),
+                SExpr::string("Alice"),
+                SExpr::number(42),
+            ],
+        );
+        let code = compile(&expr).unwrap();
+        assert!(code.contains("__viwo_call"));
+        assert!(code.contains("greet"));
+        assert!(code.contains("Alice"));
+        assert!(code.contains("42"));
+    }
+}

@@ -7,14 +7,14 @@ use viwo_core::WorldStorage;
 use viwo_ir::SExpr;
 use viwo_runtime::ViwoRuntime;
 
-#[tokio::test]
-async fn test_state_persistence() {
+#[test]
+fn test_state_persistence() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     // Create an entity with a counter
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage
             .create_entity(json!({"name": "Counter", "count": 0}), None)
             .unwrap()
@@ -41,41 +41,41 @@ async fn test_state_persistence() {
     );
 
     {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage.add_verb(entity_id, "get_count", &verb_code).unwrap();
     }
 
     // Execute the verb
     let result = runtime
         .execute_verb(entity_id, "get_count", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_f64().unwrap(), 0.0);
 
     // Update the count
     {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage.update_entity(entity_id, json!({"count": 5})).unwrap();
     }
 
     // Execute again - should see updated value
     let result = runtime
         .execute_verb(entity_id, "get_count", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_f64().unwrap(), 5.0);
 }
 
-#[tokio::test]
-async fn test_verb_inheritance() {
+#[test]
+fn test_verb_inheritance() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     // Create a base entity with a verb
     let (base_id, child_id) = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let base = storage
             .create_entity(json!({"name": "Base"}), None)
             .unwrap();
@@ -100,14 +100,14 @@ async fn test_verb_inheritance() {
     // Child should inherit the verb
     let result = runtime
         .execute_verb(child_id, "greet", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_str().unwrap(), "Hello from base");
 
     // Override verb on child
     {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage
             .add_verb(
                 child_id,
@@ -120,7 +120,7 @@ async fn test_verb_inheritance() {
     // Should now use child's version
     let result = runtime
         .execute_verb(child_id, "greet", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_str().unwrap(), "Hello from child");
@@ -128,7 +128,7 @@ async fn test_verb_inheritance() {
     // Base should still have original
     let result = runtime
         .execute_verb(base_id, "greet", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_str().unwrap(), "Hello from base");

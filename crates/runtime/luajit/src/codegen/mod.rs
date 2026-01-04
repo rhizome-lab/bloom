@@ -1,6 +1,7 @@
 //! S-expression to Lua code generation.
 
 mod bool;
+mod game;
 mod json;
 mod list;
 mod math;
@@ -139,6 +140,9 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
 
     // Try each library in order
     if let Some(result) = std::compile_std(op, args, should_return)? {
+        return Ok(result);
+    }
+    if let Some(result) = game::compile_game(op, args, prefix)? {
         return Ok(result);
     }
     if let Some(result) = math::compile_math(op, args, prefix)? {

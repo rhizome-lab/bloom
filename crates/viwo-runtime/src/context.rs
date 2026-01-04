@@ -1,7 +1,7 @@
 //! Execution context for running scripts with access to storage.
 
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use mlua::LuaSerdeExt;
 use viwo_core::{Entity, EntityId, WorldStorage};
 use viwo_ir::SExpr;
 use viwo_runtime_luajit::Runtime as LuaRuntime;
@@ -20,13 +20,12 @@ pub struct ExecutionContext {
 
 impl ExecutionContext {
     /// Execute an S-expression in this context.
-    pub async fn execute(&self, expr: &SExpr) -> Result<serde_json::Value, crate::ExecutionError> {
+    pub fn execute(&self, expr: &SExpr) -> Result<serde_json::Value, crate::ExecutionError> {
         // Create a Lua runtime
         let runtime = LuaRuntime::new()?;
 
-        // TODO: Inject kernel functions as Lua globals
-        // This requires mlua async support or blocking calls
-        // For now, kernel functions need to be compiled into the generated Lua
+        // Inject game opcodes as Lua globals
+        self.inject_opcodes(&runtime)?;
 
         // Compile to Lua code first
         let lua_code = viwo_runtime_luajit::compile(expr)?;
@@ -60,6 +59,95 @@ local __args = json.decode('{}')
         // 3. Proxy/metatable tracking
 
         Ok(result)
+    }
+
+    /// Inject game opcodes as Lua globals.
+    fn inject_opcodes(&self, runtime: &LuaRuntime) -> Result<(), crate::ExecutionError> {
+        let lua = runtime.lua();
+        let storage = self.storage.clone();
+
+        // entity opcode - get entity by ID
+        let storage_clone = storage.clone();
+        let entity_fn = lua.create_function(move |lua_ctx, entity_id: i64| {
+            let entity = crate::opcodes::opcode_entity(entity_id as EntityId, &storage_clone)
+                .map_err(mlua::Error::external)?;
+            lua_ctx.to_value(&entity)
+        })?;
+        lua.globals().set("__viwo_entity", entity_fn)?;
+
+        // update opcode - persist entity changes
+        let storage_clone = storage.clone();
+        let update_fn = lua.create_function(move |_lua_ctx, (entity_id, updates): (i64, mlua::Value)| {
+            // Convert Lua value to serde_json::Value
+            let updates_json: serde_json::Value = _lua_ctx.from_value(updates)?;
+            crate::opcodes::opcode_update(entity_id as EntityId, updates_json, &storage_clone)
+                .map_err(mlua::Error::external)?;
+            Ok(())
+        })?;
+        lua.globals().set("__viwo_update", update_fn)?;
+
+        // create opcode - create new entity
+        let storage_clone = storage.clone();
+        let create_fn = lua.create_function(move |_lua_ctx, (props, prototype_id): (mlua::Value, Option<i64>)| {
+            let props_json: serde_json::Value = _lua_ctx.from_value(props)?;
+            let new_id = crate::opcodes::opcode_create(
+                props_json,
+                prototype_id.map(|id| id as EntityId),
+                &storage_clone
+            ).map_err(mlua::Error::external)?;
+            Ok(new_id)
+        })?;
+        lua.globals().set("__viwo_create", create_fn)?;
+
+        // call opcode - call a verb on an entity
+        let storage_clone = storage.clone();
+        let caller_id = self.this.id;
+        let call_fn = lua.create_function(move |lua_ctx, (target_entity, verb_name, args): (mlua::Value, String, mlua::Value)| {
+            // Convert entity to get ID
+            let target: serde_json::Value = lua_ctx.from_value(target_entity)?;
+            let target_id = target["id"].as_i64()
+                .ok_or_else(|| mlua::Error::external("call: target entity missing id"))?
+                as EntityId;
+
+            // Convert args array to Vec<serde_json::Value>
+            let args_json: serde_json::Value = lua_ctx.from_value(args)?;
+            let args_vec = match &args_json {
+                serde_json::Value::Array(arr) => arr.clone(),
+                // Empty table {} might be deserialized as object, treat as empty array
+                serde_json::Value::Object(obj) if obj.is_empty() => Vec::new(),
+                _ => return Err(mlua::Error::external("call: args must be an array")),
+            };
+
+            // Get entity and verb from storage
+            let (target_entity_full, verb) = {
+                let storage = storage_clone.lock().unwrap();
+                let entity = storage.get_entity(target_id)
+                    .map_err(mlua::Error::external)?
+                    .ok_or_else(|| mlua::Error::external(format!("call: entity {} not found", target_id)))?;
+                let verb = storage.get_verb(target_id, &verb_name)
+                    .map_err(mlua::Error::external)?
+                    .ok_or_else(|| mlua::Error::external(format!("call: verb '{}' not found on entity {}", verb_name, target_id)))?;
+                (entity, verb)
+            };
+
+            // Create new execution context for the verb
+            let ctx = ExecutionContext {
+                this: target_entity_full,
+                caller_id: Some(caller_id),
+                args: args_vec,
+                storage: storage_clone.clone(),
+            };
+
+            // Execute the verb
+            let result = ctx.execute(&verb.code)
+                .map_err(mlua::Error::external)?;
+
+            // Convert result back to Lua
+            lua_ctx.to_value(&result)
+        })?;
+        lua.globals().set("__viwo_call", call_fn)?;
+
+        Ok(())
     }
 
     /// Flatten an entity's props to match TypeScript behavior.

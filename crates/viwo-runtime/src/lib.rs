@@ -1,11 +1,11 @@
 //! Integrated runtime for Viwo combining storage and script execution.
 
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use viwo_core::{EntityId, WorldStorage};
 
 pub mod context;
 pub mod kernel;
+pub mod opcodes;
 
 pub use context::ExecutionContext;
 pub use kernel::KernelOps;
@@ -35,7 +35,7 @@ impl ViwoRuntime {
     }
 
     /// Execute a verb on an entity.
-    pub async fn execute_verb(
+    pub fn execute_verb(
         &self,
         entity_id: EntityId,
         verb_name: &str,
@@ -44,7 +44,7 @@ impl ViwoRuntime {
     ) -> Result<serde_json::Value, ExecutionError> {
         // Get entity and verb from storage
         let (entity, verb) = {
-            let storage = self.storage.lock().await;
+            let storage = self.storage.lock().unwrap();
             let entity = storage
                 .get_entity(entity_id)?
                 .ok_or(ExecutionError::EntityNotFound(entity_id))?;
@@ -63,7 +63,7 @@ impl ViwoRuntime {
         };
 
         // Execute in Lua
-        ctx.execute(&verb.code).await
+        ctx.execute(&verb.code)
     }
 }
 

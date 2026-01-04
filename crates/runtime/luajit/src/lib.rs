@@ -92,6 +92,11 @@ impl Runtime {
         Ok(Self { lua })
     }
 
+    /// Get a reference to the Lua state.
+    pub fn lua(&self) -> &Lua {
+        &self.lua
+    }
+
     /// Execute an S-expression and return the result as JSON.
     pub fn execute(&self, expr: &SExpr) -> Result<serde_json::Value, ExecutionError> {
         let code = compile(expr)?;

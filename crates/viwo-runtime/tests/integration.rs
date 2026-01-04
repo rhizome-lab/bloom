@@ -5,15 +5,15 @@ use viwo_core::WorldStorage;
 use viwo_ir::SExpr;
 use viwo_runtime::ViwoRuntime;
 
-#[tokio::test]
-async fn test_execute_simple_verb() {
+#[test]
+fn test_execute_simple_verb() {
     // Create storage and runtime
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     // Create an entity
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage
             .create_entity(json!({"name": "Test Entity"}), None)
             .unwrap()
@@ -21,7 +21,7 @@ async fn test_execute_simple_verb() {
 
     // Add a simple verb that returns a number
     {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage
             .add_verb(entity_id, "test", &SExpr::from(42))
             .unwrap();
@@ -30,19 +30,19 @@ async fn test_execute_simple_verb() {
     // Execute the verb
     let result = runtime
         .execute_verb(entity_id, "test", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result, json!(42));
 }
 
-#[tokio::test]
-async fn test_execute_verb_with_math() {
+#[test]
+fn test_execute_verb_with_math() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage.create_entity(json!({"name": "Math"}), None).unwrap()
     };
 
@@ -50,25 +50,25 @@ async fn test_execute_verb_with_math() {
     let verb_code = SExpr::call("math.add", vec![SExpr::number(1.0), SExpr::number(2.0)]);
 
     {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage.add_verb(entity_id, "add", &verb_code).unwrap();
     }
 
     let result = runtime
         .execute_verb(entity_id, "add", vec![], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result.as_f64().unwrap(), 3.0);
 }
 
-#[tokio::test]
-async fn test_execute_verb_with_args() {
+#[test]
+fn test_execute_verb_with_args() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage.create_entity(json!({"name": "Args"}), None).unwrap()
     };
 
@@ -76,13 +76,13 @@ async fn test_execute_verb_with_args() {
     let verb_code = SExpr::call("std.arg", vec![SExpr::number(0.0)]);
 
     {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         storage.add_verb(entity_id, "echo", &verb_code).unwrap();
     }
 
     let result = runtime
         .execute_verb(entity_id, "echo", vec![json!("hello")], None)
-        .await
+        
         .unwrap();
 
     assert_eq!(result, json!("hello"));

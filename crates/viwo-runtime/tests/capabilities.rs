@@ -4,14 +4,14 @@ use serde_json::json;
 use viwo_core::WorldStorage;
 use viwo_runtime::{KernelOps, ViwoRuntime};
 
-#[tokio::test]
-async fn test_get_capability_from_entity() {
+#[test]
+fn test_get_capability_from_entity() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     // Create entity with capabilities
     let entity_id = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id = storage.create_entity(json!({"name": "Test"}), None).unwrap();
 
         // Add some capabilities
@@ -31,7 +31,7 @@ async fn test_get_capability_from_entity() {
     // Get entity.control capability
     let cap = kernel
         .get_capability(entity_id, "entity.control", None)
-        .await
+        
         .unwrap();
     assert!(cap.is_some());
     assert_eq!(cap.unwrap().cap_type, "entity.control");
@@ -39,25 +39,25 @@ async fn test_get_capability_from_entity() {
     // Get with filter
     let cap = kernel
         .get_capability(entity_id, "entity.control", Some(json!({"target_id": 42})))
-        .await
+        
         .unwrap();
     assert!(cap.is_some());
 
     // Get with wrong filter
     let cap = kernel
         .get_capability(entity_id, "entity.control", Some(json!({"target_id": 99})))
-        .await
+        
         .unwrap();
     assert!(cap.is_none());
 }
 
-#[tokio::test]
-async fn test_capability_transfer() {
+#[test]
+fn test_capability_transfer() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);
 
     let (e1_id, e2_id, cap_id) = {
-        let storage = runtime.storage().lock().await;
+        let storage = runtime.storage().lock().unwrap();
         let id1 = storage.create_entity(json!({"name": "E1"}), None).unwrap();
         let id2 = storage.create_entity(json!({"name": "E2"}), None).unwrap();
         let cap_id = storage
@@ -71,23 +71,23 @@ async fn test_capability_transfer() {
     // Verify e1 has it
     assert!(kernel
         .has_capability(e1_id, "test.cap", None)
-        .await
+        
         .unwrap());
     assert!(!kernel
         .has_capability(e2_id, "test.cap", None)
-        .await
+        
         .unwrap());
 
     // Transfer
-    kernel.give_capability(&cap_id, e2_id).await.unwrap();
+    kernel.give_capability(&cap_id, e2_id).unwrap();
 
     // Verify transfer
     assert!(!kernel
         .has_capability(e1_id, "test.cap", None)
-        .await
+        
         .unwrap());
     assert!(kernel
         .has_capability(e2_id, "test.cap", None)
-        .await
+        
         .unwrap());
 }
