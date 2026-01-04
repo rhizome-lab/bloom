@@ -410,6 +410,34 @@ return {{ result = __result, this = __this }}
         })?;
         lua.globals().set("__viwo_fs_remove", fs_remove_fn)?;
 
+        // sqlite.query opcode - execute SQL query with capability
+        let this_id = self.this.id;
+        let sqlite_query_fn = lua.create_function(move |lua_ctx, (capability, db_path, query, params): (mlua::Value, String, String, mlua::Value)| {
+            let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
+            let params_json: serde_json::Value = lua_ctx.from_value(params)?;
+            let params_array = params_json.as_array()
+                .ok_or_else(|| mlua::Error::external("sqlite.query params must be an array"))?;
+
+            let results = viwo_plugin_sqlite::sqlite_query(&cap_json, this_id, &db_path, &query, params_array)
+                .map_err(mlua::Error::external)?;
+            lua_ctx.to_value(&results)
+        })?;
+        lua.globals().set("__viwo_sqlite_query", sqlite_query_fn)?;
+
+        // sqlite.execute opcode - execute SQL statement with capability
+        let this_id = self.this.id;
+        let sqlite_execute_fn = lua.create_function(move |lua_ctx, (capability, db_path, query, params): (mlua::Value, String, String, mlua::Value)| {
+            let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
+            let params_json: serde_json::Value = lua_ctx.from_value(params)?;
+            let params_array = params_json.as_array()
+                .ok_or_else(|| mlua::Error::external("sqlite.execute params must be an array"))?;
+
+            let rows_affected = viwo_plugin_sqlite::sqlite_execute(&cap_json, this_id, &db_path, &query, params_array)
+                .map_err(mlua::Error::external)?;
+            Ok(rows_affected)
+        })?;
+        lua.globals().set("__viwo_sqlite_execute", sqlite_execute_fn)?;
+
         // Register procgen plugin opcodes (if loaded)
         let plugins = self.plugins.lock().unwrap();
         if plugins.get_plugin("procgen").is_some() {

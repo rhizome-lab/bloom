@@ -8,6 +8,7 @@ mod list;
 mod math;
 mod obj;
 mod procgen;
+mod sqlite;
 mod std;
 mod str;
 
@@ -172,6 +173,9 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
         return Ok(result);
     }
     if let Some(result) = fs::compile_fs(op, args, prefix)? {
+        return Ok(result);
+    }
+    if let Some(result) = sqlite::compile_sqlite(op, args, prefix)? {
         return Ok(result);
     }
 
