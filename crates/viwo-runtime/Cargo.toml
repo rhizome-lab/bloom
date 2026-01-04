@@ -12,6 +12,7 @@ viwo-runtime-luajit.workspace = true
 viwo-plugin-fs = { path = "../plugins/fs" }
 viwo-plugin-net = { path = "../plugins/net" }
 viwo-plugin-sqlite = { path = "../plugins/sqlite" }
+viwo-plugin-vector = { path = "../plugins/vector" }
 serde.workspace = true
 serde_json.workspace = true
 tokio = { version = "1", features = ["sync", "rt"] }

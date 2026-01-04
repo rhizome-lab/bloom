@@ -12,6 +12,7 @@ mod procgen;
 mod sqlite;
 mod std;
 mod str;
+mod vector;
 
 use ::std::collections::HashSet;
 use thiserror::Error;
@@ -180,6 +181,9 @@ fn compile_opcode(op: &str, args: &[SExpr], should_return: bool) -> Result<Strin
         return Ok(result);
     }
     if let Some(result) = net::compile_net(op, args, prefix)? {
+        return Ok(result);
+    }
+    if let Some(result) = vector::compile_vector(op, args, prefix)? {
         return Ok(result);
     }
 

@@ -474,6 +474,54 @@ return {{ result = __result, this = __this }}
         })?;
         lua.globals().set("__viwo_net_post", net_post_fn)?;
 
+        // vector.insert opcode - insert vector embedding with capability
+        let this_id = self.this.id;
+        let vector_insert_fn = lua.create_function(move |lua_ctx, (capability, db_path, key, embedding, metadata): (mlua::Value, String, String, mlua::Value, mlua::Value)| {
+            let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
+            let embedding_json: serde_json::Value = lua_ctx.from_value(embedding)?;
+            let metadata_json: serde_json::Value = lua_ctx.from_value(metadata)?;
+
+            let embedding_array = embedding_json.as_array()
+                .ok_or_else(|| mlua::Error::external("vector.insert: embedding must be an array"))?;
+            let embedding_f32: Vec<f32> = embedding_array.iter()
+                .map(|v| v.as_f64().unwrap_or(0.0) as f32)
+                .collect();
+
+            let id = viwo_plugin_vector::vector_insert(&cap_json, this_id, &db_path, &key, &embedding_f32, &metadata_json)
+                .map_err(mlua::Error::external)?;
+            Ok(id)
+        })?;
+        lua.globals().set("__viwo_vector_insert", vector_insert_fn)?;
+
+        // vector.search opcode - search for similar vectors with capability
+        let this_id = self.this.id;
+        let vector_search_fn = lua.create_function(move |lua_ctx, (capability, db_path, query_embedding, limit): (mlua::Value, String, mlua::Value, i64)| {
+            let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
+            let embedding_json: serde_json::Value = lua_ctx.from_value(query_embedding)?;
+
+            let embedding_array = embedding_json.as_array()
+                .ok_or_else(|| mlua::Error::external("vector.search: embedding must be an array"))?;
+            let embedding_f32: Vec<f32> = embedding_array.iter()
+                .map(|v| v.as_f64().unwrap_or(0.0) as f32)
+                .collect();
+
+            let results = viwo_plugin_vector::vector_search(&cap_json, this_id, &db_path, &embedding_f32, limit as usize)
+                .map_err(mlua::Error::external)?;
+            lua_ctx.to_value(&results)
+        })?;
+        lua.globals().set("__viwo_vector_search", vector_search_fn)?;
+
+        // vector.delete opcode - delete vector by key with capability
+        let this_id = self.this.id;
+        let vector_delete_fn = lua.create_function(move |lua_ctx, (capability, db_path, key): (mlua::Value, String, String)| {
+            let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
+
+            let rows_affected = viwo_plugin_vector::vector_delete(&cap_json, this_id, &db_path, &key)
+                .map_err(mlua::Error::external)?;
+            Ok(rows_affected)
+        })?;
+        lua.globals().set("__viwo_vector_delete", vector_delete_fn)?;
+
         // Register procgen plugin opcodes (if loaded)
         let plugins = self.plugins.lock().unwrap();
         if plugins.get_plugin("procgen").is_some() {
