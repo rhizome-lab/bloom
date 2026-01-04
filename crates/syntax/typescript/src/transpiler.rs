@@ -85,6 +85,7 @@ impl<'a> TranspileContext<'a> {
             "binary_expression" => self.transpile_binary_expr(node),
             "unary_expression" => self.transpile_unary_expr(node),
             "parenthesized_expression" => self.transpile_parenthesized(node),
+            "assignment_expression" => self.transpile_assignment_expr(node),
             "call_expression" => self.transpile_call_expr(node),
             "member_expression" => self.transpile_member_expr(node),
             "subscript_expression" => self.transpile_subscript_expr(node),
@@ -98,11 +99,16 @@ impl<'a> TranspileContext<'a> {
             "lexical_declaration" => self.transpile_lexical_declaration(node),
             "variable_declaration" => self.transpile_variable_declaration(node),
             "if_statement" => self.transpile_if_statement(node),
+            "while_statement" => self.transpile_while_statement(node),
+            "for_in_statement" => self.transpile_for_in_statement(node),
+            "break_statement" => Ok(SExpr::call("std.break", vec![])),
+            "continue_statement" => Ok(SExpr::call("std.continue", vec![])),
             "return_statement" => self.transpile_return_statement(node),
             "statement_block" => self.transpile_block(node),
 
-            // Comments (skip)
+            // Comments and empty statements (skip)
             "comment" => Ok(SExpr::Null),
+            "empty_statement" => Ok(SExpr::Null),
 
             // else_clause: extract the body
             "else_clause" => self.transpile_else_clause(node),
@@ -180,6 +186,7 @@ impl<'a> TranspileContext<'a> {
             // Logical
             "&&" => "bool.and",
             "||" => "bool.or",
+            "??" => "bool.nullish",
 
             // String
             // + is handled above, but for explicit string concat we could check types
@@ -234,6 +241,62 @@ impl<'a> TranspileContext<'a> {
         ))
     }
 
+    fn transpile_assignment_expr(&self, node: Node) -> Result<SExpr, TranspileError> {
+        let left = node
+            .child_by_field_name("left")
+            .ok_or_else(|| TranspileError::Parse("assignment missing left".into()))?;
+        let right = node
+            .child_by_field_name("right")
+            .ok_or_else(|| TranspileError::Parse("assignment missing right".into()))?;
+
+        let right_expr = self.transpile_node(right)?;
+
+        match left.kind() {
+            "identifier" => {
+                // Simple variable assignment: x = value
+                let var_name = self.node_text(left);
+                Ok(SExpr::call(
+                    "std.set",
+                    vec![SExpr::string(var_name), right_expr],
+                ))
+            }
+            "member_expression" => {
+                // Property assignment: obj.prop = value
+                let obj = left
+                    .child_by_field_name("object")
+                    .ok_or_else(|| TranspileError::Parse("member missing object".into()))?;
+                let prop = left
+                    .child_by_field_name("property")
+                    .ok_or_else(|| TranspileError::Parse("member missing property".into()))?;
+                let obj_expr = self.transpile_node(obj)?;
+                let prop_name = self.node_text(prop);
+                Ok(SExpr::call(
+                    "obj.set",
+                    vec![obj_expr, SExpr::string(prop_name), right_expr],
+                ))
+            }
+            "subscript_expression" => {
+                // Index assignment: arr[i] = value
+                let obj = left
+                    .child_by_field_name("object")
+                    .ok_or_else(|| TranspileError::Parse("subscript missing object".into()))?;
+                let index = left
+                    .child_by_field_name("index")
+                    .ok_or_else(|| TranspileError::Parse("subscript missing index".into()))?;
+                let obj_expr = self.transpile_node(obj)?;
+                let idx_expr = self.transpile_node(index)?;
+                Ok(SExpr::call(
+                    "list.set",
+                    vec![obj_expr, idx_expr, right_expr],
+                ))
+            }
+            _ => Err(TranspileError::Unsupported(format!(
+                "assignment to '{}'",
+                left.kind()
+            ))),
+        }
+    }
+
     fn transpile_call_expr(&self, node: Node) -> Result<SExpr, TranspileError> {
         let function = node
             .child_by_field_name("function")
@@ -241,9 +304,6 @@ impl<'a> TranspileContext<'a> {
         let arguments = node
             .child_by_field_name("arguments")
             .ok_or_else(|| TranspileError::Parse("call_expression missing arguments".into()))?;
-
-        // Get the function name/expression
-        let func_name = self.get_call_name(function)?;
 
         // Parse arguments
         let mut args = Vec::new();
@@ -254,7 +314,16 @@ impl<'a> TranspileContext<'a> {
             }
         }
 
-        Ok(SExpr::call(func_name, args))
+        // Try to get a simple function name (for opcodes like math.floor, list.push)
+        if let Ok(func_name) = self.get_call_name(function) {
+            Ok(SExpr::call(func_name, args))
+        } else {
+            // Complex expression - use std.apply
+            let func_expr = self.transpile_node(function)?;
+            let mut apply_args = vec![func_expr];
+            apply_args.extend(args);
+            Ok(SExpr::call("std.apply", apply_args))
+        }
     }
 
     fn get_call_name(&self, node: Node) -> Result<String, TranspileError> {
@@ -526,15 +595,79 @@ impl<'a> TranspileContext<'a> {
         Ok(SExpr::Null)
     }
 
+    fn transpile_while_statement(&self, node: Node) -> Result<SExpr, TranspileError> {
+        let condition = node
+            .child_by_field_name("condition")
+            .ok_or_else(|| TranspileError::Parse("while_statement missing condition".into()))?;
+        let body = node
+            .child_by_field_name("body")
+            .ok_or_else(|| TranspileError::Parse("while_statement missing body".into()))?;
+
+        // Condition is a parenthesized_expression, get the inner expression
+        let cond_expr = self.transpile_node(condition)?;
+        let body_expr = self.transpile_node(body)?;
+
+        Ok(SExpr::call("std.while", vec![cond_expr, body_expr]))
+    }
+
+    fn transpile_for_in_statement(&self, node: Node) -> Result<SExpr, TranspileError> {
+        // for (const x of arr) { ... }
+        // In tree-sitter TS, "for (x of arr)" is for_in_statement with kind="of"
+        let left = node
+            .child_by_field_name("left")
+            .ok_or_else(|| TranspileError::Parse("for_in_statement missing left".into()))?;
+        let right = node
+            .child_by_field_name("right")
+            .ok_or_else(|| TranspileError::Parse("for_in_statement missing right".into()))?;
+        let body = node
+            .child_by_field_name("body")
+            .ok_or_else(|| TranspileError::Parse("for_in_statement missing body".into()))?;
+
+        // Get the variable name from left (could be "const x", "let x", or just "x")
+        let var_name = self.extract_for_variable(left)?;
+        let iter_expr = self.transpile_node(right)?;
+        let body_expr = self.transpile_node(body)?;
+
+        Ok(SExpr::call(
+            "std.for",
+            vec![SExpr::string(var_name), iter_expr, body_expr],
+        ))
+    }
+
+    fn extract_for_variable(&self, node: Node) -> Result<String, TranspileError> {
+        match node.kind() {
+            "identifier" => Ok(self.node_text(node).to_string()),
+            "lexical_declaration" => {
+                // "const x" or "let x"
+                let mut cursor = node.walk();
+                for child in node.children(&mut cursor) {
+                    if child.kind() == "variable_declarator" {
+                        if let Some(name) = child.child_by_field_name("name") {
+                            return Ok(self.node_text(name).to_string());
+                        }
+                    }
+                }
+                Err(TranspileError::Parse(
+                    "for-of: could not extract variable name".into(),
+                ))
+            }
+            _ => Err(TranspileError::Unsupported(format!(
+                "for-of variable type '{}'",
+                node.kind()
+            ))),
+        }
+    }
+
     fn transpile_return_statement(&self, node: Node) -> Result<SExpr, TranspileError> {
         let mut cursor = node.walk();
         for child in node.children(&mut cursor) {
             if child.is_named() && child.kind() != "return" {
-                return self.transpile_node(child);
+                let value = self.transpile_node(child)?;
+                return Ok(SExpr::call("std.return", vec![value]));
             }
         }
         // Return with no value
-        Ok(SExpr::Null)
+        Ok(SExpr::call("std.return", vec![]))
     }
 
     fn transpile_block(&self, node: Node) -> Result<SExpr, TranspileError> {

@@ -2,7 +2,30 @@
 
 ## Next Up
 
-(All items completed)
+### Rust Port
+
+Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
+
+- [x] **Codegen**: Split codegen.rs into per-library modules (math, list, str, obj, std, bool)
+- [x] **Tests**: Port tests from TypeScript (143 tests passing, see `crates/viwo-cli/tests/integration.rs`)
+- [x] **Transpiler**: Support `while_statement`, `for_in_statement`, `break_statement`, `continue_statement`
+- [x] **Transpiler**: Support `parenthesized_expression` as call target (e.g. `((x) => x + 1)(5)`)
+- [x] **Transpiler**: Support `assignment_expression` for `i = i + 1` in loops
+- [x] **Codegen**: Implement `std.apply` for calling lambdas
+- [x] **Codegen**: No IIFEs needed - lambda calls use `std.apply` which compiles to `(func)(args)`
+- [x] **Stdlib Math**: All ops (`+`, `-`, `*`, `/`, `%`, `^`, `abs`, `floor`, `ceil`, `trunc`, `round`, `sqrt`, `min`, `max`, `clamp`, `sign`, `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `log`, `log2`, `log10`, `exp`)
+- [x] **Stdlib List**: All ops (`new`, `len`, `empty`, `get`, `set`, `push`, `pop`, `unshift`, `shift`, `map`, `filter`, `reduce`, `find`, `concat`, `slice`, `includes`, `indexOf`, `reverse`, `sort`, `join`)
+- [x] **Stdlib String**: All ops (`len`, `concat`, `lower`, `upper`, `split`, `sub`, `trim`, `indexOf`, `includes`, `replace`, `slice`, `join`, `startsWith`, `endsWith`, `repeat`)
+- [x] **Stdlib Object**: All ops (`new`, `get`, `set`, `keys`, `values`, `entries`, `has`, `delete`, `del`, `merge`, `map`, `filter`, `reduce`, `flatMap`)
+- [x] **Stdlib List**: `splice`, `flatMap`
+- [x] **Stdlib Std**: `typeof`
+- [x] **Stdlib JSON**: `stringify`, `parse` (via cjson serde bindings)
+- [x] **Transpiler**: `nullish` (??) coalescing operator
+- [x] **Codegen**: `bool.guard` - like && but only null/undefined are falsy (not false)
+- [x] **Codegen**: `std.continue` with goto label support in loops
+- [x] **Codegen**: Type coercion (`std.string`, `std.number`, `std.boolean`)
+- [x] **Codegen**: Error handling (`std.throw`, `std.try`)
+- [x] **Codegen**: Logging (`std.log`, `std.warn`)
 
 ## 1. Deep Simulation (Sandbox)
 

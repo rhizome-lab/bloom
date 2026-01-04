@@ -20,9 +20,58 @@ pub enum ExecutionError {
     Compile(#[from] CompileError),
 }
 
+/// Set up JSON interop: array metatable, null sentinel, and cjson module.
+fn setup_json_interop(lua: &Lua) -> Result<(), mlua::Error> {
+    // Use mlua's array_metatable for JSON serialization
+    let array_mt = lua.array_metatable();
+    lua.globals().set("__array_mt", array_mt)?;
+
+    // Create __is_array function that checks if a table has the array metatable
+    // This is implemented in Rust because we can access the internal metatable
+    let is_array = lua.create_function(|lua_ctx, table: mlua::Table| {
+        // Get the actual metatable (not affected by __metatable)
+        let mt = table.metatable();
+        if let Some(mt) = mt {
+            // Compare with the array metatable
+            let array_mt = lua_ctx.array_metatable();
+            // Use raw pointer comparison
+            Ok(mt.equals(&array_mt)?)
+        } else {
+            Ok(false)
+        }
+    })?;
+    lua.globals().set("__is_array", is_array)?;
+
+    // Create a null sentinel that serializes to JSON null
+    lua.globals().set("null", lua.null())?;
+
+    // Create json module with encode/decode functions using Rust serde_json
+    let json_mod = lua.create_table()?;
+
+    // json.encode: Lua value -> JSON string
+    let encode = lua.create_function(|lua_ctx, value: mlua::Value| {
+        let json: serde_json::Value = lua_ctx.from_value(value)?;
+        Ok(json.to_string())
+    })?;
+    json_mod.set("encode", encode)?;
+
+    // json.decode: JSON string -> Lua value
+    let decode = lua.create_function(|lua_ctx, s: String| {
+        let json: serde_json::Value = serde_json::from_str(&s)
+            .map_err(|e| mlua::Error::external(e))?;
+        lua_ctx.to_value(&json)
+    })?;
+    json_mod.set("decode", decode)?;
+
+    lua.globals().set("json", json_mod)?;
+
+    Ok(())
+}
+
 /// Execute an S-expression using LuaJIT and return the result as JSON.
 pub fn execute(expr: &SExpr) -> Result<serde_json::Value, ExecutionError> {
     let lua = Lua::new();
+    setup_json_interop(&lua)?;
     let code = compile(expr)?;
     let result: mlua::Value = lua.load(&code).eval()?;
     let json = lua.from_value(result)?;
@@ -38,7 +87,8 @@ impl Runtime {
     /// Create a new runtime.
     pub fn new() -> LuaResult<Self> {
         let lua = Lua::new();
-        // TODO: load viwo stdlib
+        setup_json_interop(&lua)?;
+        // TODO: load viwo stdlib (optional/explicit)
         Ok(Self { lua })
     }
 
