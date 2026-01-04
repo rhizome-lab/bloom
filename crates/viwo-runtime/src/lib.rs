@@ -76,6 +76,9 @@ pub enum ExecutionError {
     #[error("runtime error: {0}")]
     Runtime(#[from] viwo_runtime_luajit::ExecutionError),
 
+    #[error("compile error: {0}")]
+    Compile(#[from] viwo_runtime_luajit::CompileError),
+
     #[error("entity not found: {0}")]
     EntityNotFound(EntityId),
 

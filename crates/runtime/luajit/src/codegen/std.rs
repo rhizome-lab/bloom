@@ -148,6 +148,52 @@ pub fn compile_std(
             format!("{}{}", prefix, to_lua_name(var_name))
         }
 
+        "std.arg" => {
+            if args.len() != 1 {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 1,
+                    got: args.len(),
+                });
+            }
+            let index = compile_value(&args[0], false)?;
+            // Lua arrays are 1-indexed, but std.arg uses 0-indexed
+            format!("{}(__args[{} + 1])", prefix, index)
+        }
+
+        "std.args" => {
+            if !args.is_empty() {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 0,
+                    got: args.len(),
+                });
+            }
+            format!("{}__args", prefix)
+        }
+
+        "std.this" => {
+            if !args.is_empty() {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 0,
+                    got: args.len(),
+                });
+            }
+            format!("{}__this", prefix)
+        }
+
+        "std.caller" => {
+            if !args.is_empty() {
+                return Err(CompileError::InvalidArgCount {
+                    opcode: op.to_string(),
+                    expected: 0,
+                    got: args.len(),
+                });
+            }
+            format!("{}__caller", prefix)
+        }
+
         "std.break" => "break".to_string(),
 
         "std.continue" => {

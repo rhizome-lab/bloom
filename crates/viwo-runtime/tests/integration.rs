@@ -63,7 +63,6 @@ async fn test_execute_verb_with_math() {
 }
 
 #[tokio::test]
-#[ignore] // TODO: Implement std.arg and context variables
 async fn test_execute_verb_with_args() {
     let storage = WorldStorage::in_memory().unwrap();
     let runtime = ViwoRuntime::new(storage);

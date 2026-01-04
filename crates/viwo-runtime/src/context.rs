@@ -24,14 +24,26 @@ impl ExecutionContext {
         // Create a Lua runtime
         let runtime = LuaRuntime::new()?;
 
-        // TODO: Inject kernel functions into Lua globals
-        // - send(type, payload)
-        // - entity(id)
-        // - get_capability(type, filter)
-        // - etc.
+        // Compile to Lua code first
+        let lua_code = viwo_runtime_luajit::compile(expr)?;
 
-        // Execute the S-expression
-        let result = runtime.execute(expr)?;
+        // Wrap in function that sets up context variables
+        // Use json.decode to parse the JSON strings
+        let wrapped_code = format!(
+            r#"
+local __this = json.decode('{}')
+local __caller = json.decode('{}')
+local __args = json.decode('{}')
+{}
+"#,
+            serde_json::to_string(&self.this).unwrap().replace('\\', "\\\\").replace('\'', "\\'"),
+            serde_json::to_string(&self.caller_id).unwrap().replace('\\', "\\\\").replace('\'', "\\'"),
+            serde_json::to_string(&self.args).unwrap().replace('\\', "\\\\").replace('\'', "\\'"),
+            lua_code
+        );
+
+        // Execute the wrapped code
+        let result = runtime.execute_lua(&wrapped_code)?;
         Ok(result)
     }
 }
