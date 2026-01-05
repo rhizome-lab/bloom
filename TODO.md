@@ -54,17 +54,26 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Tests**: Port multi-entity interaction tests ✅
 - [ ] **Tests**: Port remaining edge cases and error handling tests
 
-**Plugin System:**
-- [ ] **Plugins**: Implement plugin opcode registry in viwo-runtime-luajit
-- [ ] **Plugins**: Complete plugin loader (load .so/.dll/.dylib, call on_load)
-- [ ] **Plugins**: Port `fs` plugin (filesystem access)
-- [ ] **Plugins**: Port `net` plugin (HTTP/WebSocket client)
-- [ ] **Plugins**: Port `sqlite` plugin (direct SQL access)
-- [ ] **Plugins**: Port `procgen` plugin (seeded random, noise)
-- [ ] **Plugins**: Port `ai` plugin (LLM integration via Vercel AI SDK)
-- [ ] **Plugins**: Port `vector` plugin (sqlite-vec embeddings)
-- [ ] **Plugins**: Port `memory` plugin (RAG with vector search)
-- [ ] **Plugins**: Port `diffusers` plugin (image generation)
+**Type-Safe IR & Code Generation: (COMPLETE ✅)**
+- [x] **viwo-ir**: Implement opaque inner enum SExpr design with phantom types ✅
+- [x] **viwo-ir**: TOML schema format with dual-type system (TS generics + Rust runtime types) ✅
+- [x] **viwo-ir**: Schema-based code generator for type-safe Rust builders ✅
+- [x] **viwo-ir**: Prevent invalid SExpr construction at compile time (e.g., `SExpr::<Num>::bool(true)`) ✅
+- [x] **viwo-ir**: Add `cast_type()` and `erase_type()` for type conversion ✅
+- [x] **viwo-ir**: Rust keyword escaping in generated code (else → r#else) ✅
+- [ ] **viwo-ir**: Extract remaining opcode definitions from TypeScript to schema
+
+**Plugin System: (COMPLETE ✅ - 7/8 plugins ported)**
+- [x] **Plugins**: Implement plugin opcode registry in viwo-runtime-luajit ✅
+- [x] **Plugins**: Complete plugin loader (dynamic loading with libloading) ✅
+- [x] **Plugins**: Port `fs` plugin (filesystem access with capability enforcement) ✅
+- [x] **Plugins**: Port `net` plugin (HTTP client with reqwest) ✅
+- [x] **Plugins**: Port `sqlite` plugin (direct SQL access with rusqlite) ✅
+- [x] **Plugins**: Port `procgen` plugin (seeded random, simplex noise) ✅
+- [x] **Plugins**: Port `ai` plugin (multi-provider LLM via rig: OpenAI, Anthropic, Cohere, Perplexity) ✅
+- [x] **Plugins**: Port `vector` plugin (sqlite-vec embeddings for semantic search) ✅
+- [x] **Plugins**: Port `memory` plugin (RAG with vector search + AI embeddings) ✅
+- [ ] **Plugins**: Port `diffusers` plugin (image generation - LOW PRIORITY, waiting on Rust diffusion impls)
 
 **Server & Transport:**
 - [ ] **Server**: Expand JSON-RPC handlers (look, create, dig, go, set, teleport, etc.)
