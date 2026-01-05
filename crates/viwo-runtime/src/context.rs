@@ -113,11 +113,28 @@ return {{ result = __result, this = __this }}
 
         // capability opcode - get capability by ID
         let storage_clone = storage.clone();
-        let capability_fn = lua.create_function(move |lua_ctx, cap_id: String| {
+        let capability_fn = lua.create_function(move |lua_ctx, cap_id: mlua::Value| {
+            // Handle nil or missing capability ID
+            let cap_id_str = match cap_id {
+                mlua::Value::String(s) => s.to_str()?.to_string(),
+                mlua::Value::Number(n) => n.to_string(),
+                mlua::Value::Integer(i) => i.to_string(),
+                mlua::Value::Nil => {
+                    return Err(mlua::Error::external(
+                        "capability opcode: capability ID is nil (property may not exist on entity)"
+                    ));
+                }
+                _ => {
+                    return Err(mlua::Error::external(
+                        format!("capability opcode: expected string or number, got {:?}", cap_id.type_name())
+                    ));
+                }
+            };
+
             let storage = storage_clone.lock().unwrap();
-            let cap = storage.get_capability(&cap_id)
+            let cap = storage.get_capability(&cap_id_str)
                 .map_err(mlua::Error::external)?
-                .ok_or_else(|| mlua::Error::external(format!("capability not found: {}", cap_id)))?;
+                .ok_or_else(|| mlua::Error::external(format!("capability not found: {}", cap_id_str)))?;
 
             // Return capability as an object with owner_id, type, params
             lua_ctx.to_value(&serde_json::json!({

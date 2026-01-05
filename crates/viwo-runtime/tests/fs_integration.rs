@@ -47,7 +47,7 @@ fn test_fs_write_and_read() {
                 vec![
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::String("__this".to_string()), SExpr::String("write_cap_id".to_string())],
+                        vec![SExpr::call("std.this", vec![]), SExpr::String("write_cap_id".to_string())],
                     ),
                 ],
             ),
@@ -89,7 +89,7 @@ fn test_fs_write_and_read() {
                 vec![
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::String("__this".to_string()), SExpr::String("read_cap_id".to_string())],
+                        vec![SExpr::call("std.this", vec![]), SExpr::String("read_cap_id".to_string())],
                     ),
                 ],
             ),
@@ -141,7 +141,7 @@ fn test_fs_list() {
                 vec![
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::String("__this".to_string()), SExpr::String("read_cap_id".to_string())],
+                        vec![SExpr::call("std.this", vec![]), SExpr::String("read_cap_id".to_string())],
                     ),
                 ],
             ),
@@ -197,7 +197,7 @@ fn test_fs_stat() {
                 vec![
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::String("__this".to_string()), SExpr::String("read_cap_id".to_string())],
+                        vec![SExpr::call("std.this", vec![]), SExpr::String("read_cap_id".to_string())],
                     ),
                 ],
             ),
@@ -256,7 +256,7 @@ fn test_fs_capability_validation() {
                 vec![
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::String("__this".to_string()), SExpr::String("read_cap_id".to_string())],
+                        vec![SExpr::call("std.this", vec![]), SExpr::String("read_cap_id".to_string())],
                     ),
                 ],
             ),
@@ -305,7 +305,7 @@ fn test_fs_mkdir_and_remove() {
                 vec![
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::String("__this".to_string()), SExpr::String("write_cap_id".to_string())],
+                        vec![SExpr::call("std.this", vec![]), SExpr::String("write_cap_id".to_string())],
                     ),
                 ],
             ),
@@ -334,7 +334,7 @@ fn test_fs_mkdir_and_remove() {
                 vec![
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::String("__this".to_string()), SExpr::String("write_cap_id".to_string())],
+                        vec![SExpr::call("std.this", vec![]), SExpr::String("write_cap_id".to_string())],
                     ),
                 ],
             ),
