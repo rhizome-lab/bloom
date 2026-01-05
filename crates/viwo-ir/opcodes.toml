@@ -1,0 +1,445 @@
+# Opcode Schema for ViwoScript
+#
+# This schema defines opcodes with dual-type system:
+# - type_ts: TypeScript compile-time type (can include generics, mapped types, etc.)
+# - type_runtime: Rust runtime type (String, Number, Bool, Object, Array, Null, Any)
+#
+# Runtime types are used for:
+# - Rust code generation (builders, codegen modules)
+# - Runtime validation and type checking
+#
+# TypeScript types are used for:
+# - TypeScript type definitions
+# - IDE autocomplete and type checking
+# - Documentation generation
+
+# ============================================================================
+# std library - Core language constructs
+# ============================================================================
+
+[[opcode]]
+name = "std.this"
+category = "data"
+description = "Current entity"
+label = "This"
+return_type_ts = "Entity"
+return_type_runtime = "Object"
+
+[[opcode]]
+name = "std.caller"
+category = "data"
+description = "Current caller"
+label = "Caller"
+return_type_ts = "Entity"
+return_type_runtime = "Object"
+
+[[opcode]]
+name = "std.seq"
+category = "control_flow"
+description = "Executes a sequence of steps and returns the result of the last step"
+label = "Sequence"
+lazy = true
+variadic = true
+return_type_ts = "any"
+return_type_runtime = "Any"
+
+[[opcode.params]]
+name = "...steps"
+type_ts = "unknown[]"
+type_runtime = "Array"
+description = "Steps to execute in sequence"
+
+[[opcode]]
+name = "std.let"
+category = "variables"
+description = "Creates a new variable in the current scope"
+label = "Let"
+lazy = true
+return_type_ts = "void"
+return_type_runtime = "Null"
+
+[[opcode.params]]
+name = "name"
+type_ts = "string"
+type_runtime = "String"
+description = "Variable name"
+
+[[opcode.params]]
+name = "value"
+type_ts = "any"
+type_runtime = "Any"
+description = "Initial value"
+
+[[opcode]]
+name = "std.var"
+category = "variables"
+description = "Reads the value of a variable"
+label = "Variable"
+return_type_ts = "any"
+return_type_runtime = "Any"
+
+[[opcode.params]]
+name = "name"
+type_ts = "string"
+type_runtime = "String"
+description = "Variable name"
+
+[[opcode]]
+name = "std.set"
+category = "variables"
+description = "Sets the value of an existing variable"
+label = "Set"
+lazy = true
+return_type_ts = "void"
+return_type_runtime = "Null"
+
+[[opcode.params]]
+name = "name"
+type_ts = "string"
+type_runtime = "String"
+description = "Variable name"
+
+[[opcode.params]]
+name = "value"
+type_ts = "any"
+type_runtime = "Any"
+description = "New value"
+
+[[opcode]]
+name = "std.if"
+category = "control_flow"
+description = "Conditional execution"
+label = "If"
+lazy = true
+return_type_ts = "any"
+return_type_runtime = "Any"
+
+[[opcode.params]]
+name = "condition"
+type_ts = "boolean"
+type_runtime = "Bool"
+description = "Condition to evaluate"
+
+[[opcode.params]]
+name = "then"
+type_ts = "any"
+type_runtime = "Any"
+description = "Expression to execute if condition is true"
+
+[[opcode.params]]
+name = "else"
+type_ts = "any"
+type_runtime = "Any"
+description = "Expression to execute if condition is false"
+optional = true
+
+# ============================================================================
+# obj library - Object operations
+# ============================================================================
+
+[[opcode]]
+name = "obj.get"
+category = "object"
+description = "Gets a property value from an object"
+label = "Get Property"
+generics = ["Type", "Key extends keyof Type"]
+return_type_ts = "Type[Key]"
+return_type_runtime = "Any"
+
+[[opcode.params]]
+name = "object"
+type_ts = "Type"
+type_runtime = "Object"
+description = "The object to get property from"
+
+[[opcode.params]]
+name = "key"
+type_ts = "Key"
+type_runtime = "String"
+description = "Property key"
+
+[[opcode.slot]]
+name = "Object"
+type = "block"
+
+[[opcode.slot]]
+name = "Key"
+type = "block"
+
+[[opcode]]
+name = "obj.set"
+category = "object"
+description = "Sets a property value on an object"
+label = "Set Property"
+lazy = true
+return_type_ts = "void"
+return_type_runtime = "Null"
+
+[[opcode.params]]
+name = "object"
+type_ts = "object"
+type_runtime = "Object"
+description = "The object to set property on"
+
+[[opcode.params]]
+name = "key"
+type_ts = "string"
+type_runtime = "String"
+description = "Property key"
+
+[[opcode.params]]
+name = "value"
+type_ts = "any"
+type_runtime = "Any"
+description = "New value"
+
+[[opcode]]
+name = "obj.keys"
+category = "object"
+description = "Returns an array of a given object's own enumerable property names"
+label = "Keys"
+generics = ["Type"]
+return_type_ts = "readonly (keyof Type)[]"
+return_type_runtime = "Array"
+
+[[opcode.params]]
+name = "object"
+type_ts = "Type"
+type_runtime = "Object"
+description = "The object to get keys from"
+
+[[opcode.slot]]
+name = "Object"
+type = "block"
+
+[[opcode]]
+name = "obj.values"
+category = "object"
+description = "Returns an array of a given object's own enumerable property values"
+label = "Values"
+generics = ["Type"]
+return_type_ts = "Type[keyof Type][]"
+return_type_runtime = "Array"
+
+[[opcode.params]]
+name = "object"
+type_ts = "Type"
+type_runtime = "Object"
+description = "The object to get values from"
+
+[[opcode.slot]]
+name = "Object"
+type = "block"
+
+# ============================================================================
+# str library - String operations
+# ============================================================================
+
+[[opcode]]
+name = "str.concat"
+category = "string"
+description = "Concatenates strings"
+label = "Concat"
+variadic = true
+return_type_ts = "string"
+return_type_runtime = "String"
+
+[[opcode.params]]
+name = "...strings"
+type_ts = "string[]"
+type_runtime = "Array"
+description = "Strings to concatenate"
+
+[[opcode]]
+name = "str.length"
+category = "string"
+description = "Returns the length of a string"
+label = "Length"
+return_type_ts = "number"
+return_type_runtime = "Number"
+
+[[opcode.params]]
+name = "string"
+type_ts = "string"
+type_runtime = "String"
+description = "Input string"
+
+# ============================================================================
+# math library - Mathematical operations
+# ============================================================================
+
+[[opcode]]
+name = "math.add"
+category = "math"
+description = "Adds numbers"
+label = "Add"
+variadic = true
+return_type_ts = "number"
+return_type_runtime = "Number"
+
+[[opcode.params]]
+name = "...numbers"
+type_ts = "number[]"
+type_runtime = "Array"
+description = "Numbers to add"
+
+[[opcode]]
+name = "math.sub"
+category = "math"
+description = "Subtracts numbers"
+label = "Subtract"
+return_type_ts = "number"
+return_type_runtime = "Number"
+
+[[opcode.params]]
+name = "left"
+type_ts = "number"
+type_runtime = "Number"
+description = "Left operand"
+
+[[opcode.params]]
+name = "right"
+type_ts = "number"
+type_runtime = "Number"
+description = "Right operand"
+
+[[opcode]]
+name = "math.mul"
+category = "math"
+description = "Multiplies numbers"
+label = "Multiply"
+variadic = true
+return_type_ts = "number"
+return_type_runtime = "Number"
+
+[[opcode.params]]
+name = "...numbers"
+type_ts = "number[]"
+type_runtime = "Array"
+description = "Numbers to multiply"
+
+[[opcode]]
+name = "math.div"
+category = "math"
+description = "Divides numbers"
+label = "Divide"
+return_type_ts = "number"
+return_type_runtime = "Number"
+
+[[opcode.params]]
+name = "left"
+type_ts = "number"
+type_runtime = "Number"
+description = "Dividend"
+
+[[opcode.params]]
+name = "right"
+type_ts = "number"
+type_runtime = "Number"
+description = "Divisor"
+
+# ============================================================================
+# list library - Array operations
+# ============================================================================
+
+[[opcode]]
+name = "list.new"
+category = "list"
+description = "Creates a new list from elements"
+label = "New List"
+lazy = true
+variadic = true
+generics = ["Elements extends readonly unknown[]"]
+return_type_ts = "[...Elements]"
+return_type_runtime = "Array"
+
+[[opcode.params]]
+name = "...elements"
+type_ts = "Elements"
+type_runtime = "Array"
+description = "Elements to include in the list"
+
+[[opcode]]
+name = "list.get"
+category = "list"
+description = "Gets an element from a list by index"
+label = "Get Element"
+generics = ["T"]
+return_type_ts = "T"
+return_type_runtime = "Any"
+
+[[opcode.params]]
+name = "list"
+type_ts = "T[]"
+type_runtime = "Array"
+description = "The list to get element from"
+
+[[opcode.params]]
+name = "index"
+type_ts = "number"
+type_runtime = "Number"
+description = "Zero-based index"
+
+[[opcode]]
+name = "list.length"
+category = "list"
+description = "Returns the length of a list"
+label = "Length"
+return_type_ts = "number"
+return_type_runtime = "Number"
+
+[[opcode.params]]
+name = "list"
+type_ts = "unknown[]"
+type_runtime = "Array"
+description = "Input list"
+
+# ============================================================================
+# bool library - Boolean operations
+# ============================================================================
+
+[[opcode]]
+name = "bool.and"
+category = "bool"
+description = "Logical AND"
+label = "And"
+lazy = true
+variadic = true
+return_type_ts = "boolean"
+return_type_runtime = "Bool"
+
+[[opcode.params]]
+name = "...operands"
+type_ts = "boolean[]"
+type_runtime = "Array"
+description = "Boolean values to AND"
+
+[[opcode]]
+name = "bool.or"
+category = "bool"
+description = "Logical OR"
+label = "Or"
+lazy = true
+variadic = true
+return_type_ts = "boolean"
+return_type_runtime = "Bool"
+
+[[opcode.params]]
+name = "...operands"
+type_ts = "boolean[]"
+type_runtime = "Array"
+description = "Boolean values to OR"
+
+[[opcode]]
+name = "bool.not"
+category = "bool"
+description = "Logical NOT"
+label = "Not"
+return_type_ts = "boolean"
+return_type_runtime = "Bool"
+
+[[opcode.params]]
+name = "value"
+type_ts = "boolean"
+type_runtime = "Bool"
+description = "Boolean value to negate"

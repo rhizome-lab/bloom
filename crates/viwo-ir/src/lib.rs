@@ -20,6 +20,7 @@
 mod sexpr;
 mod opcodes;
 mod validation;
+pub mod schema;
 
 pub use sexpr::SExpr;
 pub use opcodes::CORE_LIBRARIES;
