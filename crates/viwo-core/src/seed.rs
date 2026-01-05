@@ -4,11 +4,11 @@
 //! TypeScript and create entities with properties and verbs. The TypeScript
 //! format provides LSP support and type checking during authoring.
 
-use crate::{Capability, WorldStorage};
+use crate::WorldStorage;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use thiserror::Error;
 use viwo_syntax_typescript::{parse_entity_definition, EntityDefinition as TsEntityDef};
 
@@ -165,40 +165,32 @@ pub fn seed_basic_world(
     storage
         .create_capability(
             system_id,
-            Capability {
-                id: "sys.mint".to_string(),
-                params: serde_json::json!({ "namespace": "*" }),
-            },
+            "sys.mint",
+            serde_json::json!({ "namespace": "*" }),
         )
         .map_err(|e| SeedError::StorageError(e.to_string()))?;
 
     storage
         .create_capability(
             system_id,
-            Capability {
-                id: "sys.create".to_string(),
-                params: serde_json::json!({}),
-            },
+            "sys.create",
+            serde_json::json!({}),
         )
         .map_err(|e| SeedError::StorageError(e.to_string()))?;
 
     storage
         .create_capability(
             system_id,
-            Capability {
-                id: "sys.sudo".to_string(),
-                params: serde_json::json!({}),
-            },
+            "sys.sudo",
+            serde_json::json!({}),
         )
         .map_err(|e| SeedError::StorageError(e.to_string()))?;
 
     storage
         .create_capability(
             system_id,
-            Capability {
-                id: "entity.control".to_string(),
-                params: serde_json::json!({ "*": true }),
-            },
+            "entity.control",
+            serde_json::json!({ "*": true }),
         )
         .map_err(|e| SeedError::StorageError(e.to_string()))?;
 
@@ -246,8 +238,8 @@ mod tests {
             Some(&serde_json::Value::String("A simple test entity".to_string()))
         );
         assert_eq!(
-            def.props.get("count"),
-            Some(&serde_json::Value::Number(42.into()))
+            def.props.get("count").and_then(|v| v.as_f64()),
+            Some(42.0)
         );
 
         // Check verbs
