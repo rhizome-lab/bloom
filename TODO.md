@@ -79,8 +79,8 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [ ] **Plugins**: Port `diffusers` plugin (image generation - LOW PRIORITY, waiting on Rust diffusion impls)
 
 **Server & Transport:**
-- [ ] **viwo-core**: Port scheduler system (periodic task execution from database queue)
-- [ ] **viwo-transport-websocket-jsonrpc**: Integrate runtime with verb execution
+- [x] **viwo-core**: Port scheduler system (periodic task execution from database queue) ✅
+- [x] **viwo-transport-websocket-jsonrpc**: Integrate runtime with verb execution ✅
 - [ ] **Server**: Expand JSON-RPC handlers (look, create, dig, go, set, teleport, etc.)
 - [ ] **Server**: Implement authentication system
 - [ ] **Server**: Session management with player entity association
