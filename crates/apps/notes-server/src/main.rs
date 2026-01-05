@@ -79,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         db_path: "notes.db".to_string(),
     };
 
-    let server = Server::new(config)?;
+    let server = Server::new(runtime, config);
     tracing::info!("Server listening on ws://127.0.0.1:{}", port);
 
     // Run server (blocks until shutdown)

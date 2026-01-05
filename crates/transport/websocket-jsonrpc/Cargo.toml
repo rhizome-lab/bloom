@@ -9,6 +9,7 @@ description = "WebSocket JSON-RPC transport for Viwo"
 viwo-core.workspace = true
 viwo-ir.workspace = true
 viwo-plugin-abi.workspace = true
+viwo-runtime = { path = "../../viwo-runtime" }
 viwo-runtime-luajit.workspace = true
 tokio.workspace = true
 tokio-tungstenite.workspace = true

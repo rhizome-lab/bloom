@@ -6,12 +6,12 @@ use std::sync::Arc;
 
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::{broadcast, mpsc, Mutex, RwLock};
+use tokio::sync::{broadcast, mpsc, RwLock};
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{error, info, warn};
 
 use crate::session::{Session, SessionId};
-use viwo_core::WorldStorage;
+use viwo_runtime::ViwoRuntime;
 
 /// Server configuration.
 #[derive(Debug, Clone)]
@@ -34,41 +34,27 @@ impl Default for ServerConfig {
 /// The Viwo WebSocket server.
 pub struct Server {
     config: ServerConfig,
-    storage: Arc<Mutex<WorldStorage>>,
+    runtime: Arc<ViwoRuntime>,
     sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     broadcast_tx: broadcast::Sender<String>,
 }
 
 impl Server {
-    /// Create a new server with the given configuration.
-    pub fn new(config: ServerConfig) -> Result<Self, viwo_core::StorageError> {
-        let storage = WorldStorage::open(&config.db_path)?;
+    /// Create a new server with the given runtime and configuration.
+    pub fn new(runtime: Arc<ViwoRuntime>, config: ServerConfig) -> Self {
         let (broadcast_tx, _) = broadcast::channel(256);
 
-        Ok(Self {
+        Self {
             config,
-            storage: Arc::new(Mutex::new(storage)),
+            runtime,
             sessions: Arc::new(RwLock::new(HashMap::new())),
             broadcast_tx,
-        })
+        }
     }
 
-    /// Create a server with in-memory storage (for testing).
-    pub fn in_memory() -> Result<Self, viwo_core::StorageError> {
-        let storage = WorldStorage::in_memory()?;
-        let (broadcast_tx, _) = broadcast::channel(256);
-
-        Ok(Self {
-            config: ServerConfig::default(),
-            storage: Arc::new(Mutex::new(storage)),
-            sessions: Arc::new(RwLock::new(HashMap::new())),
-            broadcast_tx,
-        })
-    }
-
-    /// Get the storage (requires locking).
-    pub fn storage(&self) -> &Arc<Mutex<WorldStorage>> {
-        &self.storage
+    /// Get the runtime.
+    pub fn runtime(&self) -> &Arc<ViwoRuntime> {
+        &self.runtime
     }
 
     /// Run the server, accepting connections until shutdown.
@@ -78,12 +64,12 @@ impl Server {
         info!("Listening on ws://{}", addr);
 
         while let Ok((stream, addr)) = listener.accept().await {
-            let storage = Arc::clone(&self.storage);
+            let runtime = Arc::clone(&self.runtime);
             let sessions = Arc::clone(&self.sessions);
             let broadcast_tx = self.broadcast_tx.clone();
 
             tokio::spawn(async move {
-                if let Err(err) = handle_connection(stream, addr, storage, sessions, broadcast_tx).await {
+                if let Err(err) = handle_connection(stream, addr, runtime, sessions, broadcast_tx).await {
                     error!("Connection error from {}: {}", addr, err);
                 }
             });
@@ -97,7 +83,7 @@ impl Server {
 async fn handle_connection(
     stream: TcpStream,
     addr: SocketAddr,
-    storage: Arc<Mutex<WorldStorage>>,
+    runtime: Arc<ViwoRuntime>,
     sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     broadcast_tx: broadcast::Sender<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -146,7 +132,7 @@ async fn handle_connection(
     while let Some(msg) = ws_receiver.next().await {
         match msg {
             Ok(Message::Text(text)) => {
-                match handle_message(text.as_ref(), &storage, &tx).await {
+                match handle_message(text.as_ref(), &runtime, &tx).await {
                     Ok(()) => {}
                     Err(err) => {
                         warn!("Error handling message from {}: {}", addr, err);
@@ -192,7 +178,7 @@ async fn handle_connection(
 /// Handle a JSON-RPC message.
 async fn handle_message(
     text: &str,
-    storage: &Arc<Mutex<WorldStorage>>,
+    runtime: &Arc<ViwoRuntime>,
     tx: &mpsc::UnboundedSender<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let request: serde_json::Value = serde_json::from_str(text)?;
@@ -215,7 +201,7 @@ async fn handle_message(
                 .and_then(|id| id.as_i64())
                 .ok_or("Missing entity id")?;
 
-            let storage = storage.lock().await;
+            let storage = runtime.storage().lock().unwrap();
             match storage.get_entity(entity_id) {
                 Ok(Some(entity)) => Ok(serde_json::to_value(&entity)?),
                 Ok(None) => Err("Entity not found".into()),
@@ -231,9 +217,32 @@ async fn handle_message(
                 .and_then(|p| p.get("prototype_id"))
                 .and_then(|id| id.as_i64());
 
-            let storage = storage.lock().await;
+            let storage = runtime.storage().lock().unwrap();
             match storage.create_entity(props, prototype_id) {
                 Ok(id) => Ok(serde_json::json!({ "id": id })),
+                Err(err) => Err(err.to_string().into()),
+            }
+        }
+        "call_verb" => {
+            let entity_id = params
+                .and_then(|p| p.get("entity_id"))
+                .and_then(|id| id.as_i64())
+                .ok_or("Missing entity_id")?;
+            let verb_name = params
+                .and_then(|p| p.get("verb"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing verb name")?;
+            let args = params
+                .and_then(|p| p.get("args"))
+                .and_then(|a| a.as_array())
+                .cloned()
+                .unwrap_or_default();
+            let caller_id = params
+                .and_then(|p| p.get("caller_id"))
+                .and_then(|id| id.as_i64());
+
+            match runtime.execute_verb(entity_id, verb_name, args.clone(), caller_id) {
+                Ok(result) => Ok(result),
                 Err(err) => Err(err.to_string().into()),
             }
         }
