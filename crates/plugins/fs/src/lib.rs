@@ -1,13 +1,50 @@
 //! Filesystem plugin for Viwo with capability-based security.
 
+use std::ffi::{CStr, CString};
 use std::fs;
-use std::os::raw::c_int;
+use std::os::raw::{c_char, c_int};
 use std::path::PathBuf;
 
-/// Plugin initialization
-#[no_mangle]
-pub extern "C" fn plugin_init() -> c_int {
-    // No special initialization needed for fs plugin
+/// Type for the registration callback passed from the runtime
+type RegisterFunction = unsafe extern "C" fn(
+    name: *const c_char,
+    func: unsafe extern "C" fn(*const c_char, *mut *mut c_char) -> i32,
+) -> i32;
+
+/// Plugin initialization - register all fs functions
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn plugin_init(register_fn: RegisterFunction) -> c_int {
+    unsafe {
+        let names = [
+            "fs.read",
+            "fs.write",
+            "fs.list",
+            "fs.stat",
+            "fs.exists",
+            "fs.mkdir",
+            "fs.remove",
+        ];
+        let funcs: [unsafe extern "C" fn(*const c_char, *mut *mut c_char) -> i32; 7] = [
+            fs_read_ffi,
+            fs_write_ffi,
+            fs_list_ffi,
+            fs_stat_ffi,
+            fs_exists_ffi,
+            fs_mkdir_ffi,
+            fs_remove_ffi,
+        ];
+
+        for (name, func) in names.iter().zip(funcs.iter()) {
+            let name_cstr = match CString::new(*name) {
+                Ok(s) => s,
+                Err(_) => return -1,
+            };
+            if register_fn(name_cstr.as_ptr(), *func) != 0 {
+                return -1;
+            }
+        }
+    }
+
     0 // Success
 }
 
@@ -15,6 +52,161 @@ pub extern "C" fn plugin_init() -> c_int {
 #[no_mangle]
 pub extern "C" fn plugin_cleanup() {
     // No cleanup needed
+}
+
+// FFI wrapper functions that convert between JSON strings and Rust types
+
+#[no_mangle]
+unsafe extern "C" fn fs_read_ffi(input_json: *const c_char, output_json: *mut *mut c_char) -> i32 {
+    ffi_wrapper(input_json, output_json, |input: serde_json::Value| {
+        let capability = &input["capability"];
+        let entity_id = input["entity_id"].as_i64().ok_or("Missing entity_id")?;
+        let path = input["path"].as_str().ok_or("Missing path")?;
+
+        let result = fs_read(capability, entity_id, path)?;
+        Ok(serde_json::json!({"content": result}))
+    })
+}
+
+#[no_mangle]
+unsafe extern "C" fn fs_write_ffi(input_json: *const c_char, output_json: *mut *mut c_char) -> i32 {
+    ffi_wrapper(input_json, output_json, |input: serde_json::Value| {
+        let capability = &input["capability"];
+        let entity_id = input["entity_id"].as_i64().ok_or("Missing entity_id")?;
+        let path = input["path"].as_str().ok_or("Missing path")?;
+        let content = input["content"].as_str().ok_or("Missing content")?;
+
+        fs_write(capability, entity_id, path, content)?;
+        Ok(serde_json::json!({"success": true}))
+    })
+}
+
+#[no_mangle]
+unsafe extern "C" fn fs_list_ffi(input_json: *const c_char, output_json: *mut *mut c_char) -> i32 {
+    ffi_wrapper(input_json, output_json, |input: serde_json::Value| {
+        let capability = &input["capability"];
+        let entity_id = input["entity_id"].as_i64().ok_or("Missing entity_id")?;
+        let path = input["path"].as_str().ok_or("Missing path")?;
+
+        let files = fs_list(capability, entity_id, path)?;
+        Ok(serde_json::json!({"files": files}))
+    })
+}
+
+#[no_mangle]
+unsafe extern "C" fn fs_stat_ffi(input_json: *const c_char, output_json: *mut *mut c_char) -> i32 {
+    ffi_wrapper(input_json, output_json, |input: serde_json::Value| {
+        let capability = &input["capability"];
+        let entity_id = input["entity_id"].as_i64().ok_or("Missing entity_id")?;
+        let path = input["path"].as_str().ok_or("Missing path")?;
+
+        fs_stat(capability, entity_id, path)
+    })
+}
+
+#[no_mangle]
+unsafe extern "C" fn fs_exists_ffi(input_json: *const c_char, output_json: *mut *mut c_char) -> i32 {
+    ffi_wrapper(input_json, output_json, |input: serde_json::Value| {
+        let capability = &input["capability"];
+        let entity_id = input["entity_id"].as_i64().ok_or("Missing entity_id")?;
+        let path = input["path"].as_str().ok_or("Missing path")?;
+
+        let exists = fs_exists(capability, entity_id, path)?;
+        Ok(serde_json::json!({"exists": exists}))
+    })
+}
+
+#[no_mangle]
+unsafe extern "C" fn fs_mkdir_ffi(input_json: *const c_char, output_json: *mut *mut c_char) -> i32 {
+    ffi_wrapper(input_json, output_json, |input: serde_json::Value| {
+        let capability = &input["capability"];
+        let entity_id = input["entity_id"].as_i64().ok_or("Missing entity_id")?;
+        let path = input["path"].as_str().ok_or("Missing path")?;
+
+        fs_mkdir(capability, entity_id, path)?;
+        Ok(serde_json::json!({"success": true}))
+    })
+}
+
+#[no_mangle]
+unsafe extern "C" fn fs_remove_ffi(input_json: *const c_char, output_json: *mut *mut c_char) -> i32 {
+    ffi_wrapper(input_json, output_json, |input: serde_json::Value| {
+        let capability = &input["capability"];
+        let entity_id = input["entity_id"].as_i64().ok_or("Missing entity_id")?;
+        let path = input["path"].as_str().ok_or("Missing path")?;
+
+        fs_remove(capability, entity_id, path)?;
+        Ok(serde_json::json!({"success": true}))
+    })
+}
+
+/// Helper function to wrap Rust functions for FFI
+unsafe fn ffi_wrapper<F>(
+    input_json: *const c_char,
+    output_json: *mut *mut c_char,
+    func: F,
+) -> i32
+where
+    F: FnOnce(serde_json::Value) -> Result<serde_json::Value, String>,
+{
+    // Parse input JSON
+    let input_str = match unsafe { CStr::from_ptr(input_json).to_str() } {
+        Ok(s) => s,
+        Err(_) => {
+            *output_json = error_json("Invalid UTF-8 in input");
+            return -1;
+        }
+    };
+
+    let input: serde_json::Value = match serde_json::from_str(input_str) {
+        Ok(v) => v,
+        Err(e) => {
+            *output_json = error_json(&format!("JSON parse error: {}", e));
+            return -1;
+        }
+    };
+
+    // Call the function
+    let result = match func(input) {
+        Ok(v) => v,
+        Err(e) => {
+            *output_json = error_json(&e);
+            return -1;
+        }
+    };
+
+    // Serialize output
+    let output_str = match serde_json::to_string(&result) {
+        Ok(s) => s,
+        Err(e) => {
+            *output_json = error_json(&format!("JSON serialize error: {}", e));
+            return -1;
+        }
+    };
+
+    // Allocate C string
+    match CString::new(output_str) {
+        Ok(cstr) => {
+            *output_json = cstr.into_raw();
+            0
+        }
+        Err(_) => {
+            *output_json = error_json("Failed to create C string");
+            -1
+        }
+    }
+}
+
+/// Helper to create an error JSON response
+fn error_json(msg: &str) -> *mut c_char {
+    let error = serde_json::json!({"error": msg});
+    match serde_json::to_string(&error) {
+        Ok(s) => match CString::new(s) {
+            Ok(cstr) => cstr.into_raw(),
+            Err(_) => std::ptr::null_mut(),
+        },
+        Err(_) => std::ptr::null_mut(),
+    }
 }
 
 /// Validate that a capability grants access to a path

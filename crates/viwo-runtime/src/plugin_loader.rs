@@ -29,12 +29,18 @@ impl PluginRegistry {
             let lib = Library::new(path.as_ref())
                 .map_err(|e| format!("Failed to load plugin {}: {}", name, e))?;
 
-            // Call plugin_init
-            let init_fn: Symbol<extern "C" fn() -> c_int> = lib
+            // Get the registration function to pass to plugin_init
+            type RegisterFunction = unsafe extern "C" fn(
+                name: *const std::os::raw::c_char,
+                func: unsafe extern "C" fn(*const std::os::raw::c_char, *mut *mut std::os::raw::c_char) -> i32,
+            ) -> i32;
+
+            // Call plugin_init with the registration callback
+            let init_fn: Symbol<extern "C" fn(RegisterFunction) -> c_int> = lib
                 .get(b"plugin_init")
                 .map_err(|e| format!("Plugin {} missing plugin_init: {}", name, e))?;
 
-            let result = init_fn();
+            let result = init_fn(crate::plugin_registry::register_plugin_function);
             if result != 0 {
                 return Err(format!("Plugin {} init failed with code {}", name, result));
             }

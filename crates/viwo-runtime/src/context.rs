@@ -363,8 +363,16 @@ return {{ result = __result, this = __this }}
         let this_id = self.this.id;
         let fs_read_fn = lua.create_function(move |lua_ctx, (capability, path): (mlua::Value, String)| {
             let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
-            let content = viwo_plugin_fs::fs_read(&cap_json, this_id, &path)
+            let input = serde_json::json!({
+                "capability": cap_json,
+                "entity_id": this_id,
+                "path": path
+            });
+            let result = crate::plugin_registry::call_plugin_function("fs.read", &input)
                 .map_err(mlua::Error::external)?;
+            let content = result["content"].as_str()
+                .ok_or_else(|| mlua::Error::external("fs.read: missing content in response"))?
+                .to_string();
             Ok(content)
         })?;
         lua.globals().set("__viwo_fs_read", fs_read_fn)?;
@@ -373,7 +381,13 @@ return {{ result = __result, this = __this }}
         let this_id = self.this.id;
         let fs_write_fn = lua.create_function(move |lua_ctx, (capability, path, content): (mlua::Value, String, String)| {
             let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
-            viwo_plugin_fs::fs_write(&cap_json, this_id, &path, &content)
+            let input = serde_json::json!({
+                "capability": cap_json,
+                "entity_id": this_id,
+                "path": path,
+                "content": content
+            });
+            crate::plugin_registry::call_plugin_function("fs.write", &input)
                 .map_err(mlua::Error::external)?;
             Ok(())
         })?;
@@ -383,8 +397,15 @@ return {{ result = __result, this = __this }}
         let this_id = self.this.id;
         let fs_list_fn = lua.create_function(move |lua_ctx, (capability, path): (mlua::Value, String)| {
             let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
-            let files = viwo_plugin_fs::fs_list(&cap_json, this_id, &path)
+            let input = serde_json::json!({
+                "capability": cap_json,
+                "entity_id": this_id,
+                "path": path
+            });
+            let result = crate::plugin_registry::call_plugin_function("fs.list", &input)
                 .map_err(mlua::Error::external)?;
+            let files = result["files"].as_array()
+                .ok_or_else(|| mlua::Error::external("fs.list: missing files in response"))?;
             lua_ctx.to_value(&files)
         })?;
         lua.globals().set("__viwo_fs_list", fs_list_fn)?;
@@ -393,7 +414,12 @@ return {{ result = __result, this = __this }}
         let this_id = self.this.id;
         let fs_stat_fn = lua.create_function(move |lua_ctx, (capability, path): (mlua::Value, String)| {
             let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
-            let stats = viwo_plugin_fs::fs_stat(&cap_json, this_id, &path)
+            let input = serde_json::json!({
+                "capability": cap_json,
+                "entity_id": this_id,
+                "path": path
+            });
+            let stats = crate::plugin_registry::call_plugin_function("fs.stat", &input)
                 .map_err(mlua::Error::external)?;
             lua_ctx.to_value(&stats)
         })?;
@@ -403,8 +429,15 @@ return {{ result = __result, this = __this }}
         let this_id = self.this.id;
         let fs_exists_fn = lua.create_function(move |lua_ctx, (capability, path): (mlua::Value, String)| {
             let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
-            let exists = viwo_plugin_fs::fs_exists(&cap_json, this_id, &path)
+            let input = serde_json::json!({
+                "capability": cap_json,
+                "entity_id": this_id,
+                "path": path
+            });
+            let result = crate::plugin_registry::call_plugin_function("fs.exists", &input)
                 .map_err(mlua::Error::external)?;
+            let exists = result["exists"].as_bool()
+                .ok_or_else(|| mlua::Error::external("fs.exists: missing exists in response"))?;
             Ok(exists)
         })?;
         lua.globals().set("__viwo_fs_exists", fs_exists_fn)?;
@@ -413,7 +446,12 @@ return {{ result = __result, this = __this }}
         let this_id = self.this.id;
         let fs_mkdir_fn = lua.create_function(move |lua_ctx, (capability, path): (mlua::Value, String)| {
             let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
-            viwo_plugin_fs::fs_mkdir(&cap_json, this_id, &path)
+            let input = serde_json::json!({
+                "capability": cap_json,
+                "entity_id": this_id,
+                "path": path
+            });
+            crate::plugin_registry::call_plugin_function("fs.mkdir", &input)
                 .map_err(mlua::Error::external)?;
             Ok(())
         })?;
@@ -423,7 +461,12 @@ return {{ result = __result, this = __this }}
         let this_id = self.this.id;
         let fs_remove_fn = lua.create_function(move |lua_ctx, (capability, path): (mlua::Value, String)| {
             let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
-            viwo_plugin_fs::fs_remove(&cap_json, this_id, &path)
+            let input = serde_json::json!({
+                "capability": cap_json,
+                "entity_id": this_id,
+                "path": path
+            });
+            crate::plugin_registry::call_plugin_function("fs.remove", &input)
                 .map_err(mlua::Error::external)?;
             Ok(())
         })?;

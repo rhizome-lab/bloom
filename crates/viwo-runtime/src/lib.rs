@@ -9,9 +9,11 @@ pub mod context;
 pub mod kernel;
 pub mod opcodes;
 pub mod plugin_loader;
+pub mod plugin_registry;
 
 pub use context::ExecutionContext;
 pub use kernel::KernelOps;
+pub use plugin_registry::{call_plugin_function, init_registry};
 
 /// The main Viwo runtime.
 pub struct ViwoRuntime {
@@ -29,6 +31,9 @@ impl ViwoRuntime {
 
     /// Create a new runtime with a custom scheduler interval.
     pub fn open_with_interval(db_path: &str, interval_ms: u64) -> Result<Self, viwo_core::StorageError> {
+        // Initialize plugin registry
+        plugin_registry::init_registry();
+
         // Open two connections: one for sync operations, one for async scheduler
         let storage = WorldStorage::open(db_path)?;
         let scheduler_storage = WorldStorage::open(db_path)?;
