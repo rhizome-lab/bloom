@@ -55,7 +55,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Tests**: Port complex workflow tests (conditionals, loops, lambdas, lists) ✅
 - [x] **Tests**: Port verb calling tests (call opcode, entity mutations) ✅
 - [x] **Tests**: Port multi-entity interaction tests ✅
-- [ ] **Tests**: Port remaining edge cases and error handling tests
+- [x] **Tests**: Port remaining edge cases and error handling tests (edge_cases.rs) ✅
 
 **Type-Safe IR & Code Generation: (COMPLETE ✅)**
 - [x] **viwo-ir**: Implement opaque inner enum SExpr design with phantom types ✅
@@ -68,9 +68,9 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 
 ## Next Up
 
-1. **Testing**: Port remaining runtime integration tests from TypeScript (edge cases, error handling)
-2. **Server**: Add session-based login handler (associate session with player entity)
-3. **Server**: Add execute handler (verb discovery + command execution)
+1. **Server**: Add session-based login handler (associate session with player entity)
+2. **Server**: Add execute handler (verb discovery + command execution)
+3. **Server**: Broadcast system for multi-client updates
 
 ---
 
