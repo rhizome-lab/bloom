@@ -71,9 +71,9 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Plugins**: Complete plugin loader (dynamic loading with libloading) ✅
 - [x] **Plugins**: Refactor to native Lua C API (removed JSON serialization, full capabilities) ✅
 - [x] **Plugins**: Port `fs` plugin with native Lua C API (7 functions: read, write, list, stat, exists, mkdir, remove) ✅
-- [ ] **Plugins**: Add runtime integration tests for fs plugin
-- [ ] **Plugins**: Refactor `net` plugin to native Lua C API
-- [ ] **Plugins**: Refactor `sqlite` plugin to native Lua C API
+- [x] **Plugins**: Add runtime integration tests for fs plugin ✅
+- [x] **Plugins**: Refactor `net` plugin to native Lua C API (2 functions: get, post) ✅
+- [x] **Plugins**: Refactor `sqlite` plugin to native Lua C API (2 functions: query, execute) ✅
 - [ ] **Plugins**: Refactor `procgen` plugin to native Lua C API
 - [ ] **Plugins**: Refactor `ai` plugin to native Lua C API
 - [ ] **Plugins**: Refactor `vector` plugin to native Lua C API
