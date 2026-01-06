@@ -66,7 +66,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **viwo-ir**: Rust keyword escaping in generated code (else → r#else) ✅
 - [ ] **viwo-ir**: Extract remaining opcode definitions from TypeScript to schema
 
-**Plugin System: (IN PROGRESS - Native Lua C API refactor)**
+**Plugin System: (IN PROGRESS - Native Lua C API refactor, 6/7 complete)**
 - [x] **Plugins**: Implement plugin opcode registry in viwo-runtime-luajit ✅
 - [x] **Plugins**: Complete plugin loader (dynamic loading with libloading) ✅
 - [x] **Plugins**: Refactor to native Lua C API (removed JSON serialization, full capabilities) ✅
@@ -76,8 +76,8 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Plugins**: Refactor `sqlite` plugin to native Lua C API (2 functions: query, execute) ✅
 - [x] **Plugins**: Refactor `procgen` plugin to native Lua C API (5 functions: seed, noise, random, randomRange, between) ✅
 - [x] **Plugins**: Refactor `vector` plugin to native Lua C API (3 functions: insert, search, delete) ✅
-- [ ] **Plugins**: Refactor `ai` plugin to native Lua C API
-- [ ] **Plugins**: Refactor `memory` plugin to native Lua C API
+- [x] **Plugins**: Refactor `ai` plugin to native Lua C API (3 functions: generateText, embed, chat) ✅
+- [ ] **Plugins**: Refactor `memory` plugin to native Lua C API (depends on ai plugin)
 - [ ] **Plugins**: Port `diffusers` plugin (image generation - LOW PRIORITY, waiting on Rust diffusion impls)
 
 **Server & Transport:**
