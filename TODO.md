@@ -66,7 +66,16 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **viwo-ir**: Rust keyword escaping in generated code (else → r#else) ✅
 - [ ] **viwo-ir**: Extract remaining opcode definitions from TypeScript to schema
 
-**Plugin System: (IN PROGRESS - Native Lua C API refactor, 6/7 complete)**
+## Next Up
+
+1. **Plugins**: Refactor `memory` plugin to native Lua C API (RAG with cross-plugin dependency on ai+vector)
+2. **Server**: Compare Rust JSON-RPC handlers against TypeScript reference implementation
+3. **Testing**: Port remaining runtime integration tests from TypeScript (edge cases, error handling)
+4. **Server**: Expand JSON-RPC handlers to match TypeScript completeness
+
+---
+
+**Plugin System: (6/7 complete - memory plugin remaining)**
 - [x] **Plugins**: Implement plugin opcode registry in viwo-runtime-luajit ✅
 - [x] **Plugins**: Complete plugin loader (dynamic loading with libloading) ✅
 - [x] **Plugins**: Refactor to native Lua C API (removed JSON serialization, full capabilities) ✅
@@ -77,7 +86,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Plugins**: Refactor `procgen` plugin to native Lua C API (5 functions: seed, noise, random, randomRange, between) ✅
 - [x] **Plugins**: Refactor `vector` plugin to native Lua C API (3 functions: insert, search, delete) ✅
 - [x] **Plugins**: Refactor `ai` plugin to native Lua C API (3 functions: generateText, embed, chat) ✅
-- [ ] **Plugins**: Refactor `memory` plugin to native Lua C API (depends on ai plugin)
+- [ ] **Plugins**: Refactor `memory` plugin to native Lua C API (depends on ai+vector plugins)
 - [ ] **Plugins**: Port `diffusers` plugin (image generation - LOW PRIORITY, waiting on Rust diffusion impls)
 
 **Server & Transport:**
