@@ -2,7 +2,7 @@
 
 use crate::CompileError;
 use crate::codegen::compile_value;
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 /// Compile vector.* opcodes to Lua calls
 pub fn compile_vector(
@@ -24,7 +24,7 @@ pub fn compile_vector(
             let embedding = compile_value(&args[3], false)?;
             let metadata = compile_value(&args[4], false)?;
             format!(
-                "{}__viwo_vector_insert({}, {}, {}, {}, {})",
+                "{}__bloom_vector_insert({}, {}, {}, {}, {})",
                 prefix, cap, db_path, key, embedding, metadata
             )
         }
@@ -40,7 +40,7 @@ pub fn compile_vector(
             let query_embedding = compile_value(&args[2], false)?;
             let limit = compile_value(&args[3], false)?;
             format!(
-                "{}__viwo_vector_search({}, {}, {}, {})",
+                "{}__bloom_vector_search({}, {}, {}, {})",
                 prefix, cap, db_path, query_embedding, limit
             )
         }
@@ -55,7 +55,7 @@ pub fn compile_vector(
             let db_path = compile_value(&args[1], false)?;
             let key = compile_value(&args[2], false)?;
             format!(
-                "{}__viwo_vector_delete({}, {}, {})",
+                "{}__bloom_vector_delete({}, {}, {})",
                 prefix, cap, db_path, key
             )
         }

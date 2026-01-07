@@ -1,10 +1,10 @@
 # Shared Package
 
-The Shared package (`@viwo/shared`) contains utilities, types, and constants shared between the Core, Client, and other packages.
+The Shared package (`@bloom/shared`) contains utilities, types, and constants shared between the Core, Client, and other packages.
 
 ## JSON-RPC Types
 
-The `src/jsonrpc.ts` file defines the TypeScript interfaces for the JSON-RPC 2.0 protocol used by Viwo.
+The `src/jsonrpc.ts` file defines the TypeScript interfaces for the JSON-RPC 2.0 protocol used by Bloom.
 
 ### Key Interfaces
 

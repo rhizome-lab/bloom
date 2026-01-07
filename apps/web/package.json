@@ -1,5 +1,5 @@
 {
-  "name": "@viwo/web",
+  "name": "@bloom/web",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -12,8 +12,8 @@
     "format": "oxfmt"
   },
   "dependencies": {
-    "@viwo/client": "workspace:*",
-    "@viwo/shared": "workspace:*",
+    "@bloom/client": "workspace:*",
+    "@bloom/shared": "workspace:*",
     "solid-js": "^1.8.15"
   },
   "devDependencies": {

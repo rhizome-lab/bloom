@@ -1,6 +1,6 @@
-//! Viwo Notes Server
+//! Bloom Notes Server
 //!
-//! Wiki-style notes with wikilinks and backlinks, built on the Viwo engine.
+//! Wiki-style notes with wikilinks and backlinks, built on the Bloom engine.
 //!
 //! ## Usage
 //!
@@ -10,11 +10,11 @@
 //! PORT=8081 cargo run --bin notes-server
 //! ```
 
+use bloom_core::seed::{SeedSystem, seed_basic_world};
+use bloom_runtime::BloomRuntime;
+use bloom_transport_websocket_jsonrpc::Server;
 use std::path::PathBuf;
 use std::sync::Arc;
-use viwo_core::seed::{SeedSystem, seed_basic_world};
-use viwo_runtime::ViwoRuntime;
-use viwo_transport_websocket_jsonrpc::Server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -27,10 +27,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .and_then(|p| p.parse().ok())
         .unwrap_or(8081);
 
-    tracing::info!("Starting Viwo Notes Server...");
+    tracing::info!("Starting Bloom Notes Server...");
 
     // Create runtime (opens database connections)
-    let runtime = Arc::new(ViwoRuntime::open("notes.db")?);
+    let runtime = Arc::new(BloomRuntime::open("notes.db")?);
 
     // Get path to TypeScript entity definitions
     // Relative to workspace root: apps/notes-server/src/definitions/
@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Start WebSocket server
-    let config = viwo_transport_websocket_jsonrpc::ServerConfig {
+    let config = bloom_transport_websocket_jsonrpc::ServerConfig {
         host: "127.0.0.1".to_string(),
         port,
         db_path: "notes.db".to_string(),

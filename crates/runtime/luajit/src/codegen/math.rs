@@ -1,7 +1,7 @@
 //! math.* opcode compilation.
 
 use super::{CompileError, compile_infix_op, compile_value};
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 /// Compile math.* opcodes. Returns None if opcode doesn't match.
 pub fn compile_math(
@@ -309,7 +309,7 @@ pub fn compile_math(
 #[cfg(test)]
 mod tests {
     use super::super::compile;
-    use viwo_ir::SExpr;
+    use bloom_ir::SExpr;
 
     #[test]
     fn test_add() {

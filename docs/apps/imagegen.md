@@ -1,6 +1,6 @@
 # Image Generation Frontend
 
-A comprehensive image generation frontend for viwo that combines visual canvas editing with capability-based AI image generation.
+A comprehensive image generation frontend for bloom that combines visual canvas editing with capability-based AI image generation.
 
 ## Overview
 
@@ -9,7 +9,7 @@ The Image Generation app provides two complementary interfaces for working with 
 1. **Layer Mode** - InvokeAI-style canvas interface for visual editing and generation
 2. **Blocks Mode** - Visual script editor that auto-generates blocks from server capabilities
 
-The app connects to the viwo server via WebSocket and leverages the diffusers plugin for Stable Diffusion image generation.
+The app connects to the bloom server via WebSocket and leverages the diffusers plugin for Stable Diffusion image generation.
 
 ## Architecture
 
@@ -23,18 +23,18 @@ The app connects to the viwo server via WebSocket and leverages the diffusers pl
 - ControlNet support for guided generation
 - Inpainting and mask editing
 - Entity integration for saving/loading images
-- ViwoScript state tracking
+- BloomScript state tracking
 
 **Blocks Mode** (`src/modes/BlocksMode.tsx`):
 
-- Wraps `@viwo/web-editor` ScriptEditor
+- Wraps `@bloom/web-editor` ScriptEditor
 - Auto-generates blocks from capability metadata
-- Supports all viwo capabilities
+- Supports all bloom capabilities
 - "Visualize as Layers" button for canvas preview
 
 ### Capability-Based Generation
 
-The app uses viwo's capability system for secure, controlled access to AI features:
+The app uses bloom's capability system for secure, controlled access to AI features:
 
 ```typescript
 // Get generation capability
@@ -50,12 +50,12 @@ const result = await sendRpc("std.call_method", {
 
 ### Shared Script State
 
-Both modes share the same ViwoScript state, enabling seamless transitions:
+Both modes share the same BloomScript state, enabling seamless transitions:
 
 ```typescript
 const [sharedScript, setSharedScript] = createSignal(StdLib.seq());
 
-// Layer Mode records actions as ViwoScript operations
+// Layer Mode records actions as BloomScript operations
 setSharedScript(
   StdLib.seq(
     CanvasOps.layerCreate(id, name),
@@ -87,7 +87,7 @@ setSharedScript(
 
 ### Entity Integration
 
-Save generated images as viwo entities:
+Save generated images as bloom entities:
 
 ```typescript
 // Save image with metadata
@@ -148,12 +148,12 @@ canvas.loadImageToLayer(layerId, entityData.image_url, 0, 0);
 
 ### Environment
 
-- **Viwo server**: `ws://localhost:8080` (configurable in `viwo-connection.ts`)
+- **Bloom server**: `ws://localhost:8080` (configurable in `bloom-connection.ts`)
 - **Dev server port**: 3002 (configurable in `vite.config.ts`)
 
 ### Required Services
 
-- Viwo server with diffusers plugin
+- Bloom server with diffusers plugin
 - Python inference server for image generation (see `docs/plugins/diffusers.md`)
 
 ## Development
@@ -170,10 +170,10 @@ apps/imagegen/
 │   ├── engine/
 │   │   └── canvas/
 │   │       ├── useCanvas.ts     # Canvas engine
-│   │       ├── operations.ts    # ViwoScript operations
+│   │       ├── operations.ts    # BloomScript operations
 │   │       └── scriptToLayers.ts # Script parser
 │   └── utils/
-│       ├── viwo-connection.ts   # WebSocket client
+│       ├── bloom-connection.ts   # WebSocket client
 │       ├── useGeneration.ts     # Generation queue
 │       ├── batchGeneration.ts   # Batch utilities
 │       ├── templates.ts         # Template management
@@ -187,9 +187,9 @@ apps/imagegen/
 
 - **SolidJS**: Reactive UI framework
 - **Vite**: Build tool and dev server
-- **@viwo/scripting**: ViwoScript integration
-- **@viwo/web-editor**: Block editor component
-- **sharp** (server-side): Image processing via `@viwo/image-io`
+- **@bloom/scripting**: BloomScript integration
+- **@bloom/web-editor**: Block editor component
+- **sharp** (server-side): Image processing via `@bloom/image-io`
 
 ## See Also
 

@@ -1,10 +1,10 @@
 # Client Package
 
-Client-side SDK for connecting to Viwo.
+Client-side SDK for connecting to Bloom.
 
 ## Overview
 
-This package provides the necessary libraries and utilities for building custom clients that interact with the Viwo server. It handles the low-level details of the connection protocol.
+This package provides the necessary libraries and utilities for building custom clients that interact with the Bloom server. It handles the low-level details of the connection protocol.
 
 ## Contents
 
@@ -15,5 +15,5 @@ This package provides the necessary libraries and utilities for building custom 
 Import the `Client` class to establish a connection:
 
 ```typescript
-import { Client } from "@viwo/client";
+import { Client } from "@bloom/client";
 ```

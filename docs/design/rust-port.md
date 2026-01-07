@@ -1,6 +1,6 @@
-# Viwo Rust Port
+# Bloom Rust Port
 
-Design document for porting Viwo to a Rust-based runtime with LuaJIT execution.
+Design document for porting Bloom to a Rust-based runtime with LuaJIT execution.
 
 ## Motivation
 
@@ -23,7 +23,7 @@ Design document for porting Viwo to a Rust-based runtime with LuaJIT execution.
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────┐
-│                      viwo-core                              │
+│                      bloom-core                              │
 │           (entities, capabilities, SQLite storage)          │
 └─────────────────────────┬───────────────────────────────────┘
                           │
@@ -43,10 +43,10 @@ Design document for porting Viwo to a Rust-based runtime with LuaJIT execution.
 
 ```
 crates/
-├── viwo-ir/              # S-expression types, validation, spec
-├── viwo-core/            # Entity, Verb, Capability, SQLite storage
-├── viwo-plugin-abi/      # Plugin trait, OpcodeRegistry, Value types
-├── viwo-cli/             # Binary entrypoint (serve, transpile, compile, exec)
+├── bloom-ir/              # S-expression types, validation, spec
+├── bloom-core/            # Entity, Verb, Capability, SQLite storage
+├── bloom-plugin-abi/      # Plugin trait, OpcodeRegistry, Value types
+├── bloom-cli/             # Binary entrypoint (serve, transpile, compile, exec)
 │
 ├── syntax/
 │   └── typescript/       # TS → S-expr (tree-sitter-typescript)
@@ -353,4 +353,4 @@ unsafe extern "C" fn fs_read_lua(L: *mut mlua::ffi::lua_State) -> c_int {
 ## Related Documents
 
 - [Architecture](../architecture.md) - Current TypeScript architecture
-- [ViwoScript](../viwoscript.md) - S-expression opcodes reference
+- [BloomScript](../bloomscript.md) - S-expression opcodes reference

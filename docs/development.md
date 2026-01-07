@@ -1,20 +1,20 @@
 # Development Guide
 
-Welcome to the Viwo development guide! This document will help you get set up and contributing to the project.
+Welcome to the Bloom development guide! This document will help you get set up and contributing to the project.
 
 ## Getting Started
 
 ### Prerequisites
 
-- **[Bun](https://bun.sh/)**: Viwo is built on the Bun runtime. Ensure you have the latest version installed.
+- **[Bun](https://bun.sh/)**: Bloom is built on the Bun runtime. Ensure you have the latest version installed.
 
 ### Installation
 
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/pterror/viwo.git
-    cd viwo
+    git clone https://github.com/pterror/bloom.git
+    cd bloom
     ```
 
 2.  Install dependencies:
@@ -24,7 +24,7 @@ Welcome to the Viwo development guide! This document will help you get set up an
 
 ### Project Structure
 
-Viwo is a monorepo managed by Bun workspaces.
+Bloom is a monorepo managed by Bun workspaces.
 
 - **`apps/`**: Deployable applications.
   - `server`: The core game server.
@@ -33,7 +33,7 @@ Viwo is a monorepo managed by Bun workspaces.
   - `discord-bot`: The Discord integration.
 - **`packages/`**: Shared libraries.
   - `core`: The game engine logic.
-  - `scripting`: The ViwoScript compiler and interpreter.
+  - `scripting`: The BloomScript compiler and interpreter.
   - `client`: The TypeScript SDK.
   - `shared`: Shared types and utilities.
 - **`plugins/`**: Optional game features.
@@ -51,7 +51,7 @@ bun test
 To run tests for a specific package:
 
 ```bash
-bun test --filter @viwo/core
+bun test --filter @bloom/core
 ```
 
 ## Building the Documentation
@@ -85,8 +85,8 @@ bun run build:docs
 
 This command performs the following steps:
 
-1. Builds the `@viwo/docs` package (VitePress site).
-2. Builds the `@viwo/playground` package.
+1. Builds the `@bloom/docs` package (VitePress site).
+2. Builds the `@bloom/playground` package.
 3. Copies the playground build output to `docs/.vitepress/dist/playground`.
 
 ### Previewing the Build

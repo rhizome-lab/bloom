@@ -1,4 +1,4 @@
-import { ViwoClient } from "@viwo/client";
+import { BloomClient } from "@bloom/client";
 import { createStore } from "solid-js/store";
 
 export interface FileEntry {
@@ -52,7 +52,7 @@ interface BrowserState {
   tags: string[];
 }
 
-const client = new ViwoClient("ws://localhost:8080");
+const client = new BloomClient("ws://localhost:8080");
 
 const [state, setState] = createStore<BrowserState>({
   bookmarks: {},

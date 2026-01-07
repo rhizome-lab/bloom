@@ -1,8 +1,8 @@
 import { Box, Text, useApp, useStdout } from "ink";
-import { type GameState, ViwoClient } from "@viwo/client";
+import { type GameState, BloomClient } from "@bloom/client";
 import { useEffect, useRef, useState } from "react";
 import Editor from "./components/Editor";
-import type { Entity } from "@viwo/shared/jsonrpc";
+import type { Entity } from "@bloom/shared/jsonrpc";
 import TextInput from "ink-text-input";
 
 // Types
@@ -39,7 +39,7 @@ const App = () => {
     roomId: null,
   });
 
-  const clientRef = useRef<ViwoClient | null>(null);
+  const clientRef = useRef<BloomClient | null>(null);
 
   useEffect(() => {
     const onResize = () => setRows(stdout.rows || 24);
@@ -70,7 +70,7 @@ const App = () => {
   }, [clientState]);
 
   useEffect(() => {
-    const client = new ViwoClient("ws://localhost:8080");
+    const client = new BloomClient("ws://localhost:8080");
     clientRef.current = client;
 
     const unsubscribeState = client.subscribe((state) => {

@@ -1,4 +1,4 @@
-import { ViwoClient } from "@viwo/client";
+import { BloomClient } from "@bloom/client";
 import { createStore } from "solid-js/store";
 import { extractWikilinks } from "../lib/wikilinks";
 
@@ -57,7 +57,7 @@ interface NotesState {
   error: string | null;
 }
 
-const client = new ViwoClient("ws://localhost:8081");
+const client = new BloomClient("ws://localhost:8081");
 
 const [state, setState] = createStore<NotesState>({
   backlinks: [],

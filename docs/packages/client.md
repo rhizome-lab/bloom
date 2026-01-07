@@ -1,14 +1,14 @@
 # Client Package
 
-Client-side SDK for connecting to Viwo. Provides libraries and utilities for building custom clients that interact with the Viwo server.
+Client-side SDK for connecting to Bloom. Provides libraries and utilities for building custom clients that interact with the Bloom server.
 
 ## Overview
 
-The Client package abstracts the complexity of WebSocket management and JSON-RPC communication, providing a clean API for developers to build custom frontends or bots for Viwo.
+The Client package abstracts the complexity of WebSocket management and JSON-RPC communication, providing a clean API for developers to build custom frontends or bots for Bloom.
 
 ## Key Classes
 
-### `ViwoClient`
+### `BloomClient`
 
 The main entry point for the SDK. It manages the WebSocket connection, handles automatic reconnection, and routes incoming messages.
 
@@ -19,9 +19,9 @@ The main entry point for the SDK. It manages the WebSocket connection, handles a
 ## Usage
 
 ```typescript
-import { ViwoClient } from "@viwo/client";
+import { BloomClient } from "@bloom/client";
 
-const client = new ViwoClient("ws://localhost:8080");
+const client = new BloomClient("ws://localhost:8080");
 
 // Subscribe to state updates
 client.subscribe((state) => {

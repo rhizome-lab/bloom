@@ -1,16 +1,16 @@
 [package]
-name = "viwo-transport-websocket-jsonrpc"
+name = "bloom-transport-websocket-jsonrpc"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 description = "WebSocket JSON-RPC transport for Viwo"
 
 [dependencies]
-viwo-core.workspace = true
-viwo-ir.workspace = true
-viwo-plugin-abi.workspace = true
-viwo-runtime = { path = "../../viwo-runtime" }
-viwo-runtime-luajit.workspace = true
+bloom-core.workspace = true
+bloom-ir.workspace = true
+bloom-plugin-abi.workspace = true
+bloom-runtime = { path = "../../bloom-runtime" }
+bloom-runtime-luajit.workspace = true
 tokio.workspace = true
 tokio-tungstenite.workspace = true
 futures-util.workspace = true

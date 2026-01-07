@@ -2,7 +2,7 @@
 
 use crate::CompileError;
 use crate::codegen::compile_value;
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 /// Compile sqlite.* opcodes to Lua calls
 pub fn compile_sqlite(
@@ -23,7 +23,7 @@ pub fn compile_sqlite(
             let query = compile_value(&args[2], false)?;
             let params = compile_value(&args[3], false)?;
             format!(
-                "{}__viwo_sqlite_query({}, {}, {}, {})",
+                "{}__bloom_sqlite_query({}, {}, {}, {})",
                 prefix, cap, db_path, query, params
             )
         }
@@ -39,7 +39,7 @@ pub fn compile_sqlite(
             let query = compile_value(&args[2], false)?;
             let params = compile_value(&args[3], false)?;
             format!(
-                "{}__viwo_sqlite_execute({}, {}, {}, {})",
+                "{}__bloom_sqlite_execute({}, {}, {}, {})",
                 prefix, cap, db_path, query, params
             )
         }

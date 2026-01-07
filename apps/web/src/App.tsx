@@ -1,5 +1,5 @@
 // oxlint-disable-next-line no-unassigned-import
-import "@viwo/shared/index.css";
+import "@bloom/shared/index.css";
 import { Show, createSignal, onCleanup, onMount } from "solid-js";
 import Compass from "./components/Compass";
 import CustomExits from "./components/CustomExits";

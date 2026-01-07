@@ -1,11 +1,11 @@
 # Memory Plugin
 
-The Memory Plugin (`@viwo/plugin-memory`) provides long-term memory capabilities for the game, allowing entities and the system to store and retrieve semantic information.
+The Memory Plugin (`@bloom/plugin-memory`) provides long-term memory capabilities for the game, allowing entities and the system to store and retrieve semantic information.
 
 ## Dependencies
 
-- **`@viwo/plugin-ai`**: Required for generating embeddings.
-- **`@viwo/plugin-vector`**: Used for vector storage and similarity search.
+- **`@bloom/plugin-ai`**: Required for generating embeddings.
+- **`@bloom/plugin-vector`**: Used for vector storage and similarity search.
 
 ## Usage
 

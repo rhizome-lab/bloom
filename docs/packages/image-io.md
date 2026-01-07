@@ -1,10 +1,10 @@
 # Image I/O Package
 
-Server-side image processing package for viwo, built on the high-performance `sharp` library.
+Server-side image processing package for bloom, built on the high-performance `sharp` library.
 
 ## Overview
 
-The `@viwo/image-io` package provides comprehensive image manipulation capabilities for server-side operations. It's designed for use with viwo's `ImageEntity` system, enabling secure, efficient image processing without client-side execution.
+The `@bloom/image-io` package provides comprehensive image manipulation capabilities for server-side operations. It's designed for use with bloom's `ImageEntity` system, enabling secure, efficient image processing without client-side execution.
 
 ## Why sharp?
 
@@ -32,7 +32,7 @@ Embed metadata into an image using EXIF tags.
 **Example:**
 
 ```typescript
-import { embedMetadata } from "@viwo/image-io";
+import { embedMetadata } from "@bloom/image-io";
 
 const imageWithMetadata = await embedMetadata(imageBuffer, "png", {
   prompt: "a beautiful landscape",
@@ -57,7 +57,7 @@ Extract metadata from an image.
 **Example:**
 
 ```typescript
-import { readMetadata } from "@viwo/image-io";
+import { readMetadata } from "@bloom/image-io";
 
 const metadata = await readMetadata(imageBuffer, "png");
 console.log(metadata.prompt); // "a beautiful landscape"
@@ -83,7 +83,7 @@ Convert image between formats with optional metadata preservation.
 **Example:**
 
 ```typescript
-import { convertImage } from "@viwo/image-io";
+import { convertImage } from "@bloom/image-io";
 
 // Convert PNG to JPEG with metadata preservation
 const jpegImage = await convertImage(pngBuffer, "png", "jpeg", {
@@ -117,7 +117,7 @@ Rotate and scale images.
 **Example:**
 
 ```typescript
-import { transformImage } from "@viwo/image-io";
+import { transformImage } from "@bloom/image-io";
 
 // Rotate 90 degrees clockwise
 const rotated = await transformImage(imageBuffer, "png", {
@@ -155,7 +155,7 @@ Apply image filters.
 **Example:**
 
 ```typescript
-import { filterImage } from "@viwo/image-io";
+import { filterImage } from "@bloom/image-io";
 
 // Apply gaussian blur
 const blurred = await filterImage(imageBuffer, "png", "blur");
@@ -187,7 +187,7 @@ Overlay one image on top of another.
 **Example:**
 
 ```typescript
-import { compositeImages } from "@viwo/image-io";
+import { compositeImages } from "@bloom/image-io";
 
 // Overlay logo at position (100, 100)
 const withLogo = await compositeImages(baseImage, logoImage, "png", {

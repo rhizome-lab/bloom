@@ -1,16 +1,16 @@
 # Apps
 
-Collection of runnable applications for the Viwo project.
+Collection of runnable applications for the Bloom project.
 
 ## Overview
 
-This directory contains the various entry points and interfaces for interacting with the Viwo engine, including web clients, CLI tools, and bots. Each application serves a specific user need or interface modality.
+This directory contains the various entry points and interfaces for interacting with the Bloom engine, including web clients, CLI tools, and bots. Each application serves a specific user need or interface modality.
 
 ## Contents
 
 - **admin-cli**: Administrative command-line tools for system management.
 - **cli**: Standard command-line interface for general interaction.
-- **discord-bot**: Integration for connecting Viwo to Discord.
+- **discord-bot**: Integration for connecting Bloom to Discord.
 - **playground**: Interactive playground for testing and experimenting with scripts.
 - **server**: The main backend server that powers the world.
 - **tui**: Terminal User Interface for a retro/terminal-based experience.

@@ -1,7 +1,7 @@
 //! Tests for TypeScript transpiler.
 
 use super::*;
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 fn assert_transpile(source: &str, expected: SExpr) {
     let result = transpile(source).expect("transpile failed");

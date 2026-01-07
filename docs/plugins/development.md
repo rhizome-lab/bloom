@@ -1,6 +1,6 @@
 # Plugin Development Guide
 
-Guide for developing native Rust plugins for Viwo using the Lua C API.
+Guide for developing native Rust plugins for Bloom using the Lua C API.
 
 ## Architecture Overview
 
@@ -235,7 +235,7 @@ if nargs != 2 {
 use mlua::ffi::*;
 
 // Get global
-lua_getglobal(L, b"__viwo_this_id\0".as_ptr() as *const c_char);
+lua_getglobal(L, b"__bloom_this_id\0".as_ptr() as *const c_char);
 let this_id = lua_tointeger(L, -1);
 lua_pop(L, 1); // Clean up stack
 ```
@@ -277,7 +277,7 @@ See `crates/plugins/fs/src/lib.rs` for full table conversion implementation.
 
 ```toml
 [package]
-name = "viwo-plugin-example"
+name = "bloom-plugin-example"
 version = "0.1.0"
 edition = "2021"
 
@@ -329,7 +329,7 @@ let path = match std::str::from_utf8(path_slice) {
 Pop values you don't need:
 
 ```rust
-lua_getglobal(L, b"__viwo_this_id\0".as_ptr() as *const c_char);
+lua_getglobal(L, b"__bloom_this_id\0".as_ptr() as *const c_char);
 let this_id = lua_tointeger(L, -1);
 lua_pop(L, 1); // Important!
 ```
@@ -348,15 +348,15 @@ Build and test your plugin:
 
 ```bash
 # Build plugin
-cargo build --package viwo-plugin-example
+cargo build --package bloom-plugin-example
 
 # Plugin will be at:
-# Linux: target/debug/libviwo_plugin_example.so
-# macOS: target/debug/libviwo_plugin_example.dylib
-# Windows: target/debug/viwo_plugin_example.dll
+# Linux: target/debug/libbloom_plugin_example.so
+# macOS: target/debug/libbloom_plugin_example.dylib
+# Windows: target/debug/bloom_plugin_example.dll
 
-# Test with Viwo runtime
-cargo test --package viwo-runtime
+# Test with Bloom runtime
+cargo test --package bloom-runtime
 ```
 
 ## Example Plugins

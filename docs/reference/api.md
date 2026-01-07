@@ -1,8 +1,8 @@
-# Viwo API Specification
+# Bloom API Specification
 
-Viwo uses **JSON-RPC 2.0** over WebSockets for communication between the Core Server and Clients (Web, TUI, CLI).
+Bloom uses **JSON-RPC 2.0** over WebSockets for communication between the Core Server and Clients (Web, TUI, CLI).
 
-> **Note**: The `@viwo/client` package provides a type-safe TypeScript SDK that implements this protocol. It is recommended to use this SDK for building new frontends.
+> **Note**: The `@bloom/client` package provides a type-safe TypeScript SDK that implements this protocol. It is recommended to use this SDK for building new frontends.
 
 ## Protocol Basics
 

@@ -1,8 +1,8 @@
 //! Tree-sitter based TypeScript transpiler.
 
+use bloom_ir::SExpr;
 use thiserror::Error;
 use tree_sitter::{Node, Parser, Tree};
-use viwo_ir::SExpr;
 
 #[derive(Debug, Error)]
 pub enum TranspileError {

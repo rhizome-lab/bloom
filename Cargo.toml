@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
-default-members = ["crates/viwo-cli"]
+default-members = ["crates/bloom-cli"]
 members = [
-    "crates/viwo-ir",
-    "crates/viwo-core",
-    "crates/viwo-runtime",
-    "crates/viwo-plugin-abi",
-    "crates/viwo-cli",
+    "crates/bloom-ir",
+    "crates/bloom-core",
+    "crates/bloom-runtime",
+    "crates/bloom-plugin-abi",
+    "crates/bloom-cli",
     "crates/syntax/typescript",
     "crates/runtime/luajit",
     "crates/transport/websocket-jsonrpc",
@@ -27,7 +27,7 @@ members = [
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/anthropics/viwo"
+repository = "https://github.com/anthropics/bloom"
 
 [workspace.dependencies]
 # Core
@@ -62,13 +62,13 @@ abi_stable = "0.11"
 libloading = "0.8"
 
 # Workspace crates
-viwo-ir = { path = "crates/viwo-ir" }
-viwo-core = { path = "crates/viwo-core" }
-viwo-runtime = { path = "crates/viwo-runtime" }
-viwo-plugin-abi = { path = "crates/viwo-plugin-abi" }
-viwo-transport-websocket-jsonrpc = { path = "crates/transport/websocket-jsonrpc" }
-viwo-syntax-typescript = { path = "crates/syntax/typescript" }
-viwo-runtime-luajit = { path = "crates/runtime/luajit" }
+bloom-ir = { path = "crates/bloom-ir" }
+bloom-core = { path = "crates/bloom-core" }
+bloom-runtime = { path = "crates/bloom-runtime" }
+bloom-plugin-abi = { path = "crates/bloom-plugin-abi" }
+bloom-transport-websocket-jsonrpc = { path = "crates/transport/websocket-jsonrpc" }
+bloom-syntax-typescript = { path = "crates/syntax/typescript" }
+bloom-runtime-luajit = { path = "crates/runtime/luajit" }
 
 # Minimize debug build size
 [profile.dev]

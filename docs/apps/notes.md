@@ -30,7 +30,7 @@ bun dev:notes         # port 3004
 ```
 src/
 ├── App.tsx                 # Main layout (3-column grid)
-├── store/notes.ts          # ViwoClient + SolidJS store
+├── store/notes.ts          # BloomClient + SolidJS store
 ├── lib/wikilinks.ts        # Markdown rendering
 └── components/
     ├── NoteList.tsx        # Sidebar with search

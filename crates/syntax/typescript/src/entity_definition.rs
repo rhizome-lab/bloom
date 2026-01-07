@@ -1,11 +1,11 @@
 //! Parse entity definitions from TypeScript class files.
 
 use crate::TranspileError;
+use bloom_ir::SExpr;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use tree_sitter::{Node, Parser};
-use viwo_ir::SExpr;
 
 /// Entity definition extracted from TypeScript class.
 #[derive(Debug, Clone, Serialize, Deserialize)]

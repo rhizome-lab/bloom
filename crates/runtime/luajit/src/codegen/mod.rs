@@ -17,8 +17,8 @@ mod str;
 mod vector;
 
 use ::std::collections::HashSet;
+use bloom_ir::SExpr;
 use thiserror::Error;
-use viwo_ir::SExpr;
 
 /// Errors that can occur during compilation.
 #[derive(Debug, Error)]

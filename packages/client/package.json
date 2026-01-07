@@ -1,5 +1,5 @@
 {
-  "name": "@viwo/client",
+  "name": "@bloom/client",
   "version": "0.0.0",
   "main": "src/index.ts",
   "exports": {
@@ -12,7 +12,7 @@
     "format": "oxfmt"
   },
   "dependencies": {
-    "@viwo/shared": "workspace:*"
+    "@bloom/shared": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",

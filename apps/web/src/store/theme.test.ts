@@ -98,7 +98,7 @@ describe("Theme Store", () => {
   test("Import Theme", () => {
     const validTheme = {
       colors: { "--bg-app": "green" },
-      manifest: { kind: "viwo-theme", name: "Imported", version: "1.0.0" },
+      manifest: { kind: "bloom-theme", name: "Imported", version: "1.0.0" },
     };
     themeStore.importTheme(validTheme);
 
@@ -129,7 +129,7 @@ describe("Theme Store", () => {
     const warnSpy = spyOn(console, "warn").mockImplementation(() => {});
     const theme = {
       colors: {},
-      manifest: { kind: "viwo-theme", name: "Old", version: "0.9.0" },
+      manifest: { kind: "bloom-theme", name: "Old", version: "0.9.0" },
     };
     themeStore.importTheme(theme);
     expect(warnSpy).toHaveBeenCalled();
@@ -145,16 +145,16 @@ describe("Theme Store", () => {
   describe("Theme Migration", () => {
     beforeEach(() => {
       if (globalThis.localStorage) {
-        globalThis.localStorage.removeItem("viwo_theme");
-        globalThis.localStorage.removeItem("viwo_themes");
-        globalThis.localStorage.removeItem("viwo_active_theme_id");
-        globalThis.localStorage.removeItem("viwo_allow_custom_css");
+        globalThis.localStorage.removeItem("bloom_theme");
+        globalThis.localStorage.removeItem("bloom_themes");
+        globalThis.localStorage.removeItem("bloom_active_theme_id");
+        globalThis.localStorage.removeItem("bloom_allow_custom_css");
       }
       themeStore.reset();
     });
 
     test("Migrate from old single theme", () => {
-      globalThis.localStorage.setItem("viwo_theme", JSON.stringify({ "--bg-app": "red" }));
+      globalThis.localStorage.setItem("bloom_theme", JSON.stringify({ "--bg-app": "red" }));
 
       const state = loadInitialState();
 
@@ -171,14 +171,14 @@ describe("Theme Store", () => {
           manifest: { name: "Old Theme" }, // Missing kind/version
         },
       ]);
-      globalThis.localStorage.setItem("viwo_themes", oldThemes);
+      globalThis.localStorage.setItem("bloom_themes", oldThemes);
 
       const state = loadInitialState();
 
       expect(state.themes.length).toBe(2); // Default + Old
       const migrated = state.themes.find((theme) => theme.id === "t1");
       expect(migrated).toBeDefined();
-      expect(migrated!.manifest.kind).toBe("viwo-theme");
+      expect(migrated!.manifest.kind).toBe("bloom-theme");
       expect(migrated!.manifest.version).toBe("1.0.0");
     });
   });

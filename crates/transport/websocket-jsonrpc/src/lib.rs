@@ -1,4 +1,4 @@
-//! WebSocket server for Viwo.
+//! WebSocket server for Bloom.
 
 pub mod plugin_loader;
 pub mod server;

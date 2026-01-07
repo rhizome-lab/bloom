@@ -1,11 +1,11 @@
 # Client SDK
 
-The Client SDK (`@viwo/client`) provides a type-safe interface for connecting to the Viwo Core server via WebSockets. It handles the JSON-RPC protocol, state management, and event subscriptions.
+The Client SDK (`@bloom/client`) provides a type-safe interface for connecting to the Bloom Core server via WebSockets. It handles the JSON-RPC protocol, state management, and event subscriptions.
 
 ## Installation
 
 ```bash
-bun add @viwo/client
+bun add @bloom/client
 ```
 
 ## Usage
@@ -13,9 +13,9 @@ bun add @viwo/client
 ### Connecting to the Server
 
 ```typescript
-import { ViwoClient, GameState } from "@viwo/client";
+import { BloomClient, GameState } from "@bloom/client";
 
-const client = new ViwoClient("ws://localhost:8080");
+const client = new BloomClient("ws://localhost:8080");
 
 // Subscribe to state changes
 client.subscribe((state: GameState) => {
@@ -42,7 +42,7 @@ client.execute("go", ["north"]);
 To receive game messages (e.g., descriptions, chat):
 
 ```typescript
-import { GameMessage } from "@viwo/client";
+import { GameMessage } from "@bloom/client";
 
 client.onMessage((msg: GameMessage) => {
   console.log(`[${msg.type}] ${msg.text}`);
@@ -51,7 +51,7 @@ client.onMessage((msg: GameMessage) => {
 
 ## API Reference
 
-### `ViwoClient`
+### `BloomClient`
 
 #### `constructor(url: string)`
 

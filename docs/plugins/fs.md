@@ -1,6 +1,6 @@
 # File System Plugin
 
-The `@viwo/plugin-fs` package provides file system capabilities to ViwoScript, enabling safe, sandboxed file operations.
+The `@bloom/plugin-fs` package provides file system capabilities to BloomScript, enabling safe, sandboxed file operations.
 
 ## Capabilities
 

@@ -1,10 +1,10 @@
-//! Tests for viwo-runtime-luajit.
+//! Tests for bloom-runtime-luajit.
 //!
 //! Compile tests are in each library module (codegen/std.rs, codegen/math.rs, etc.)
 //! This file contains general compile tests and execution tests.
 
 use crate::codegen::compile;
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 // ============================================================================
 // General compile tests

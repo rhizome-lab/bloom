@@ -1,7 +1,7 @@
 //! list.* opcode compilation.
 
 use super::{CompileError, compile_value};
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 /// Compile list.* opcodes. Returns None if opcode doesn't match.
 pub fn compile_list(
@@ -371,7 +371,7 @@ pub fn compile_list(
 #[cfg(test)]
 mod tests {
     use super::super::compile;
-    use viwo_ir::SExpr;
+    use bloom_ir::SExpr;
 
     #[test]
     fn test_new() {

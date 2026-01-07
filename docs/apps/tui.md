@@ -1,16 +1,16 @@
 # Terminal User Interface (TUI)
 
-The Viwo TUI is a terminal-based client built with [Ink](https://github.com/vadimdemedes/ink) and React. It provides a rich text interface for playing the game and editing scripts.
+The Bloom TUI is a terminal-based client built with [Ink](https://github.com/vadimdemedes/ink) and React. It provides a rich text interface for playing the game and editing scripts.
 
 ## Architecture
 
-The TUI connects to the Viwo Core using the `@viwo/client` library via WebSocket. It maintains a local replica of the game state (entities, messages) to render the UI.
+The TUI connects to the Bloom Core using the `@bloom/client` library via WebSocket. It maintains a local replica of the game state (entities, messages) to render the UI.
 
 ### Key Components
 
 - **`App`**: The root component. Manages connection state, routing (Game vs Editor), and global layout.
 - **`Editor`**: A full-screen code editor component for modifying script sources.
-- **`ViwoClient`**: Handles WebSocket communication, state synchronization, and RPC calls.
+- **`BloomClient`**: Handles WebSocket communication, state synchronization, and RPC calls.
 
 ## Component Structure
 
@@ -36,7 +36,7 @@ graph TD
 
     App -->|State: EDITOR| Code
 
-    Client[ViwoClient] -->|Updates| App
+    Client[BloomClient] -->|Updates| App
     Input -->|Execute| Client
     Code -->|Save/AI| Client
 ```

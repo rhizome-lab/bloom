@@ -2,7 +2,7 @@
 
 use crate::CompileError;
 use crate::codegen::compile_value;
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 /// Compile memory.* opcodes to Lua calls
 pub fn compile_memory(
@@ -26,7 +26,7 @@ pub fn compile_memory(
             let content = compile_value(&args[5], false)?;
             let metadata = compile_value(&args[6], false)?;
             format!(
-                "{}__viwo_memory_add({}, {}, {}, {}, {}, {}, {})",
+                "{}__bloom_memory_add({}, {}, {}, {}, {}, {}, {})",
                 prefix, db_cap, ai_cap, db_path, provider, model, content, metadata
             )
         }
@@ -45,7 +45,7 @@ pub fn compile_memory(
             let query = compile_value(&args[5], false)?;
             let options = compile_value(&args[6], false)?;
             format!(
-                "{}__viwo_memory_search({}, {}, {}, {}, {}, {}, {})",
+                "{}__bloom_memory_search({}, {}, {}, {}, {}, {}, {})",
                 prefix, db_cap, ai_cap, db_path, provider, model, query, options
             )
         }

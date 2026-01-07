@@ -1,6 +1,6 @@
-//! Viwo File Browser Server
+//! Bloom File Browser Server
 //!
-//! Sandboxed file browser with filesystem access, built on the Viwo engine.
+//! Sandboxed file browser with filesystem access, built on the Bloom engine.
 //!
 //! ## Usage
 //!
@@ -10,11 +10,11 @@
 //! PORT=8080 FS_ROOT=./sandbox cargo run --bin filebrowser-server
 //! ```
 
+use bloom_core::seed::{SeedSystem, seed_basic_world};
+use bloom_runtime::BloomRuntime;
+use bloom_transport_websocket_jsonrpc::Server;
 use std::path::PathBuf;
 use std::sync::Arc;
-use viwo_core::seed::{SeedSystem, seed_basic_world};
-use viwo_runtime::ViwoRuntime;
-use viwo_transport_websocket_jsonrpc::Server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -30,14 +30,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get filesystem sandbox root from environment or use default
     let fs_root = std::env::var("FS_ROOT").unwrap_or_else(|_| "./sandbox".to_string());
 
-    tracing::info!("Starting Viwo File Browser Server...");
+    tracing::info!("Starting Bloom File Browser Server...");
     tracing::info!("Filesystem sandbox root: {}", fs_root);
 
     // Create runtime (opens database connections)
-    let runtime = Arc::new(ViwoRuntime::open("filebrowser.db")?);
+    let runtime = Arc::new(BloomRuntime::open("filebrowser.db")?);
 
     // Load the fs plugin
-    runtime.load_plugin("target/debug/libviwo_plugin_fs.so", "fs")?;
+    runtime.load_plugin("target/debug/libbloom_plugin_fs.so", "fs")?;
     tracing::info!("Loaded fs plugin");
 
     // Get path to TypeScript entity definitions
@@ -97,7 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Start WebSocket server
-    let config = viwo_transport_websocket_jsonrpc::ServerConfig {
+    let config = bloom_transport_websocket_jsonrpc::ServerConfig {
         host: "127.0.0.1".to_string(),
         port,
         db_path: "filebrowser.db".to_string(),

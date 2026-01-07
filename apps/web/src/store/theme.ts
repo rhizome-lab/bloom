@@ -25,7 +25,7 @@ export interface ThemeColors {
 }
 
 interface ThemeManifestV1 {
-  kind: "viwo-theme";
+  kind: "bloom-theme";
   version: "1.0.0";
   name: string;
   author: string;
@@ -71,7 +71,7 @@ const defaultTheme: Theme = {
   manifest: {
     author: "Viwo",
     description: "The default dark theme.",
-    kind: "viwo-theme",
+    kind: "bloom-theme",
     name: "Default Dark",
     version: "1.0.0",
   },
@@ -85,10 +85,10 @@ interface ThemeState {
 
 // Migration Logic
 export const loadInitialState = (): ThemeState => {
-  const savedThemes = localStorage.getItem("viwo_themes");
-  const savedActiveId = localStorage.getItem("viwo_active_theme_id");
-  const savedCustomCssPref = localStorage.getItem("viwo_allow_custom_css");
-  const oldSavedTheme = localStorage.getItem("viwo_theme");
+  const savedThemes = localStorage.getItem("bloom_themes");
+  const savedActiveId = localStorage.getItem("bloom_active_theme_id");
+  const savedCustomCssPref = localStorage.getItem("bloom_allow_custom_css");
+  const oldSavedTheme = localStorage.getItem("bloom_theme");
 
   let themes: Theme[] = [defaultTheme];
   let activeThemeId = "default";
@@ -105,7 +105,7 @@ export const loadInitialState = (): ThemeState => {
               ...theme,
               manifest: {
                 ...theme.manifest,
-                kind: "viwo-theme",
+                kind: "bloom-theme",
                 version: "1.0.0",
               },
             };
@@ -133,7 +133,7 @@ export const loadInitialState = (): ThemeState => {
         manifest: {
           author: "User",
           description: "Migrated from previous version.",
-          kind: "viwo-theme",
+          kind: "bloom-theme",
           name: "My Custom Theme",
           version: "1.0.0",
         },
@@ -169,7 +169,7 @@ export const themeStore = {
       id: crypto.randomUUID(),
       manifest: {
         author: "User",
-        kind: "viwo-theme",
+        kind: "bloom-theme",
         name,
         version: "1.0.0",
       }, // Clone current colors
@@ -191,7 +191,7 @@ export const themeStore = {
 
   importTheme: (theme: any) => {
     // Validate theme structure
-    if (!theme.manifest || theme.manifest.kind !== "viwo-theme" || !theme.colors) {
+    if (!theme.manifest || theme.manifest.kind !== "bloom-theme" || !theme.colors) {
       alert("Invalid theme format. Must be a valid Viwo Theme.");
       return;
     }
@@ -258,9 +258,9 @@ export const themeStore = {
 
 // Auto-save
 createEffect(() => {
-  localStorage.setItem("viwo_themes", JSON.stringify(state.themes));
-  localStorage.setItem("viwo_active_theme_id", state.activeThemeId);
-  localStorage.setItem("viwo_allow_custom_css", JSON.stringify(state.allowCustomCss));
+  localStorage.setItem("bloom_themes", JSON.stringify(state.themes));
+  localStorage.setItem("bloom_active_theme_id", state.activeThemeId);
+  localStorage.setItem("bloom_allow_custom_css", JSON.stringify(state.allowCustomCss));
 });
 
 // Apply theme to document root

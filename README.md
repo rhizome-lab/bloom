@@ -1,14 +1,14 @@
-# Viwo
+# Bloom
 
-**Viwo** (Virtual World) is a persistent, multiplayer, scriptable virtual world engine. It combines the interactive storytelling of MUDs/MOOs with modern web technologies and AI integration.
+**Bloom** (Virtual World) is a persistent, multiplayer, scriptable virtual world engine. It combines the interactive storytelling of MUDs/MOOs with modern web technologies and AI integration.
 
 ## Overview
 
-Viwo allows players to explore a persistent world, interact with objects and NPCs, and extend the world through a built-in scripting language. The engine is designed to be modular, supporting multiple frontends (Web, TUI, Discord) connected to a central core server.
+Bloom allows players to explore a persistent world, interact with objects and NPCs, and extend the world through a built-in scripting language. The engine is designed to be modular, supporting multiple frontends (Web, TUI, Discord) connected to a central core server.
 
 ## Key Features
 
-- **Scriptable World**: Everything in the world (rooms, items, NPCs) can be scripted using **ViwoScript**, an S-expression language using JSON syntax.
+- **Scriptable World**: Everything in the world (rooms, items, NPCs) can be scripted using **BloomScript**, an S-expression language using JSON syntax.
 - **Persistent State**: The world state is persisted in a SQLite database.
 - **Multiplayer**: Real-time interaction with other players.
 - **AI Integration**: Built-in support for AI-driven NPCs and content generation.
@@ -42,8 +42,8 @@ The project is organized as a monorepo:
 
 ```bash
 # Clone the repository
-git clone https://github.com/pterror/viwo.git
-cd viwo
+git clone https://github.com/pterror/bloom.git
+cd bloom
 
 # Install dependencies
 bun install
@@ -65,7 +65,7 @@ Access the web client at `http://localhost:5173`.
 
 ## Scripting
 
-Viwo uses **ViwoScript**, an S-expression language that uses JSON as its syntax. It is designed to be easily parsed and manipulated by tools (like the visual editor).
+Bloom uses **BloomScript**, an S-expression language that uses JSON as its syntax. It is designed to be easily parsed and manipulated by tools (like the visual editor).
 
 Example script (Greeting) represented in JSON:
 

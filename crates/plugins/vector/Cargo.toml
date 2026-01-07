@@ -1,5 +1,5 @@
 [package]
-name = "viwo-plugin-vector"
+name = "bloom-plugin-vector"
 version = "0.1.0"
 edition = "2021"
 

@@ -2,7 +2,7 @@
 
 use crate::CompileError;
 use crate::codegen::compile_value;
-use viwo_ir::SExpr;
+use bloom_ir::SExpr;
 
 /// Compile net.* opcodes to Lua calls
 pub fn compile_net(op: &str, args: &[SExpr], prefix: &str) -> Result<Option<String>, CompileError> {
@@ -17,7 +17,7 @@ pub fn compile_net(op: &str, args: &[SExpr], prefix: &str) -> Result<Option<Stri
             let cap = compile_value(&args[0], false)?;
             let url = compile_value(&args[1], false)?;
             let headers = compile_value(&args[2], false)?;
-            format!("{}__viwo_net_get({}, {}, {})", prefix, cap, url, headers)
+            format!("{}__bloom_net_get({}, {}, {})", prefix, cap, url, headers)
         }
         "net.post" => {
             if args.len() != 4 {
@@ -31,7 +31,7 @@ pub fn compile_net(op: &str, args: &[SExpr], prefix: &str) -> Result<Option<Stri
             let headers = compile_value(&args[2], false)?;
             let body = compile_value(&args[3], false)?;
             format!(
-                "{}__viwo_net_post({}, {}, {}, {})",
+                "{}__bloom_net_post({}, {}, {}, {})",
                 prefix, cap, url, headers, body
             )
         }

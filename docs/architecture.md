@@ -1,10 +1,10 @@
-# Viwo Architecture Deep-Dive
+# Bloom Architecture Deep-Dive
 
 Comprehensive architecture documentation. For quick reference, see `CLAUDE.md`.
 
 ## Execution Model
 
-Viwo uses a "Sandwich Architecture" with three layers:
+Bloom uses a "Sandwich Architecture" with three layers:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -264,10 +264,10 @@ Tasks stored in `scheduled_tasks` table, executed via `evaluate()` with script c
 │                    apps/server                          │
 │  Boots core + plugins, serves WebSocket on :8080        │
 ├─────────────────────────────────────────────────────────┤
-│                      @viwo/core                         │
+│                      @bloom/core                         │
 │  Entity system, verbs, capabilities, scheduler          │
 ├─────────────────────────────────────────────────────────┤
-│                    @viwo/scripting                      │
+│                    @bloom/scripting                      │
 │  Transpiler, compiler, interpreter, standard library    │
 └─────────────────────────────────────────────────────────┘
            ↑ WebSocket (JSON-RPC)

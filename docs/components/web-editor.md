@@ -1,6 +1,6 @@
 # Web Editor
 
-The Web Editor package (`@viwo/web-editor`) provides React/SolidJS components for editing ViwoScript code. It wraps the Monaco Editor and provides custom language support.
+The Web Editor package (`@bloom/web-editor`) provides React/SolidJS components for editing BloomScript code. It wraps the Monaco Editor and provides custom language support.
 
 ## Components
 
@@ -8,7 +8,7 @@ The Web Editor package (`@viwo/web-editor`) provides React/SolidJS components fo
 
 The main component for editing scripts. It handles:
 
-- Syntax highlighting for ViwoScript.
+- Syntax highlighting for BloomScript.
 - Autocompletion.
 - Error reporting.
 
@@ -19,7 +19,7 @@ A lower-level wrapper around the Monaco Editor instance.
 ## Usage
 
 ```tsx
-import { ScriptEditor } from "@viwo/web-editor";
+import { ScriptEditor } from "@bloom/web-editor";
 
 function MyEditor() {
   return (

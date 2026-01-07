@@ -3,7 +3,7 @@
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use viwo_core::EntityId;
+use bloom_core::EntityId;
 
 /// Unique session identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

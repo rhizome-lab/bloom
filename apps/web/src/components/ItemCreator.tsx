@@ -1,5 +1,5 @@
 import { For, createSignal } from "solid-js";
-import { ALL_ADJECTIVES } from "@viwo/shared/constants/adjectives";
+import { ALL_ADJECTIVES } from "@bloom/shared/constants/adjectives";
 import { gameStore } from "../store/game";
 
 export default function ItemCreator(props: { onClose?: () => void }) {

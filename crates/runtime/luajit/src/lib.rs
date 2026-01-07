@@ -1,4 +1,4 @@
-//! LuaJIT runtime for Viwo.
+//! LuaJIT runtime for Bloom.
 //!
 //! Compiles S-expressions to Lua and executes via LuaJIT.
 
@@ -6,9 +6,9 @@ mod codegen;
 
 pub use codegen::{CompileError, compile};
 
+use bloom_ir::SExpr;
 use mlua::{Lua, LuaSerdeExt, Result as LuaResult};
 use thiserror::Error;
-use viwo_ir::SExpr;
 
 /// Errors that can occur during execution.
 #[derive(Debug, Error)]
@@ -88,7 +88,7 @@ impl Runtime {
     pub fn new() -> LuaResult<Self> {
         let lua = Lua::new();
         setup_json_interop(&lua)?;
-        // TODO: load viwo stdlib (optional/explicit)
+        // TODO: load bloom stdlib (optional/explicit)
         Ok(Self { lua })
     }
 

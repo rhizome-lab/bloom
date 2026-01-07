@@ -1,5 +1,5 @@
 [package]
-name = "viwo-plugin-diffusers"
+name = "bloom-plugin-diffusers"
 version = "0.1.0"
 edition = "2021"
 description = "Diffusers plugin for Viwo - Stable Diffusion image generation using burn-models"

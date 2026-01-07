@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { ViwoClient } from "@viwo/client";
+import { BloomClient } from "@bloom/client";
 
 // Mock config
 mock.module("./config", () => ({
@@ -18,26 +18,26 @@ describe("GameSocket", () => {
   let onMessageSpy: any;
 
   beforeEach(() => {
-    // Spy on ViwoClient prototype methods
-    connectSpy = spyOn(ViwoClient.prototype, "connect").mockImplementation(
+    // Spy on BloomClient prototype methods
+    connectSpy = spyOn(BloomClient.prototype, "connect").mockImplementation(
       function connectSpy(this: any) {
         // Capture the instance.
       },
     );
-    executeSpy = spyOn(ViwoClient.prototype, "execute").mockResolvedValue(null);
-    sendRequestSpy = spyOn(ViwoClient.prototype, "sendRequest").mockResolvedValue(null);
-    disconnectSpy = spyOn(ViwoClient.prototype, "disconnect").mockImplementation(() => {});
+    executeSpy = spyOn(BloomClient.prototype, "execute").mockResolvedValue(null);
+    sendRequestSpy = spyOn(BloomClient.prototype, "sendRequest").mockResolvedValue(null);
+    disconnectSpy = spyOn(BloomClient.prototype, "disconnect").mockImplementation(() => {});
 
     // We need to capture the subscribe listener to simulate state changes
     // We need to capture the subscribe listener to simulate state changes
-    spyOn(ViwoClient.prototype, "subscribe").mockImplementation((listener: any) => {
+    spyOn(BloomClient.prototype, "subscribe").mockImplementation((listener: any) => {
       // Immediately call with connected state for testing happy path
       listener({ isConnected: true });
       return () => true;
     });
 
     // Use `mock.fn` behavior to capture calls.
-    onMessageSpy = spyOn(ViwoClient.prototype, "onMessage").mockImplementation(
+    onMessageSpy = spyOn(BloomClient.prototype, "onMessage").mockImplementation(
       (_listener: any) => () => true,
     );
   });

@@ -1,5 +1,5 @@
 {
-  "name": "@viwo/discord-bot",
+  "name": "@bloom/discord-bot",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
   "dependencies": {
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
-    "@viwo/client": "workspace:*"
+    "@bloom/client": "workspace:*"
   },
   "devDependencies": {
     "@typescript/native-preview": "latest",

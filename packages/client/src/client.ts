@@ -9,7 +9,7 @@ import type {
   RoomIdNotification,
   StreamChunkNotification,
   UpdateNotification,
-} from "@viwo/shared/jsonrpc";
+} from "@bloom/shared/jsonrpc";
 
 export type CommandArgument = string | number | boolean | null | readonly CommandArgument[];
 
@@ -31,7 +31,7 @@ export type MessageListener = (message: GameMessage) => void;
  * Client for interacting with the Viwo Core server via WebSocket and JSON-RPC.
  * Manages connection state, message handling, and entity synchronization.
  */
-export class ViwoClient {
+export class BloomClient {
   private socket: WebSocket | null = null;
   private state: GameState = {
     entities: new Map(),

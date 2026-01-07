@@ -1,6 +1,6 @@
 # TUI (Terminal User Interface)
 
-A rich terminal-based interface for Viwo.
+A rich terminal-based interface for Bloom.
 
 ## Overview
 

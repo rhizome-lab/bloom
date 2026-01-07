@@ -1,6 +1,6 @@
 # Scripting Language Specification
 
-The Viwo scripting language is a dynamic, JSON-based language that uses S-expressions (Lisp-like syntax) represented as JSON arrays. It is designed to be embedded in JSON documents and executed by the Viwo core engine.
+The Bloom scripting language is a dynamic, JSON-based language that uses S-expressions (Lisp-like syntax) represented as JSON arrays. It is designed to be embedded in JSON documents and executed by the Bloom core engine.
 
 ## Core Syntax
 
@@ -74,7 +74,7 @@ The standard library provides essential control flow, variable management, and s
 
 ### Scoping
 
-ViwoScript uses **lexical block scoping**. A new scope is created for:
+BloomScript uses **lexical block scoping**. A new scope is created for:
 
 - `seq` (Sequence)
 - `if` (Then and Else branches)
@@ -250,7 +250,7 @@ _Defined in: `packages/scripting/src/lib/time.ts`_
 
 ## Practical Examples
 
-This section demonstrates common patterns and real-world usage of ViwoScript opcodes.
+This section demonstrates common patterns and real-world usage of BloomScript opcodes.
 
 ### Default Values with Nullish Coalescing
 
@@ -349,6 +349,6 @@ Using `try` for safe operations:
 
 ## Permissions
 
-Viwo uses a **Capability-Based Security** model. See [Security](../core/security.md) for details.
+Bloom uses a **Capability-Based Security** model. See [Security](../core/security.md) for details.
 
 To check if an actor can edit an entity, the system checks for `entity.control` capability.

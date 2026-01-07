@@ -11,7 +11,7 @@ use tokio_tungstenite::tungstenite::Message;
 use tracing::{error, info, warn};
 
 use crate::session::{Session, SessionId};
-use viwo_runtime::ViwoRuntime;
+use bloom_runtime::BloomRuntime;
 
 /// Server configuration.
 #[derive(Debug, Clone)]
@@ -31,17 +31,17 @@ impl Default for ServerConfig {
     }
 }
 
-/// The Viwo WebSocket server.
+/// The Bloom WebSocket server.
 pub struct Server {
     config: ServerConfig,
-    runtime: Arc<ViwoRuntime>,
+    runtime: Arc<BloomRuntime>,
     sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     broadcast_tx: broadcast::Sender<String>,
 }
 
 impl Server {
     /// Create a new server with the given runtime and configuration.
-    pub fn new(runtime: Arc<ViwoRuntime>, config: ServerConfig) -> Self {
+    pub fn new(runtime: Arc<BloomRuntime>, config: ServerConfig) -> Self {
         let (broadcast_tx, _) = broadcast::channel(256);
 
         Self {
@@ -53,7 +53,7 @@ impl Server {
     }
 
     /// Get the runtime.
-    pub fn runtime(&self) -> &Arc<ViwoRuntime> {
+    pub fn runtime(&self) -> &Arc<BloomRuntime> {
         &self.runtime
     }
 
@@ -133,7 +133,7 @@ impl Server {
 async fn handle_connection(
     stream: TcpStream,
     addr: SocketAddr,
-    runtime: Arc<ViwoRuntime>,
+    runtime: Arc<BloomRuntime>,
     sessions: Arc<RwLock<HashMap<SessionId, Session>>>,
     broadcast_tx: broadcast::Sender<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -239,7 +239,7 @@ async fn handle_message(
     text: &str,
     session_id: SessionId,
     sessions: &Arc<RwLock<HashMap<SessionId, Session>>>,
-    runtime: &Arc<ViwoRuntime>,
+    runtime: &Arc<BloomRuntime>,
     tx: &mpsc::UnboundedSender<String>,
     broadcast_tx: &broadcast::Sender<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -592,7 +592,7 @@ async fn handle_message(
             let code = params.and_then(|p| p.get("code")).ok_or("Missing code")?;
 
             // Parse code as SExpr
-            let sexpr: viwo_ir::SExpr =
+            let sexpr: bloom_ir::SExpr =
                 serde_json::from_value(code.clone()).map_err(|e| format!("Invalid code: {}", e))?;
 
             let storage = runtime.storage().lock().unwrap();
@@ -610,7 +610,7 @@ async fn handle_message(
             let code = params.and_then(|p| p.get("code")).ok_or("Missing code")?;
 
             // Parse code as SExpr
-            let sexpr: viwo_ir::SExpr =
+            let sexpr: bloom_ir::SExpr =
                 serde_json::from_value(code.clone()).map_err(|e| format!("Invalid code: {}", e))?;
 
             let storage = runtime.storage().lock().unwrap();
