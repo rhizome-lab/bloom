@@ -1,4 +1,11 @@
-import { ChannelType, Client, Events, GatewayIntentBits, type TextChannel } from "discord.js";
+import {
+  ChannelType,
+  Client,
+  EmbedBuilder,
+  Events,
+  GatewayIntentBits,
+  type TextChannel,
+} from "discord.js";
 import { CONFIG } from "./config";
 import { db } from "./instances";
 import { sessionManager } from "./session";
@@ -83,7 +90,7 @@ class DiscordBot {
     });
   }
 
-  private handleCommand(message: any) {
+  private async handleCommand(message: any) {
     const args = message.content.slice(1).trim().split(/ +/);
     const command = args.shift().toLowerCase();
 
@@ -102,6 +109,67 @@ class DiscordBot {
       message.reply(`Channel linked to Room ${roomId}.`);
     } else if (command === "ping") {
       message.reply("Pong!");
+    } else if (command === "help") {
+      const embed = new EmbedBuilder()
+        .setColor(0x5865f2)
+        .setTitle("Bloom Bot Commands")
+        .setDescription("Available commands:")
+        .addFields(
+          { name: "!link <room_id>", value: "Link this channel to a room", inline: true },
+          { name: "!unlink", value: "Unlink this channel from its room", inline: true },
+          { name: "!room", value: "Show current room info", inline: true },
+          { name: "!inventory", value: "Show your inventory", inline: true },
+          { name: "!inspect <item>", value: "Inspect an item", inline: true },
+          { name: "!help", value: "Show this help message", inline: true },
+        )
+        .setFooter({ text: "Regular messages are sent as game commands" });
+      message.reply({ embeds: [embed] });
+    } else if (command === "unlink") {
+      db.setRoomForChannel(message.channelId, null);
+      message.reply("Channel unlinked from room.");
+    } else if (command === "room" || command === "look") {
+      // Execute 'look' command for the user
+      try {
+        const entityId = await sessionManager.ensureSession(
+          message.author.id,
+          message.channelId,
+          message.author.displayName,
+        );
+        const socket = socketManager.getSocket();
+        socket.execute("sudo", [entityId, "look", []]);
+      } catch (error) {
+        message.reply("Failed to get room info.");
+      }
+    } else if (command === "inventory" || command === "inv" || command === "i") {
+      // Execute 'inventory' command for the user
+      try {
+        const entityId = await sessionManager.ensureSession(
+          message.author.id,
+          message.channelId,
+          message.author.displayName,
+        );
+        const socket = socketManager.getSocket();
+        socket.execute("sudo", [entityId, "inventory", []]);
+      } catch (error) {
+        message.reply("Failed to get inventory.");
+      }
+    } else if (command === "inspect") {
+      // Execute 'look <item>' command for the user
+      if (!args[0]) {
+        message.reply("Usage: !inspect <item_name>");
+        return;
+      }
+      try {
+        const entityId = await sessionManager.ensureSession(
+          message.author.id,
+          message.channelId,
+          message.author.displayName,
+        );
+        const socket = socketManager.getSocket();
+        socket.execute("sudo", [entityId, "look", [args.join(" ")]]);
+      } catch (error) {
+        message.reply("Failed to inspect item.");
+      }
     }
   }
 
@@ -114,21 +182,75 @@ class DiscordBot {
         try {
           const channel = await this.client.channels.fetch(session.channel_id);
           if (channel && channel.isTextBased()) {
-            // Format message
-            let content = "";
+            // Format message based on type
             if (data.type === "message") {
-              content = data.text;
+              // Simple text message
+              (channel as TextChannel).send(data.text);
             } else if (data.type === "room") {
-              content = `**${data.name}**\n${data.description}\n\n*Exits*: ${data.exits
-                ?.map((exit: any) => exit.name)
-                .join(", ")}\n*Items*: ${data.contents?.map((item: any) => item.name).join(", ")}`;
-            } else if (data.type === "error") {
-              content = `🔴 ${data.text}`;
-            } else {
-              content = `\`\`\`json\n${JSON.stringify(data, undefined, 2)}\n\`\`\``;
-            }
+              // Room info as embed
+              const embed = new EmbedBuilder()
+                .setColor(0x2ecc71)
+                .setTitle(data.name || "Unknown Room")
+                .setDescription(data.description || "");
 
-            if (content) {
+              // Add exits
+              const exits = data.exits?.map((exit: any) => exit.name).filter(Boolean) || [];
+              if (exits.length > 0) {
+                embed.addFields({
+                  name: "🚪 Exits",
+                  value: exits.join(", "),
+                  inline: true,
+                });
+              }
+
+              // Add contents
+              const contents = data.contents?.map((item: any) => item.name).filter(Boolean) || [];
+              if (contents.length > 0) {
+                embed.addFields({
+                  name: "📦 Contents",
+                  value: contents.join(", "),
+                  inline: true,
+                });
+              }
+
+              (channel as TextChannel).send({ embeds: [embed] });
+            } else if (data.type === "inventory") {
+              // Inventory as embed
+              const items = data.items?.map((item: any) => item.name).filter(Boolean) || [];
+              const embed = new EmbedBuilder()
+                .setColor(0xe67e22)
+                .setTitle("🎒 Inventory")
+                .setDescription(items.length > 0 ? items.join("\n") : "*Empty*");
+
+              (channel as TextChannel).send({ embeds: [embed] });
+            } else if (data.type === "item") {
+              // Item inspection as embed
+              const embed = new EmbedBuilder()
+                .setColor(0x9b59b6)
+                .setTitle(data.name || "Unknown Item")
+                .setDescription(data.description || "");
+
+              if (data.contents && data.contents.length > 0) {
+                const contents = data.contents.map((item: any) => item.name).filter(Boolean);
+                embed.addFields({
+                  name: "Contains",
+                  value: contents.join(", "),
+                  inline: false,
+                });
+              }
+
+              (channel as TextChannel).send({ embeds: [embed] });
+            } else if (data.type === "error") {
+              // Error message as embed
+              const embed = new EmbedBuilder()
+                .setColor(0xe74c3c)
+                .setTitle("Error")
+                .setDescription(data.text || "An error occurred");
+
+              (channel as TextChannel).send({ embeds: [embed] });
+            } else {
+              // Unknown type - show as JSON code block
+              const content = `\`\`\`json\n${JSON.stringify(data, undefined, 2)}\n\`\`\``;
               (channel as TextChannel).send(content);
             }
           }

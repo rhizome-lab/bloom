@@ -42,10 +42,14 @@ export class DatabaseManager {
     return res ? res.room_id : null;
   }
 
-  setRoomForChannel(channelId: string, roomId: number) {
-    this.db
-      .query("INSERT OR REPLACE INTO channel_maps (channel_id, room_id) VALUES (?, ?)")
-      .run(channelId, roomId);
+  setRoomForChannel(channelId: string, roomId: number | null) {
+    if (roomId === null) {
+      this.db.query("DELETE FROM channel_maps WHERE channel_id = ?").run(channelId);
+    } else {
+      this.db
+        .query("INSERT OR REPLACE INTO channel_maps (channel_id, room_id) VALUES (?, ?)")
+        .run(channelId, roomId);
+    }
   }
 
   // User Defaults
