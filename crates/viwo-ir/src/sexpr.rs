@@ -156,8 +156,31 @@ impl SExpr<Any> {
 
 // Methods available on any SExpr type
 impl<T> SExpr<T> {
-    /// Erases the type information, converting to SExpr<Any>.
-    /// This is needed when mixing different types in collections.
+    /// Erases the type information, converting to `SExpr<Any>`.
+    ///
+    /// # Safety (Type System)
+    ///
+    /// This is safe at runtime - it only erases compile-time phantom type information.
+    /// The underlying `SExprInner` is unchanged.
+    ///
+    /// # When to Use
+    ///
+    /// Use this when mixing different S-expression types in collections:
+    ///
+    /// ```ignore
+    /// // Wrong: vec! expects uniform types
+    /// vec![SExpr::string("hello"), SExpr::number(42.0)]  // compile error
+    ///
+    /// // Correct: erase_type() to unify into SExpr<Any>
+    /// vec![SExpr::string("hello").erase_type(), SExpr::number(42.0).erase_type()]
+    /// ```
+    ///
+    /// Also needed when passing typed values to functions expecting `SExpr<Any>`:
+    ///
+    /// ```ignore
+    /// let verb: SExpr<Any> = SExpr::string("result").erase_type();
+    /// storage.add_verb(entity_id, "name", &verb);
+    /// ```
     pub fn erase_type(self) -> SExpr<Any> {
         SExpr {
             inner: self.inner,

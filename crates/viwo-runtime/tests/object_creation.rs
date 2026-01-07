@@ -66,7 +66,7 @@ fn test_create_entity_via_opcode() {
                 .erase_type(),
                 SExpr::list(vec![
                     SExpr::string("location").erase_type(),
-                    SExpr::call("std.var", vec![SExpr::string("room_id")]),
+                    SExpr::call("std.var", vec![SExpr::string("room_id").erase_type()]),
                 ])
                 .erase_type(),
             ],
@@ -83,14 +83,14 @@ fn test_create_entity_via_opcode() {
         .execute_verb(player_id, "create_object", vec![json!(room_id)], None)
         .unwrap();
 
-    // Should return the new entity
-    let new_id = result["id"].as_i64().unwrap();
+    // Should return the new entity ID
+    let new_id = result.as_i64().unwrap();
     assert!(new_id > 0);
 
     // Verify entity was created
     let storage = runtime.storage().lock().unwrap();
-    let entity = storage.get_entity(new_id).unwrap();
-    assert_eq!(entity["name"], "New Object");
+    let entity = storage.get_entity(new_id).unwrap().unwrap();
+    assert_eq!(entity.props["name"], "New Object");
 }
 
 #[test]
@@ -115,7 +115,7 @@ fn test_create_entity_with_prototype() {
             .unwrap();
 
         // Add a verb to the prototype
-        let verb = SExpr::string("I am an item!");
+        let verb = SExpr::string("I am an item!").erase_type();
         storage.add_verb(proto_id, "describe", &verb).unwrap();
 
         let player_id = storage
@@ -139,7 +139,7 @@ fn test_create_entity_with_prototype() {
                     .erase_type(),
                 ],
             ),
-            SExpr::call("std.arg", vec![SExpr::number(0.0)]),
+            SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]),
         ],
     );
 
@@ -152,13 +152,13 @@ fn test_create_entity_with_prototype() {
         .execute_verb(player_id, "create_item", vec![json!(proto_id)], None)
         .unwrap();
 
-    let new_id = result["id"].as_i64().unwrap();
+    let new_id = result.as_i64().unwrap();
 
     // Verify prototype was set
     let storage = runtime.storage().lock().unwrap();
-    let entity = storage.get_entity(new_id).unwrap();
-    assert_eq!(entity["name"], "Sword");
-    assert_eq!(entity["_prototype"], proto_id);
+    let entity = storage.get_entity(new_id).unwrap().unwrap();
+    assert_eq!(entity.props["name"], "Sword");
+    assert_eq!(entity.prototype_id, Some(proto_id));
 
     // Verify verb inheritance works
     let verbs = storage.get_verbs(new_id).unwrap();
@@ -189,7 +189,7 @@ fn test_update_entity_modifies_props() {
     let verb = SExpr::call(
         "update",
         vec![
-            SExpr::call("std.arg", vec![SExpr::number(0.0)]),
+            SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]),
             SExpr::call(
                 "obj.new",
                 vec![
@@ -219,10 +219,10 @@ fn test_update_entity_modifies_props() {
 
     // Verify entity was updated
     let storage = runtime.storage().lock().unwrap();
-    let entity = storage.get_entity(target_id).unwrap();
-    assert_eq!(entity["health"], 75);
-    assert_eq!(entity["mana"], 50); // Unchanged
-    assert_eq!(entity["status"], "wounded"); // New field
+    let entity = storage.get_entity(target_id).unwrap().unwrap();
+    assert_eq!(entity.props["health"], 75);
+    assert_eq!(entity.props["mana"], 50); // Unchanged
+    assert_eq!(entity.props["status"], "wounded"); // New field
 }
 
 #[test]
@@ -239,29 +239,23 @@ fn test_prototype_chain_verb_resolution() {
             .unwrap();
 
         // Grandparent has a verb
-        let gp_verb = SExpr::string("grandparent verb");
+        let gp_verb = SExpr::string("grandparent verb").erase_type();
         storage
             .add_verb(grandparent_id, "inherited", &gp_verb)
             .unwrap();
 
         let parent_id = storage
-            .create_entity(
-                json!({"name": "Parent", "level": 2, "_prototype": grandparent_id}),
-                None,
-            )
+            .create_entity(json!({"name": "Parent", "level": 2}), Some(grandparent_id))
             .unwrap();
 
         // Parent overrides and adds verbs
-        let parent_verb = SExpr::string("parent verb");
+        let parent_verb = SExpr::string("parent verb").erase_type();
         storage
             .add_verb(parent_id, "parent_only", &parent_verb)
             .unwrap();
 
         let child_id = storage
-            .create_entity(
-                json!({"name": "Child", "level": 3, "_prototype": parent_id}),
-                None,
-            )
+            .create_entity(json!({"name": "Child", "level": 3}), Some(parent_id))
             .unwrap();
 
         (grandparent_id, parent_id, child_id)
@@ -320,20 +314,20 @@ fn test_entity_location_tracking() {
             SExpr::call(
                 "update",
                 vec![
-                    SExpr::call("std.arg", vec![SExpr::number(0.0)]), // item_id
+                    SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]), // item_id
                     SExpr::call(
                         "obj.new",
                         vec![
                             SExpr::list(vec![
                                 SExpr::string("location").erase_type(),
-                                SExpr::call("std.arg", vec![SExpr::number(1.0)]), // new_room
+                                SExpr::call("std.arg", vec![SExpr::number(1.0).erase_type()]), // new_room
                             ])
                             .erase_type(),
                         ],
                     ),
                 ],
             ),
-            SExpr::string("moved"),
+            SExpr::string("moved").erase_type(),
         ],
     );
 
@@ -353,8 +347,8 @@ fn test_entity_location_tracking() {
 
     // Verify item moved
     let storage = runtime.storage().lock().unwrap();
-    let item = storage.get_entity(item_id).unwrap();
-    assert_eq!(item["location"], room2_id);
+    let item = storage.get_entity(item_id).unwrap().unwrap();
+    assert_eq!(item.props["location"], room2_id);
 }
 
 #[test]
@@ -425,14 +419,14 @@ fn test_nested_object_creation() {
         .execute_verb(player_id, "create_complex", vec![], None)
         .unwrap();
 
-    let new_id = result["id"].as_i64().unwrap();
+    let new_id = result.as_i64().unwrap();
 
     // Verify nested props
     let storage = runtime.storage().lock().unwrap();
-    let entity = storage.get_entity(new_id).unwrap();
-    assert_eq!(entity["name"], "Complex Item");
-    assert_eq!(entity["stats"]["attack"], 10);
-    assert_eq!(entity["stats"]["defense"], 5);
-    assert_eq!(entity["tags"][0], "weapon");
-    assert_eq!(entity["tags"][1], "rare");
+    let entity = storage.get_entity(new_id).unwrap().unwrap();
+    assert_eq!(entity.props["name"], "Complex Item");
+    assert_eq!(entity.props["stats"]["attack"], 10);
+    assert_eq!(entity.props["stats"]["defense"], 5);
+    assert_eq!(entity.props["tags"][0], "weapon");
+    assert_eq!(entity.props["tags"][1], "rare");
 }

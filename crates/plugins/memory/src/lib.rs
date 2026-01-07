@@ -459,7 +459,7 @@ unsafe extern "C" fn memory_search_lua(L: *mut mlua::ffi::lua_State) -> c_int {
 
 /// Plugin initialization - register all functions
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn plugin_init(register_fn: RegisterFunction) -> c_int {
+pub unsafe extern "C" fn memory_plugin_init(register_fn: RegisterFunction) -> c_int {
     unsafe {
         let names = ["memory.add", "memory.search"];
         let funcs: [PluginLuaFunction; 2] = [memory_add_lua, memory_search_lua];
@@ -479,6 +479,6 @@ pub unsafe extern "C" fn plugin_init(register_fn: RegisterFunction) -> c_int {
 
 /// Plugin cleanup
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn plugin_cleanup() -> c_int {
+pub unsafe extern "C" fn memory_plugin_cleanup() -> c_int {
     0
 }
