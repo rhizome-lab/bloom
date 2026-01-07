@@ -63,6 +63,54 @@ impl Server {
         let listener = TcpListener::bind(&addr).await?;
         info!("Listening on ws://{}", addr);
 
+        // Start the scheduler in a background task
+        let scheduler = Arc::clone(self.runtime.scheduler());
+        let runtime_for_scheduler = Arc::clone(&self.runtime);
+        let broadcast_for_scheduler = self.broadcast_tx.clone();
+
+        tokio::spawn(async move {
+            scheduler
+                .run(move |task| {
+                    let runtime = Arc::clone(&runtime_for_scheduler);
+                    let broadcast_tx = broadcast_for_scheduler.clone();
+                    async move {
+                        info!(
+                            "Scheduler executing task {}: {}({}) on entity {}",
+                            task.id, task.verb, task.args, task.entity_id
+                        );
+
+                        // Parse args as array
+                        let args = match task.args.as_array() {
+                            Some(arr) => arr.clone(),
+                            None => vec![task.args.clone()],
+                        };
+
+                        // Execute the verb
+                        match runtime.execute_verb(task.entity_id, &task.verb, args, None) {
+                            Ok(result) => {
+                                // Optionally broadcast the result
+                                if !result.is_null() {
+                                    let notification = serde_json::json!({
+                                        "jsonrpc": "2.0",
+                                        "method": "task_completed",
+                                        "params": {
+                                            "task_id": task.id,
+                                            "entity_id": task.entity_id,
+                                            "verb": task.verb,
+                                            "result": result
+                                        }
+                                    });
+                                    let _ = broadcast_tx.send(notification.to_string());
+                                }
+                                Ok(())
+                            }
+                            Err(err) => Err(format!("{}", err)),
+                        }
+                    }
+                })
+                .await;
+        });
+
         while let Ok((stream, addr)) = listener.accept().await {
             let runtime = Arc::clone(&self.runtime);
             let sessions = Arc::clone(&self.sessions);
@@ -297,6 +345,31 @@ async fn handle_message(
 
             let _ = broadcast_tx.send(notification.to_string());
             Ok(serde_json::json!({ "status": "ok" }))
+        }
+
+        "schedule" => {
+            let entity_id = params
+                .and_then(|p| p.get("entityId"))
+                .and_then(|id| id.as_i64())
+                .ok_or("Missing entityId")?;
+            let verb = params
+                .and_then(|p| p.get("verb"))
+                .and_then(|v| v.as_str())
+                .ok_or("Missing verb")?;
+            let args = params
+                .and_then(|p| p.get("args"))
+                .cloned()
+                .unwrap_or(serde_json::json!([]));
+            let delay_ms = params
+                .and_then(|p| p.get("delayMs"))
+                .and_then(|d| d.as_u64())
+                .unwrap_or(0);
+
+            let scheduler = runtime.scheduler();
+            match scheduler.schedule(entity_id, verb, args, delay_ms).await {
+                Ok(task_id) => Ok(serde_json::json!({ "taskId": task_id, "status": "ok" })),
+                Err(err) => Err(format!("Schedule failed: {}", err).into()),
+            }
         }
 
         "get_entity" => {

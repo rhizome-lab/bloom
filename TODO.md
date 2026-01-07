@@ -68,7 +68,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 
 ## Next Up
 
-1. **Server**: Hook scheduler into server tick loop
+1. **Server**: Full verb discovery via System.get_available_verbs (execute handler currently calls verbs directly)
 
 ---
 
@@ -97,7 +97,8 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Server**: Session-based login handler (associate session with player entity) ✅
 - [x] **Server**: Execute handler (verb discovery + command execution) ✅
 - [x] **Server**: Broadcast system for multi-client updates ✅
-- [ ] **Server**: Hook scheduler into server tick loop
+- [x] **Server**: Hook scheduler into server tick loop ✅
+- [x] **Server**: Schedule handler for client-initiated task scheduling ✅
 
 **Rust Server Applications:**
 - [x] **notes-server**: Port notes server to Rust ✅
