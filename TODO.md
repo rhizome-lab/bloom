@@ -73,6 +73,9 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 3. ~~**FileBrowser App**: Integration tests for navigation, file reading, bookmarks~~ ✅ (3 tests: bookmarks, navigation, metadata)
 4. ~~**Transpiler**: Make dictionary/object access safer~~ ✅ (obj.get and list.get now support optional default value argument)
 5. **viwo-ir**: Extract remaining opcode definitions from TypeScript to schema
+   - ~100+ opcodes in codegen need schema definitions
+   - Libraries: std, math, list, obj, str, bool, json, fs, net, sqlite, ai, memory, vector, procgen, game
+   - Each needs: name, category, description, params, return types (TS + runtime)
 
 ---
 
