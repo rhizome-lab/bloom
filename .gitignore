@@ -45,3 +45,4 @@ cache/
 *.txt
 
 *.cpuprofile
+notes.db

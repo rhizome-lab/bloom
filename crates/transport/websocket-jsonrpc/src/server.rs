@@ -633,6 +633,20 @@ async fn handle_message(
             }
         }
 
+        "get_opcodes" => {
+            // Get core library opcodes
+            let mut opcodes: Vec<String> = bloom_ir::CORE_LIBRARIES
+                .iter()
+                .map(|lib| format!("{}.*", lib))
+                .collect();
+
+            // Add plugin-registered opcodes
+            let plugin_opcodes = bloom_runtime::get_registered_opcodes();
+            opcodes.extend(plugin_opcodes);
+
+            Ok(serde_json::json!(opcodes))
+        }
+
         _ => Err(format!("Unknown method: {}", method).into()),
     };
 

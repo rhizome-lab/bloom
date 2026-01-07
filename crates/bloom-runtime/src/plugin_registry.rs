@@ -54,6 +54,15 @@ pub fn get_plugin_function(name: &str) -> Option<PluginLuaFunction> {
     registry.as_ref()?.get(name).copied()
 }
 
+/// Get all registered plugin opcode names.
+pub fn get_registered_opcodes() -> Vec<String> {
+    let registry = PLUGIN_REGISTRY.lock().unwrap();
+    registry
+        .as_ref()
+        .map(|map| map.keys().cloned().collect())
+        .unwrap_or_default()
+}
+
 /// Register all plugin functions as Lua globals.
 ///
 /// Each function registered as "foo.bar" becomes the Lua global "__bloom_foo_bar".

@@ -13,7 +13,7 @@ pub mod plugin_registry;
 
 pub use context::ExecutionContext;
 pub use kernel::KernelOps;
-pub use plugin_registry::init_registry;
+pub use plugin_registry::{get_registered_opcodes, init_registry};
 
 /// The main Bloom runtime.
 pub struct BloomRuntime {
