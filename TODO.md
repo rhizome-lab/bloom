@@ -145,8 +145,8 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 
 ## Testing & Hardening
 
-- [ ] **Object Creation Flows**: Add regression tests around create/dig/set verbs covering prototype assignment, room contents updates, and capability-gated creation failures.
-- [ ] **Adversarial Actors**: Red-team scenarios for capability abuse (missing caps, spoofed locations, recursive containment, excessive gas) with assertions that operations are rejected and state remains consistent.
+- [x] **Object Creation Flows**: Add regression tests around create/dig/set verbs covering prototype assignment, room contents updates, and capability-gated creation failures. ✅ (6 tests in object_creation.rs)
+- [x] **Adversarial Actors**: Red-team scenarios for capability abuse (missing caps, spoofed locations, recursive containment, excessive gas) with assertions that operations are rejected and state remains consistent. ✅ (13 tests in adversarial.rs)
 
 ## 4. Knowledge & Productivity (Notion)
 
