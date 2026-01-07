@@ -1,6 +1,9 @@
 //! std.* opcode compilation.
 
-use super::{CompileError, compile_value, is_statement_opcode, sexpr_to_lua_table, to_lua_name};
+use super::{
+    CompileError, compile_value, contains_loop_control_flow, is_statement_opcode,
+    sexpr_to_lua_table, to_lua_name,
+};
 use viwo_ir::SExpr;
 
 /// Compile std.* opcodes. Returns None if opcode doesn't match.
@@ -50,20 +53,32 @@ pub fn compile_std(
             }
             let cond = compile_value(&args[0], false)?;
 
-            // When used as a value (should_return = false), we need to wrap in IIFE
-            // since Lua's if is a statement, not an expression
-            if should_return {
-                // Top-level: generate if statement with returns in branches
-                let then_branch = compile_value(&args[1], true)?;
+            // Check if branches contain loop control flow (break/continue)
+            // These can't be wrapped in IIFE because they need to escape to the outer loop
+            let has_control_flow = contains_loop_control_flow(&args[1])
+                || args.get(2).is_some_and(|e| contains_loop_control_flow(e));
+
+            // When used as a value (should_return = false), we normally wrap in IIFE
+            // since Lua's if is a statement, not an expression.
+            // But if branches contain break/continue, we must use plain if.
+            if should_return || has_control_flow {
+                // Generate if statement (not wrapped in IIFE)
+                let then_branch = compile_value(&args[1], should_return)?;
                 let else_branch = if args.len() > 2 {
-                    compile_value(&args[2], true)?
-                } else {
+                    compile_value(&args[2], should_return)?
+                } else if should_return {
                     "return nil".to_string()
+                } else {
+                    String::new()
                 };
-                format!(
-                    "if {} then\n{}\nelse\n{}\nend",
-                    cond, then_branch, else_branch
-                )
+                if else_branch.is_empty() {
+                    format!("if {} then\n{}\nend", cond, then_branch)
+                } else {
+                    format!(
+                        "if {} then\n{}\nelse\n{}\nend",
+                        cond, then_branch, else_branch
+                    )
+                }
             } else {
                 // Used as expression: wrap in IIFE with returns
                 let then_branch = compile_value(&args[1], true)?;

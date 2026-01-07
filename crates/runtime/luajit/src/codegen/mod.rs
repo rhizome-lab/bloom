@@ -267,6 +267,32 @@ pub(crate) fn is_statement_opcode(expr: &SExpr) -> bool {
     false
 }
 
+/// Check if an expression contains control flow (break/continue/return) that can't be wrapped in IIFE.
+/// These opcodes can't escape from a function boundary in Lua.
+pub(crate) fn contains_loop_control_flow(expr: &SExpr) -> bool {
+    if let Some(items) = expr.as_list() {
+        if let Some(first) = items.first() {
+            if let Some(op) = first.as_str() {
+                // Direct control flow opcodes that can't escape IIFE
+                if matches!(op, "std.break" | "std.continue" | "std.return") {
+                    return true;
+                }
+                // Don't recurse into lambdas - they create a new scope where control flow is valid
+                if op == "std.lambda" {
+                    return false;
+                }
+            }
+        }
+        // Recurse into all children
+        for item in items {
+            if contains_loop_control_flow(item) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 pub(crate) fn sexpr_to_lua_table(expr: &SExpr, prefix: &str) -> Result<String, CompileError> {
     if expr.is_null() {
         return Ok(format!("{}nil", prefix));
