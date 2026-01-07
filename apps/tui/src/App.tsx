@@ -2,6 +2,8 @@ import { Box, Text, useApp, useStdout } from "ink";
 import { type GameState, BloomClient } from "@bloom/client";
 import { useEffect, useRef, useState } from "react";
 import Editor from "./components/Editor";
+import Compass from "./components/Compass";
+import Inspector from "./components/Inspector";
 import type { Entity } from "@bloom/shared/jsonrpc";
 import TextInput from "ink-text-input";
 
@@ -23,6 +25,7 @@ const App = () => {
   const [room, setRoom] = useState<Entity | null>();
   const [inventory, setInventory] = useState<Entity[]>([]);
   const [mode, setMode] = useState<Mode>("GAME");
+  const [inspectedItem, setInspectedItem] = useState<Entity | null>(null);
   const [editingScript, setEditingScript] = useState<{
     id: number;
     verb: string;
@@ -136,6 +139,24 @@ const App = () => {
         return;
       }
 
+      // Handle inspect command
+      if (command === "inspect" && args.length >= 1) {
+        const itemName = args[0]!.toLowerCase();
+        // Search in room contents and inventory
+        const allItems = [...getRoomContents(), ...inventory];
+        const item = allItems.find(
+          (i) => (i["name"] as string)?.toLowerCase() === itemName
+        );
+        if (item) {
+          handleInspect(item);
+          addLog(`Inspecting: ${item["name"]}`, "info");
+        } else {
+          addLog(`Item not found: ${args[0]}`, "error");
+        }
+        setQuery("");
+        return;
+      }
+
       clientRef.current.execute(command, args);
     }
     setQuery("");
@@ -231,6 +252,11 @@ const App = () => {
       .filter((entity) => !!entity);
   };
 
+  // Handle item inspection
+  const handleInspect = (item: Entity) => {
+    setInspectedItem(item);
+  };
+
   return (
     <Box flexDirection="column" height={rows}>
       {mode === "EDITOR" && editingScript ? (
@@ -256,7 +282,7 @@ const App = () => {
             </Text>
           </Box>
 
-          {/* Main Content Area */}
+          {/* Main Content Area - Top Row */}
           <Box flexGrow={1}>
             {/* Left Column: Log */}
             <Box width="30%" borderStyle="single" flexDirection="column">
@@ -264,7 +290,7 @@ const App = () => {
                 Log
               </Text>
               <Box flexDirection="column" flexGrow={1} overflowY="hidden">
-                {logs.slice(-20).map((log) => (
+                {logs.slice(-15).map((log) => (
                   <Box key={log.id}>
                     <Text
                       color={log.type === "error" ? "red" : log.type === "info" ? "white" : "blue"}
@@ -287,7 +313,7 @@ const App = () => {
                     {room["name"] as string}
                   </Text>
                   <Text italic>{room["description"] as string}</Text>
-                  <Box marginTop={1}>
+                  <Box marginTop={1} flexDirection="column">
                     <Text underline>Contents:</Text>
                     {getRoomContents().map((item: Entity, idx: number) => (
                       <Text key={idx}>- {item["name"] as string}</Text>
@@ -309,6 +335,25 @@ const App = () => {
               ) : (
                 <Text color="gray">(empty)</Text>
               )}
+            </Box>
+          </Box>
+
+          {/* Bottom Row: Compass + Inspector */}
+          <Box height={8}>
+            {/* Left: Compass */}
+            <Box width="35%" borderStyle="single">
+              <Compass
+                room={room}
+                entities={clientState.entities}
+              />
+            </Box>
+
+            {/* Right: Inspector */}
+            <Box width="65%" borderStyle="single">
+              <Inspector
+                inspectedItem={inspectedItem}
+                entities={clientState.entities}
+              />
             </Box>
           </Box>
 
