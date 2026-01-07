@@ -36,6 +36,8 @@
 ### Tooling
 
 - [ ] **Type-Aware Linting**: Enable oxlint type-aware rules for TypeScript frontends
+- [ ] **Fix Docs Build**: `bun run build:docs` script is missing/broken
+- [ ] **Fix Unused Check**: `bun run check:unused` is failing
 
 ---
 

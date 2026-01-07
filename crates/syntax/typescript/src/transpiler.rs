@@ -85,17 +85,24 @@ impl<'a> TranspileContext<'a> {
                 "std.var",
                 vec![SExpr::string(self.node_text(node)).erase_type()],
             )),
+            "this" => Ok(SExpr::call("std.this", vec![])),
             "binary_expression" => self.transpile_binary_expr(node),
             "unary_expression" => self.transpile_unary_expr(node),
             "parenthesized_expression" => self.transpile_parenthesized(node),
             "assignment_expression" => self.transpile_assignment_expr(node),
+            "augmented_assignment_expression" => self.transpile_augmented_assignment_expr(node),
             "call_expression" => self.transpile_call_expr(node),
             "member_expression" => self.transpile_member_expr(node),
             "subscript_expression" => self.transpile_subscript_expr(node),
             "array" => self.transpile_array(node),
             "object" => self.transpile_object(node),
+            "template_string" => self.transpile_template_string(node),
             "arrow_function" => self.transpile_arrow_function(node),
             "ternary_expression" => self.transpile_ternary(node),
+
+            // Type assertions - just pass through the inner expression
+            "as_expression" => self.transpile_as_expression(node),
+            "non_null_expression" => self.transpile_non_null_expression(node),
 
             // Statements
             "expression_statement" => self.transpile_expression_statement(node),
@@ -152,6 +159,78 @@ impl<'a> TranspileContext<'a> {
             .replace("\\'", "'")
             .replace("\\\\", "\\");
         Ok(SExpr::string(unescaped).erase_type())
+    }
+
+    /// Handle template strings with interpolation (e.g., `Hello ${name}!`)
+    /// Transpiles to str.concat calls
+    fn transpile_template_string(&self, node: Node) -> Result<SExpr, TranspileError> {
+        let mut parts: Vec<SExpr> = Vec::new();
+        let mut cursor = node.walk();
+
+        for child in node.children(&mut cursor) {
+            match child.kind() {
+                // String fragment between interpolations
+                "string_fragment" | "template_fragment" => {
+                    let text = self.node_text(child);
+                    if !text.is_empty() {
+                        parts.push(SExpr::string(text).erase_type());
+                    }
+                }
+                // Interpolation: ${...}
+                "template_substitution" => {
+                    // Find the expression inside the ${ }
+                    if let Some(expr) = child.named_child(0) {
+                        parts.push(self.transpile_node(expr)?);
+                    }
+                }
+                // Skip the ` characters
+                "`" => {}
+                _ => {}
+            }
+        }
+
+        // If no parts, return empty string
+        if parts.is_empty() {
+            return Ok(SExpr::string("").erase_type());
+        }
+
+        // If single part, return it directly (wrap in std.string for type coercion)
+        if parts.len() == 1 {
+            return Ok(SExpr::call("std.string", parts));
+        }
+
+        // Multiple parts: use str.concat
+        Ok(SExpr::call("str.concat", parts))
+    }
+
+    /// Handle TypeScript `as` type assertions (e.g., `foo as Bar`)
+    /// Just pass through the expression, ignoring the type annotation
+    fn transpile_as_expression(&self, node: Node) -> Result<SExpr, TranspileError> {
+        // as_expression has two children: the expression and the type
+        // We just want the expression (first child)
+        let mut cursor = node.walk();
+        for child in node.children(&mut cursor) {
+            if child.is_named()
+                && child.kind() != "type_identifier"
+                && !child.kind().contains("type")
+            {
+                return self.transpile_node(child);
+            }
+        }
+        // Fallback: try first named child
+        let expr = node
+            .named_child(0)
+            .ok_or_else(|| TranspileError::Parse("as_expression missing expression".into()))?;
+        self.transpile_node(expr)
+    }
+
+    /// Handle TypeScript non-null assertions (e.g., `foo!`)
+    /// Just pass through the expression
+    fn transpile_non_null_expression(&self, node: Node) -> Result<SExpr, TranspileError> {
+        let expr = node.named_child(0).ok_or_else(|| {
+            TranspileError::Parse("non_null_expression missing expression".into())
+        })?;
+        self.transpile_node(expr)
     }
 
     fn transpile_binary_expr(&self, node: Node) -> Result<SExpr, TranspileError> {
@@ -294,6 +373,85 @@ impl<'a> TranspileContext<'a> {
             }
             _ => Err(TranspileError::Unsupported(format!(
                 "assignment to '{}'",
+                left.kind()
+            ))),
+        }
+    }
+
+    fn transpile_augmented_assignment_expr(&self, node: Node) -> Result<SExpr, TranspileError> {
+        // Handle +=, -=, *=, /=, etc.
+        let left = node
+            .child_by_field_name("left")
+            .ok_or_else(|| TranspileError::Parse("augmented assignment missing left".into()))?;
+        let right = node
+            .child_by_field_name("right")
+            .ok_or_else(|| TranspileError::Parse("augmented assignment missing right".into()))?;
+        let operator = node
+            .child_by_field_name("operator")
+            .ok_or_else(|| TranspileError::Parse("augmented assignment missing operator".into()))?;
+
+        let left_expr = self.transpile_node(left)?;
+        let right_expr = self.transpile_node(right)?;
+        let op_text = self.node_text(operator);
+
+        // Get the operation (strip the '=' suffix)
+        let opcode = match op_text {
+            "+=" => "math.add",
+            "-=" => "math.sub",
+            "*=" => "math.mul",
+            "/=" => "math.div",
+            "%=" => "math.mod",
+            "**=" => "math.pow",
+            "&&=" => "bool.and",
+            "||=" => "bool.or",
+            "??=" => "bool.nullish",
+            _ => {
+                return Err(TranspileError::Unsupported(format!(
+                    "augmented assignment operator '{}'",
+                    op_text
+                )));
+            }
+        };
+
+        // Build: left = opcode(left, right)
+        let operation = SExpr::call(opcode, vec![left_expr, right_expr]);
+
+        // Create the assignment
+        match left.kind() {
+            "identifier" => {
+                let var_name = self.node_text(left);
+                Ok(SExpr::call(
+                    "std.set",
+                    vec![SExpr::string(var_name).erase_type(), operation],
+                ))
+            }
+            "member_expression" => {
+                let obj = left
+                    .child_by_field_name("object")
+                    .ok_or_else(|| TranspileError::Parse("member missing object".into()))?;
+                let prop = left
+                    .child_by_field_name("property")
+                    .ok_or_else(|| TranspileError::Parse("member missing property".into()))?;
+                let obj_expr = self.transpile_node(obj)?;
+                let prop_name = self.node_text(prop);
+                Ok(SExpr::call(
+                    "obj.set",
+                    vec![obj_expr, SExpr::string(prop_name).erase_type(), operation],
+                ))
+            }
+            "subscript_expression" => {
+                let obj = left
+                    .child_by_field_name("object")
+                    .ok_or_else(|| TranspileError::Parse("subscript missing object".into()))?;
+                let index = left
+                    .child_by_field_name("index")
+                    .ok_or_else(|| TranspileError::Parse("subscript missing index".into()))?;
+                let obj_expr = self.transpile_node(obj)?;
+                let idx_expr = self.transpile_node(index)?;
+                Ok(SExpr::call("list.set", vec![obj_expr, idx_expr, operation]))
+            }
+            _ => Err(TranspileError::Unsupported(format!(
+                "augmented assignment to '{}'",
                 left.kind()
             ))),
         }
