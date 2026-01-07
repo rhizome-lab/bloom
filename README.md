@@ -1,41 +1,53 @@
 # Bloom
 
-**Bloom** (Virtual World) is a persistent, multiplayer, scriptable virtual world engine. It combines the interactive storytelling of MUDs/MOOs with modern web technologies and AI integration.
+**Bloom** is a persistent, multiplayer, scriptable virtual world engine. It combines the interactive storytelling of MUDs/MOOs with modern web technologies and AI integration.
 
 ## Overview
 
-Bloom allows players to explore a persistent world, interact with objects and NPCs, and extend the world through a built-in scripting language. The engine is designed to be modular, supporting multiple frontends (Web, TUI, Discord) connected to a central core server.
+Bloom allows players to explore a persistent world, interact with objects and NPCs, and extend the world through a built-in scripting language. The engine is designed to be modular, supporting multiple frontends (Web, TUI, Discord) connected to a Rust-powered server.
 
 ## Key Features
 
 - **Scriptable World**: Everything in the world (rooms, items, NPCs) can be scripted using **BloomScript**, an S-expression language using JSON syntax.
 - **Persistent State**: The world state is persisted in a SQLite database.
-- **Multiplayer**: Real-time interaction with other players.
-- **AI Integration**: Built-in support for AI-driven NPCs and content generation.
+- **Multiplayer**: Real-time interaction with other players via WebSockets.
+- **AI Integration**: Built-in plugins for AI-driven NPCs and content generation.
+- **LuaJIT Execution**: Scripts compile to Lua for high-performance execution.
 - **Multiple Frontends**:
-  - **Web Client**: A modern, responsive web interface with a visual script editor.
+  - **Web Client**: A modern, responsive web interface.
   - **TUI**: A terminal user interface for a retro experience.
-  - **CLI**: A command-line interface for direct interaction.
   - **Discord Bot**: Play directly from Discord.
 
 ## Architecture
 
-The project is organized as a monorepo:
+The project is organized as a monorepo with Rust backend and TypeScript frontends:
 
-- **`packages/core`**: The heart of the engine. Handles the game loop, database, scripting interpreter, and WebSocket server.
-- **`packages/client`**: A shared TypeScript client library for connecting to the core.
-- **`packages/shared`**: Shared types and utilities (JSON-RPC protocol, etc.).
-- **`apps/web`**: The main web frontend (React/Solid/Vite).
-- **`apps/tui`**: The terminal user interface.
-- **`apps/cli`**: The command-line interface.
-- **`apps/server`**: The standalone server entry point.
-- **`apps/discord-bot`**: The Discord bot integration.
-- **`plugins/ai`**: AI integration plugin.
+### Rust Backend (`crates/`)
+
+- **`bloom-ir`**: S-expression types and validation (the IR format)
+- **`bloom-core`**: Entity system, capabilities, SQLite storage
+- **`bloom-runtime`**: LuaJIT integration for script execution
+- **`bloom-cli`**: CLI binary (`bloom`)
+- **`syntax/typescript`**: TypeScript → S-expression transpiler
+- **`runtime/luajit`**: S-expression → Lua codegen
+- **`transport/websocket-jsonrpc`**: WebSocket server with JSON-RPC
+- **`plugins/*`**: Native Lua C API plugins (ai, fs, net, sqlite, procgen, vector, memory)
+
+### TypeScript Frontends (`apps/`, `packages/`)
+
+- **`packages/client`**: Shared WebSocket client library for connecting to servers
+- **`packages/shared`**: Shared types (JSON-RPC protocol)
+- **`apps/web`**: Main web frontend (SolidJS/Vite)
+- **`apps/tui`**: Terminal user interface
+- **`apps/discord-bot`**: Discord bot integration
+- **`apps/notes`**: Wiki-style notes app
+- **`apps/filebrowser`**: File browser app
 
 ## Getting Started
 
 ### Prerequisites
 
+- [Rust](https://rustup.rs/) (latest stable)
 - [Bun](https://bun.sh/) (v1.0.0 or later)
 
 ### Installation
@@ -45,36 +57,43 @@ The project is organized as a monorepo:
 git clone https://github.com/pterror/bloom.git
 cd bloom
 
-# Install dependencies
+# Install TypeScript dependencies
 bun install
+
+# Build Rust backend
+cargo build --release
 ```
 
 ### Running the Project
 
-To start the core server and the web frontend in development mode:
-
 ```bash
-# Start the core server (default port 8080)
-bun run dev:server
+# Start the notes server (Rust)
+cargo run -p bloom-notes-server
 
 # In a separate terminal, start the web client
-bun run dev:web
+bun run dev:notes
 ```
 
-Access the web client at `http://localhost:5173`.
+Access the notes app at `http://localhost:3004`.
 
 ## Scripting
 
-Bloom uses **BloomScript**, an S-expression language that uses JSON as its syntax. It is designed to be easily parsed and manipulated by tools (like the visual editor).
+Bloom uses **BloomScript**, an S-expression language that uses JSON as its syntax. Scripts are transpiled from TypeScript to S-expressions, then compiled to Lua for execution.
 
 Example script (Greeting) represented in JSON:
 
 ```json
-[
-  "seq",
-  ["let", "name", ["arg", 0]],
-  ["call", ["caller"], "tell", ["str.concat", "Hello, ", ["var", "name"], "!"]]
+["std.seq",
+  ["std.let", "name", ["std.arg", 0]],
+  ["game.call", ["std.caller"], "tell", ["str.concat", "Hello, ", ["std.var", "name"], "!"]]
 ]
+```
+
+The same script in TypeScript:
+
+```typescript
+const name = args[0];
+caller.tell("Hello, " + name + "!");
 ```
 
 ## Contributing
