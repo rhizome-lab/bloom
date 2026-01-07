@@ -171,3 +171,1003 @@ async fn test_server_basic_operations() -> Result<(), Box<dyn std::error::Error>
     println!("\n✅ All integration tests passed!");
     Ok(())
 }
+
+/// Test file browser bookmark verbs
+#[tokio::test]
+async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
+    use viwo_ir::SExpr;
+
+    // Create temporary test directory
+    let test_dir = std::env::temp_dir().join("viwo-test-fb-bookmarks");
+    let db_path = test_dir.join("test.db");
+
+    // Clean up from previous runs
+    let _ = std::fs::remove_dir_all(&test_dir);
+    std::fs::create_dir_all(&test_dir)?;
+
+    // Create runtime
+    let runtime = Arc::new(ViwoRuntime::open(db_path.to_str().unwrap())?);
+
+    // Create file browser user entity with bookmark verbs
+    let user_id = {
+        let storage = runtime.storage();
+        let storage_lock = storage.lock().unwrap();
+
+        // Create user entity
+        let user_id = storage_lock.create_entity(
+            serde_json::json!({
+                "name": "FileBrowserUser",
+                "cwd": "/home/user",
+                "fs_root": "/home/user",
+                "bookmarks": {}
+            }),
+            None,
+        )?;
+
+        // Add bookmark verb
+        // Args: [name, path (optional - defaults to cwd)]
+        let bookmark_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("name"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                // Get path argument or default to cwd
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("target_path"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call("std.arg", vec![SExpr::number(1)]),
+                                SExpr::call(
+                                    "bool.guard",
+                                    vec![
+                                        SExpr::call(
+                                            "obj.get",
+                                            vec![
+                                                SExpr::call("std.caller", vec![]),
+                                                SExpr::string("cwd"),
+                                            ],
+                                        ),
+                                        SExpr::string("/"),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                // Get current bookmarks
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("bookmarks"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.caller", vec![]),
+                                        SExpr::string("bookmarks"),
+                                    ],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Add new bookmark
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
+                        SExpr::call("std.var", vec![SExpr::string("name")]),
+                        SExpr::call("std.var", vec![SExpr::string("target_path")]),
+                    ],
+                ),
+                // Update entity
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("bookmarks"),
+                        SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
+                    ],
+                ),
+                // Return result
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("bookmark_created"),
+                        SExpr::string("name"),
+                        SExpr::call("std.var", vec![SExpr::string("name")]),
+                        SExpr::string("path"),
+                        SExpr::call("std.var", vec![SExpr::string("target_path")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "bookmark", &bookmark_verb)?;
+
+        // Add bookmarks_list verb
+        let bookmarks_list_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("bookmarks"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.caller", vec![]),
+                                        SExpr::string("bookmarks"),
+                                    ],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("bookmarks"),
+                        SExpr::string("bookmarks"),
+                        SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "bookmarks_list", &bookmarks_list_verb)?;
+
+        // Add jump verb (navigate to bookmark)
+        let jump_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("name"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("bookmarks"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.caller", vec![]),
+                                        SExpr::string("bookmarks"),
+                                    ],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Check if bookmark exists
+                SExpr::call(
+                    "std.if",
+                    vec![
+                        SExpr::call(
+                            "bool.not",
+                            vec![SExpr::call(
+                                "obj.has",
+                                vec![
+                                    SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
+                                    SExpr::call("std.var", vec![SExpr::string("name")]),
+                                ],
+                            )],
+                        ),
+                        SExpr::call(
+                            "std.throw",
+                            vec![SExpr::call(
+                                "str.concat",
+                                vec![
+                                    SExpr::string("Bookmark not found: "),
+                                    SExpr::call("std.var", vec![SExpr::string("name")]),
+                                ],
+                            )],
+                        ),
+                    ],
+                ),
+                // Get path from bookmark
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("path"),
+                        SExpr::call(
+                            "obj.get",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
+                                SExpr::call("std.var", vec![SExpr::string("name")]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Update cwd
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("cwd"),
+                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                    ],
+                ),
+                // Return result
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("jumped"),
+                        SExpr::string("name"),
+                        SExpr::call("std.var", vec![SExpr::string("name")]),
+                        SExpr::string("path"),
+                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "jump", &jump_verb)?;
+
+        // Add where verb (show current location)
+        let where_verb = SExpr::call(
+            "obj.new",
+            vec![
+                SExpr::string("type"),
+                SExpr::string("where"),
+                SExpr::string("path"),
+                SExpr::call(
+                    "bool.guard",
+                    vec![
+                        SExpr::call(
+                            "obj.get",
+                            vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                        ),
+                        SExpr::string("/"),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "where", &where_verb)?;
+
+        user_id
+    };
+
+    // Test 1: Check initial location
+    let result = runtime.execute_verb(user_id, "where", vec![], Some(user_id))?;
+    assert_eq!(result["type"], "where");
+    assert_eq!(result["path"], "/home/user");
+    println!("✓ Initial location: {}", result["path"]);
+
+    // Test 2: Create a bookmark for current directory
+    let result = runtime.execute_verb(user_id, "bookmark", vec![json!("home")], Some(user_id))?;
+    assert_eq!(result["type"], "bookmark_created");
+    assert_eq!(result["name"], "home");
+    assert_eq!(result["path"], "/home/user");
+    println!("✓ Created bookmark 'home' -> {}", result["path"]);
+
+    // Test 3: Create a bookmark with explicit path
+    let result = runtime.execute_verb(
+        user_id,
+        "bookmark",
+        vec![json!("projects"), json!("/home/user/projects")],
+        Some(user_id),
+    )?;
+    assert_eq!(result["type"], "bookmark_created");
+    assert_eq!(result["name"], "projects");
+    assert_eq!(result["path"], "/home/user/projects");
+    println!("✓ Created bookmark 'projects' -> {}", result["path"]);
+
+    // Test 4: List bookmarks
+    let result = runtime.execute_verb(user_id, "bookmarks_list", vec![], Some(user_id))?;
+    assert_eq!(result["type"], "bookmarks");
+    let bookmarks = &result["bookmarks"];
+    assert_eq!(bookmarks["home"], "/home/user");
+    assert_eq!(bookmarks["projects"], "/home/user/projects");
+    println!(
+        "✓ Bookmarks list: {} entries",
+        bookmarks.as_object().unwrap().len()
+    );
+
+    // Test 5: Jump to bookmark
+    let result = runtime.execute_verb(user_id, "jump", vec![json!("projects")], Some(user_id))?;
+    assert_eq!(result["type"], "jumped");
+    assert_eq!(result["path"], "/home/user/projects");
+    println!("✓ Jumped to bookmark 'projects'");
+
+    // Test 6: Verify location changed
+    let result = runtime.execute_verb(user_id, "where", vec![], Some(user_id))?;
+    assert_eq!(result["path"], "/home/user/projects");
+    println!("✓ Current location verified: {}", result["path"]);
+
+    // Cleanup
+    std::fs::remove_dir_all(&test_dir)?;
+
+    println!("\n✅ All bookmark tests passed!");
+    Ok(())
+}
+
+/// Test file browser navigation verbs (simulated without fs plugin)
+#[tokio::test]
+async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
+    use viwo_ir::SExpr;
+
+    // Create temporary test directory
+    let test_dir = std::env::temp_dir().join("viwo-test-fb-nav");
+    let db_path = test_dir.join("test.db");
+
+    // Clean up from previous runs
+    let _ = std::fs::remove_dir_all(&test_dir);
+    std::fs::create_dir_all(&test_dir)?;
+
+    // Create runtime
+    let runtime = Arc::new(ViwoRuntime::open(db_path.to_str().unwrap())?);
+
+    // Create file browser user entity with simulated navigation verbs
+    let user_id = {
+        let storage = runtime.storage();
+        let storage_lock = storage.lock().unwrap();
+
+        let user_id = storage_lock.create_entity(
+            serde_json::json!({
+                "name": "FileBrowserUser",
+                "cwd": "/home/user",
+                "fs_root": "/home",
+                // Simulated file system structure
+                "fs_structure": {
+                    "/home": ["user"],
+                    "/home/user": ["documents", "downloads", "projects"],
+                    "/home/user/documents": ["notes.txt", "report.pdf"],
+                    "/home/user/projects": ["project1", "project2"]
+                }
+            }),
+            None,
+        )?;
+
+        // Add where verb
+        let where_verb = SExpr::call(
+            "obj.new",
+            vec![
+                SExpr::string("type"),
+                SExpr::string("where"),
+                SExpr::string("path"),
+                SExpr::call(
+                    "bool.guard",
+                    vec![
+                        SExpr::call(
+                            "obj.get",
+                            vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                        ),
+                        SExpr::string("/"),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "where", &where_verb)?;
+
+        // Add simulated go verb (changes cwd)
+        let go_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("path"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("cwd"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                                ),
+                                SExpr::string("/"),
+                            ],
+                        ),
+                    ],
+                ),
+                // Build new path
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("new_path"),
+                        SExpr::call(
+                            "std.if",
+                            vec![
+                                SExpr::call(
+                                    "bool.eq",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                        SExpr::string(".."),
+                                    ],
+                                ),
+                                // Go up one level
+                                SExpr::call(
+                                    "std.seq",
+                                    vec![
+                                        SExpr::call(
+                                            "std.let",
+                                            vec![
+                                                SExpr::string("parts"),
+                                                SExpr::call(
+                                                    "str.split",
+                                                    vec![
+                                                        SExpr::call(
+                                                            "std.var",
+                                                            vec![SExpr::string("cwd")],
+                                                        ),
+                                                        SExpr::string("/"),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                        SExpr::call(
+                                            "list.pop",
+                                            vec![SExpr::call(
+                                                "std.var",
+                                                vec![SExpr::string("parts")],
+                                            )],
+                                        ),
+                                        SExpr::call(
+                                            "std.if",
+                                            vec![
+                                                SExpr::call(
+                                                    "bool.eq",
+                                                    vec![
+                                                        SExpr::call(
+                                                            "list.len",
+                                                            vec![SExpr::call(
+                                                                "std.var",
+                                                                vec![SExpr::string("parts")],
+                                                            )],
+                                                        ),
+                                                        SExpr::number(0),
+                                                    ],
+                                                ),
+                                                SExpr::string("/"),
+                                                SExpr::call(
+                                                    "str.join",
+                                                    vec![
+                                                        SExpr::call(
+                                                            "std.var",
+                                                            vec![SExpr::string("parts")],
+                                                        ),
+                                                        SExpr::string("/"),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                // Navigate to subdir
+                                SExpr::call(
+                                    "str.concat",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("cwd")]),
+                                        SExpr::string("/"),
+                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                // Update cwd
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("cwd"),
+                        SExpr::call("std.var", vec![SExpr::string("new_path")]),
+                    ],
+                ),
+                // Return result
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("navigated"),
+                        SExpr::string("path"),
+                        SExpr::call("std.var", vec![SExpr::string("new_path")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "go", &go_verb)?;
+
+        // Add back verb (go up one directory)
+        let back_verb = SExpr::call(
+            "call",
+            vec![
+                SExpr::call("std.this", vec![]),
+                SExpr::string("go"),
+                SExpr::string(".."),
+            ],
+        );
+        storage_lock.add_verb(user_id, "back", &back_verb)?;
+
+        // Add simulated look verb (returns contents from fs_structure)
+        let look_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("cwd"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                                ),
+                                SExpr::string("/"),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("fs_structure"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.caller", vec![]),
+                                        SExpr::string("fs_structure"),
+                                    ],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("entries"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("fs_structure")]),
+                                        SExpr::call("std.var", vec![SExpr::string("cwd")]),
+                                    ],
+                                ),
+                                SExpr::call("list.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("directory_listing"),
+                        SExpr::string("path"),
+                        SExpr::call("std.var", vec![SExpr::string("cwd")]),
+                        SExpr::string("entries"),
+                        SExpr::call("std.var", vec![SExpr::string("entries")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "look", &look_verb)?;
+
+        user_id
+    };
+
+    // Test 1: Check initial location
+    let result = runtime.execute_verb(user_id, "where", vec![], Some(user_id))?;
+    assert_eq!(result["path"], "/home/user");
+    println!("✓ Initial location: {}", result["path"]);
+
+    // Test 2: Look at current directory
+    let result = runtime.execute_verb(user_id, "look", vec![], Some(user_id))?;
+    assert_eq!(result["type"], "directory_listing");
+    assert_eq!(result["path"], "/home/user");
+    let entries = result["entries"].as_array().unwrap();
+    assert!(entries.contains(&json!("documents")));
+    assert!(entries.contains(&json!("projects")));
+    println!("✓ Directory listing: {} entries", entries.len());
+
+    // Test 3: Navigate to documents
+    let result = runtime.execute_verb(user_id, "go", vec![json!("documents")], Some(user_id))?;
+    assert_eq!(result["type"], "navigated");
+    assert_eq!(result["path"], "/home/user/documents");
+    println!("✓ Navigated to: {}", result["path"]);
+
+    // Test 4: Look at documents directory
+    let result = runtime.execute_verb(user_id, "look", vec![], Some(user_id))?;
+    let entries = result["entries"].as_array().unwrap();
+    assert!(entries.contains(&json!("notes.txt")));
+    assert!(entries.contains(&json!("report.pdf")));
+    println!("✓ Documents contents: {:?}", entries);
+
+    // Test 5: Go back to parent
+    let result = runtime.execute_verb(user_id, "back", vec![], Some(user_id))?;
+    assert_eq!(result["path"], "/home/user");
+    println!("✓ Back to: {}", result["path"]);
+
+    // Test 6: Navigate to projects
+    runtime.execute_verb(user_id, "go", vec![json!("projects")], Some(user_id))?;
+    let result = runtime.execute_verb(user_id, "look", vec![], Some(user_id))?;
+    let entries = result["entries"].as_array().unwrap();
+    assert!(entries.contains(&json!("project1")));
+    println!("✓ Projects contents: {:?}", entries);
+
+    // Cleanup
+    std::fs::remove_dir_all(&test_dir)?;
+
+    println!("\n✅ All navigation tests passed!");
+    Ok(())
+}
+
+/// Test file metadata operations (tags, annotations)
+#[tokio::test]
+async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
+    use viwo_ir::SExpr;
+
+    // Create temporary test directory
+    let test_dir = std::env::temp_dir().join("viwo-test-fb-metadata");
+    let db_path = test_dir.join("test.db");
+
+    // Clean up from previous runs
+    let _ = std::fs::remove_dir_all(&test_dir);
+    std::fs::create_dir_all(&test_dir)?;
+
+    // Create runtime
+    let runtime = Arc::new(ViwoRuntime::open(db_path.to_str().unwrap())?);
+
+    // Create file browser user entity with metadata verbs
+    let user_id = {
+        let storage = runtime.storage();
+        let storage_lock = storage.lock().unwrap();
+
+        let user_id = storage_lock.create_entity(
+            serde_json::json!({
+                "name": "FileBrowserUser",
+                "cwd": "/home/user",
+                "file_metadata": {}
+            }),
+            None,
+        )?;
+
+        // Add tag verb
+        let tag_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("path"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("tag_name"),
+                        SExpr::call("std.arg", vec![SExpr::number(1)]),
+                    ],
+                ),
+                // Get metadata map
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("metadata"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.caller", vec![]),
+                                        SExpr::string("file_metadata"),
+                                    ],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Get or create file data
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("file_data"),
+                        SExpr::call(
+                            "std.if",
+                            vec![
+                                SExpr::call(
+                                    "obj.has",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
+                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                    ],
+                                ),
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
+                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                    ],
+                                ),
+                                SExpr::call(
+                                    "obj.new",
+                                    vec![
+                                        SExpr::string("tags"),
+                                        SExpr::call("list.new", vec![]),
+                                        SExpr::string("annotations"),
+                                        SExpr::call("list.new", vec![]),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                // Get tags array
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("tags"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
+                                        SExpr::string("tags"),
+                                    ],
+                                ),
+                                SExpr::call("list.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Add tag if not already present
+                SExpr::call(
+                    "std.if",
+                    vec![
+                        SExpr::call(
+                            "bool.not",
+                            vec![SExpr::call(
+                                "list.includes",
+                                vec![
+                                    SExpr::call("std.var", vec![SExpr::string("tags")]),
+                                    SExpr::call("std.var", vec![SExpr::string("tag_name")]),
+                                ],
+                            )],
+                        ),
+                        SExpr::call(
+                            "list.push",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("tags")]),
+                                SExpr::call("std.var", vec![SExpr::string("tag_name")]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Update file_data
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
+                        SExpr::string("tags"),
+                        SExpr::call("std.var", vec![SExpr::string("tags")]),
+                    ],
+                ),
+                // Update metadata
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
+                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
+                    ],
+                ),
+                // Update entity
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("file_metadata"),
+                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
+                    ],
+                ),
+                // Return result
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("tag_added"),
+                        SExpr::string("path"),
+                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                        SExpr::string("tag"),
+                        SExpr::call("std.var", vec![SExpr::string("tag_name")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "tag", &tag_verb)?;
+
+        // Add tags verb (get tags for a path)
+        let tags_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("path"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("metadata"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.caller", vec![]),
+                                        SExpr::string("file_metadata"),
+                                    ],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("file_data"),
+                        SExpr::call(
+                            "std.if",
+                            vec![
+                                SExpr::call(
+                                    "obj.has",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
+                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                    ],
+                                ),
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
+                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                    ],
+                                ),
+                                SExpr::call(
+                                    "obj.new",
+                                    vec![SExpr::string("tags"), SExpr::call("list.new", vec![])],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("tags"),
+                        SExpr::string("path"),
+                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                        SExpr::string("tags"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![
+                                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
+                                        SExpr::string("tags"),
+                                    ],
+                                ),
+                                SExpr::call("list.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "tags", &tags_verb)?;
+
+        user_id
+    };
+
+    // Test 1: Add a tag to a file
+    let result = runtime.execute_verb(
+        user_id,
+        "tag",
+        vec![json!("/home/user/notes.txt"), json!("important")],
+        Some(user_id),
+    )?;
+    assert_eq!(result["type"], "tag_added");
+    assert_eq!(result["tag"], "important");
+    println!("✓ Added tag 'important' to notes.txt");
+
+    // Test 2: Add another tag
+    runtime.execute_verb(
+        user_id,
+        "tag",
+        vec![json!("/home/user/notes.txt"), json!("work")],
+        Some(user_id),
+    )?;
+    println!("✓ Added tag 'work' to notes.txt");
+
+    // Test 3: Get tags for file
+    let result = runtime.execute_verb(
+        user_id,
+        "tags",
+        vec![json!("/home/user/notes.txt")],
+        Some(user_id),
+    )?;
+    assert_eq!(result["type"], "tags");
+    let tags = result["tags"].as_array().unwrap();
+    assert!(tags.contains(&json!("important")));
+    assert!(tags.contains(&json!("work")));
+    println!("✓ Tags for notes.txt: {:?}", tags);
+
+    // Test 4: Add tag to another file
+    runtime.execute_verb(
+        user_id,
+        "tag",
+        vec![json!("/home/user/report.pdf"), json!("important")],
+        Some(user_id),
+    )?;
+    println!("✓ Added tag 'important' to report.pdf");
+
+    // Test 5: Verify tags are separate per file
+    let result = runtime.execute_verb(
+        user_id,
+        "tags",
+        vec![json!("/home/user/report.pdf")],
+        Some(user_id),
+    )?;
+    let tags = result["tags"].as_array().unwrap();
+    assert_eq!(tags.len(), 1);
+    assert!(tags.contains(&json!("important")));
+    assert!(!tags.contains(&json!("work")));
+    println!("✓ Tags for report.pdf: {:?}", tags);
+
+    // Cleanup
+    std::fs::remove_dir_all(&test_dir)?;
+
+    println!("\n✅ All metadata tests passed!");
+    Ok(())
+}
