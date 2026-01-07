@@ -8,7 +8,6 @@
 
 ### Knowledge & Productivity
 - [ ] **Custom Views**: Support for defining custom DB views/indexes for performance
-- [ ] **Cloud Sync**: Plugins to sync DB to cloud storage (S3, R2, Google Drive, Dropbox, etc.)
 - [ ] **Graph Queries**: Standard library for traversing entity relationships (deferred - no fixed schema yet)
 
 ### Architecture
@@ -40,6 +39,7 @@
 - [x] Rich Embeds: Message adapter system for Discord/Slack with formal GameMessage types
 - [x] Atomic Transactions: SQLite transactions with nested savepoint support for verb execution
 - [x] Capability Verbs: Optional required_capability field on verbs for authorization at call time
+- [x] Cloud Storage Plugin: Unified API for S3, GCS, Azure, Dropbox, Google Drive, OneDrive via OpenDAL
 </details>
 
 <details>

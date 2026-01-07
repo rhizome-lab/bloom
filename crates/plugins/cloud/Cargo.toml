@@ -1,0 +1,26 @@
+[package]
+name = "bloom-plugin-cloud"
+version = "0.1.0"
+edition = "2024"
+description = "Cloud storage plugin for Bloom using OpenDAL"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+opendal = { version = "0.51", features = [
+    "services-s3",
+    "services-gcs",
+    "services-azblob",
+    "services-dropbox",
+    "services-gdrive",
+    "services-onedrive",
+    "services-webdav",
+    "services-fs",
+] }
+serde_json = "1.0"
+mlua = { version = "0.10", features = ["luajit52", "vendored", "serialize"] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+
+[dev-dependencies]
+tempfile = "3.8"

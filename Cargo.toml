@@ -18,6 +18,7 @@ members = [
     "crates/plugins/vector",
     "crates/plugins/memory",
     "crates/plugins/diffusers",
+    "crates/plugins/cloud",
     "crates/apps/notes-server",
     "crates/apps/filebrowser-server",
     "xtask",
