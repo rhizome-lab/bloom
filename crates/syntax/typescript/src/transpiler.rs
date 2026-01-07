@@ -314,6 +314,13 @@ impl<'a> TranspileContext<'a> {
             }
         }
 
+        // Check for method calls on objects (arr.push, str.split, etc.)
+        if function.kind() == "member_expression" {
+            if let Some(method_call) = self.try_transpile_method_call(function, args.clone())? {
+                return Ok(method_call);
+            }
+        }
+
         // Try to get a simple function name (for opcodes like math.floor, list.push)
         if let Ok(func_name) = self.get_call_name(function) {
             Ok(SExpr::call(func_name, args))
@@ -324,6 +331,89 @@ impl<'a> TranspileContext<'a> {
             apply_args.extend(args);
             Ok(SExpr::call("std.apply", apply_args))
         }
+    }
+
+    /// Try to transpile a method call on an object/array (e.g., arr.push(x), str.split(','))
+    fn try_transpile_method_call(
+        &self,
+        member_expr: Node,
+        args: Vec<SExpr>,
+    ) -> Result<Option<SExpr>, TranspileError> {
+        let object = member_expr
+            .child_by_field_name("object")
+            .ok_or_else(|| TranspileError::Parse("member_expression missing object".into()))?;
+        let property = member_expr
+            .child_by_field_name("property")
+            .ok_or_else(|| TranspileError::Parse("member_expression missing property".into()))?;
+
+        // If the object is a known namespace (str, list, obj, std, math, bool, etc.),
+        // don't treat it as a method call - let it fall through to static opcode handling
+        if object.kind() == "identifier" {
+            let obj_name = self.node_text(object);
+            if matches!(
+                obj_name,
+                "std" | "math" | "str" | "list" | "obj" | "bool" | "time" | "json" | "game" | "kernel"
+            ) {
+                return Ok(None);
+            }
+        }
+
+        let method_name = self.node_text(property);
+
+        // Map known array/list methods to list.* opcodes
+        let list_opcode = match method_name {
+            "push" => Some("list.push"),
+            "pop" => Some("list.pop"),
+            "shift" => Some("list.shift"),
+            "unshift" => Some("list.unshift"),
+            "map" => Some("list.map"),
+            "filter" => Some("list.filter"),
+            "reduce" => Some("list.reduce"),
+            "find" => Some("list.find"),
+            "concat" => Some("list.concat"),
+            "slice" => Some("list.slice"),
+            "splice" => Some("list.splice"),
+            "includes" => Some("list.includes"),
+            "indexOf" => Some("list.indexOf"),
+            "reverse" => Some("list.reverse"),
+            "sort" => Some("list.sort"),
+            "join" => Some("list.join"),
+            "flatMap" => Some("list.flatMap"),
+            _ => None,
+        };
+
+        // Map known string methods to str.* opcodes
+        let str_opcode = match method_name {
+            "split" => Some("str.split"),
+            "trim" => Some("str.trim"),
+            "toLowerCase" => Some("str.lower"),
+            "toUpperCase" => Some("str.upper"),
+            "substring" | "substr" => Some("str.slice"),
+            "startsWith" => Some("str.startsWith"),
+            "endsWith" => Some("str.endsWith"),
+            "repeat" => Some("str.repeat"),
+            "replace" => Some("str.replace"),
+            _ => None,
+        };
+
+        // Try list opcodes first
+        if let Some(opcode) = list_opcode {
+            let obj_expr = self.transpile_node(object)?;
+            let mut call_args = vec![obj_expr];
+            call_args.extend(args);
+            return Ok(Some(SExpr::call(opcode, call_args)));
+        }
+
+        // Try string opcodes
+        if let Some(opcode) = str_opcode {
+            let obj_expr = self.transpile_node(object)?;
+            let mut call_args = vec![obj_expr];
+            call_args.extend(args);
+            return Ok(Some(SExpr::call(opcode, call_args)));
+        }
+
+        // Not a known method, return None to use default handling
+        Ok(None)
     }
 
     fn get_call_name(&self, node: Node) -> Result<String, TranspileError> {

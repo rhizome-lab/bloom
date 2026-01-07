@@ -317,3 +317,147 @@ fn test_block_statement() {
         ),
     );
 }
+
+#[test]
+fn test_array_method_push() {
+    // arr.push(x) -> list.push(arr, x)
+    assert_transpile(
+        "arr.push(42)",
+        SExpr::call(
+            "list.push",
+            vec![
+                SExpr::call("std.var", vec![SExpr::string("arr").erase_type()]),
+                SExpr::number(42.0).erase_type(),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_array_method_pop() {
+    // arr.pop() -> list.pop(arr)
+    assert_transpile(
+        "arr.pop()",
+        SExpr::call("list.pop", vec![SExpr::call("std.var", vec![SExpr::string("arr").erase_type()])]),
+    );
+}
+
+#[test]
+fn test_array_method_map() {
+    // arr.map(x => x * 2) -> list.map(arr, lambda)
+    assert_transpile(
+        "arr.map(x => x * 2)",
+        SExpr::call(
+            "list.map",
+            vec![
+                SExpr::call("std.var", vec![SExpr::string("arr").erase_type()]),
+                SExpr::call(
+                    "std.lambda",
+                    vec![
+                        SExpr::list(vec![SExpr::string("x").erase_type()]).erase_type(),
+                        SExpr::call(
+                            "math.mul",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("x").erase_type()]),
+                                SExpr::number(2.0).erase_type(),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_array_method_filter() {
+    // arr.filter(x => x > 0) -> list.filter(arr, lambda)
+    assert_transpile(
+        "arr.filter(x => x > 0)",
+        SExpr::call(
+            "list.filter",
+            vec![
+                SExpr::call("std.var", vec![SExpr::string("arr").erase_type()]),
+                SExpr::call(
+                    "std.lambda",
+                    vec![
+                        SExpr::list(vec![SExpr::string("x").erase_type()]).erase_type(),
+                        SExpr::call(
+                            "bool.gt",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("x").erase_type()]),
+                                SExpr::number(0.0).erase_type(),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_array_method_reverse() {
+    // arr.reverse() -> list.reverse(arr)
+    assert_transpile(
+        "arr.reverse()",
+        SExpr::call("list.reverse", vec![SExpr::call("std.var", vec![SExpr::string("arr").erase_type()])]),
+    );
+}
+
+#[test]
+fn test_array_method_includes() {
+    // arr.includes(5) -> list.includes(arr, 5)
+    assert_transpile(
+        "arr.includes(5)",
+        SExpr::call(
+            "list.includes",
+            vec![
+                SExpr::call("std.var", vec![SExpr::string("arr").erase_type()]),
+                SExpr::number(5.0).erase_type(),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_string_method_split() {
+    // str.split(",") -> str.split(str, ",")
+    assert_transpile(
+        "s.split(\",\")",
+        SExpr::call(
+            "str.split",
+            vec![
+                SExpr::call("std.var", vec![SExpr::string("s").erase_type()]),
+                SExpr::string(",").erase_type(),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_string_method_trim() {
+    // s.trim() -> str.trim(s)
+    assert_transpile(
+        "s.trim()",
+        SExpr::call("str.trim", vec![SExpr::call("std.var", vec![SExpr::string("s").erase_type()])]),
+    );
+}
+
+#[test]
+fn test_string_method_toLowerCase() {
+    // s.toLowerCase() -> str.lower(s)
+    assert_transpile(
+        "s.toLowerCase()",
+        SExpr::call("str.lower", vec![SExpr::call("std.var", vec![SExpr::string("s").erase_type()])]),
+    );
+}
+
+#[test]
+fn test_string_method_toUpperCase() {
+    // s.toUpperCase() -> str.upper(s)
+    assert_transpile(
+        "s.toUpperCase()",
+        SExpr::call("str.upper", vec![SExpr::call("std.var", vec![SExpr::string("s").erase_type()])]),
+    );
+}

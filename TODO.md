@@ -176,7 +176,8 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [ ] **Seed**: Add object literal support to `extractLiteral` in `packages/core/src/seeds/loader.ts` (currently only supports strings, numbers, booleans, null, and arrays)
 - [ ] **Transpiler**: Handle all compiler constructs
 - [x] **Transpiler**: Support ES6 shorthand property syntax - FIXED: now handles ShorthandPropertyAssignment
-- [ ] **Transpiler**: Support native array methods (`.push()`, `.reverse()` currently not transpiled)
+- [x] **Transpiler**: Support native array methods (`.push()`, `.reverse()`, `.map()`, etc.) - FIXED: maps to list.* opcodes
+- [x] **Transpiler**: Support native string methods (`.split()`, `.trim()`, `.toLowerCase()`, etc.) - FIXED: maps to str.* opcodes
 - [ ] **Transpiler**: Fix for-in loop transpilation (currently causes `obj.get` errors during iteration)
 - [ ] **Transpiler**: Make dictionary/object access safer (bracket notation `obj[key]` throws if key missing - should use `obj.get` with defaults or add null-safe operator support)
 - [ ] **Compiler**: Consider tracking usages of `__ctx__` and removing it from the parameter list if it is unused
