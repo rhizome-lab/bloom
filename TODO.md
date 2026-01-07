@@ -69,6 +69,10 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 ## Next Up
 
 1. **Server**: Full verb discovery via System.get_available_verbs (execute handler currently calls verbs directly)
+2. **Notes App**: Integration tests for notes-specific verbs, backlinks, search
+3. **FileBrowser App**: Integration tests for navigation, file reading, bookmarks
+4. **Transpiler**: Make dictionary/object access safer (bracket notation `obj[key]` throws if key missing)
+5. **viwo-ir**: Extract remaining opcode definitions from TypeScript to schema
 
 ---
 

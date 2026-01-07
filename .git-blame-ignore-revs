@@ -9,3 +9,6 @@
 
 # chore[format]: format codebase
 be099c0f7669ae31360de880dc2c68b118f93a90
+
+# style: apply cargo fmt to all Rust files
+8148ff8c74cdd99e602495724ec64e7a0f5b19c3
