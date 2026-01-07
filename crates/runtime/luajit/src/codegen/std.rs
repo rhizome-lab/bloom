@@ -47,22 +47,33 @@ pub fn compile_std(
                 });
             }
             let cond = compile_value(&args[0], false)?;
-            let then_branch = compile_value(&args[1], should_return)?;
-            let else_branch = if args.len() > 2 {
-                Some(compile_value(&args[2], should_return)?)
-            } else if should_return {
-                Some("return nil".to_string())
-            } else {
-                None
-            };
 
-            if let Some(else_code) = else_branch {
+            // When used as a value (should_return = false), we need to wrap in IIFE
+            // since Lua's if is a statement, not an expression
+            if should_return {
+                // Top-level: generate if statement with returns in branches
+                let then_branch = compile_value(&args[1], true)?;
+                let else_branch = if args.len() > 2 {
+                    compile_value(&args[2], true)?
+                } else {
+                    "return nil".to_string()
+                };
                 format!(
                     "if {} then\n{}\nelse\n{}\nend",
-                    cond, then_branch, else_code
+                    cond, then_branch, else_branch
                 )
             } else {
-                format!("if {} then\n{}\nend", cond, then_branch)
+                // Used as expression: wrap in IIFE with returns
+                let then_branch = compile_value(&args[1], true)?;
+                let else_branch = if args.len() > 2 {
+                    compile_value(&args[2], true)?
+                } else {
+                    "return nil".to_string()
+                };
+                format!(
+                    "(function() if {} then\n{}\nelse\n{}\nend end)()",
+                    cond, then_branch, else_branch
+                )
             }
         }
 

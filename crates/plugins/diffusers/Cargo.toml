@@ -25,10 +25,10 @@ burn-wgpu = { version = "0.20.0-pre.6", optional = true }
 burn-cuda = { version = "0.20.0-pre.6", optional = true }
 burn-ndarray = { version = "0.20.0-pre.6", optional = true }
 
-# burn-models from local path
-burn-models = { path = "/home/me/git/burn-models/crates/burn-models" }
-burn-models-clip = { path = "/home/me/git/burn-models/crates/burn-models-clip" }
-burn-models-convert = { path = "/home/me/git/burn-models/crates/burn-models-convert" }
-burn-models-unet = { path = "/home/me/git/burn-models/crates/burn-models-unet" }
-burn-models-vae = { path = "/home/me/git/burn-models/crates/burn-models-vae" }
-burn-models-samplers = { path = "/home/me/git/burn-models/crates/burn-models-samplers" }
+# burn-models for Stable Diffusion
+burn-models = { git = "https://github.com/pterror/burn-models" }
+burn-models-clip = { git = "https://github.com/pterror/burn-models" }
+burn-models-convert = { git = "https://github.com/pterror/burn-models" }
+burn-models-unet = { git = "https://github.com/pterror/burn-models" }
+burn-models-vae = { git = "https://github.com/pterror/burn-models" }
+burn-models-samplers = { git = "https://github.com/pterror/burn-models" }

@@ -228,8 +228,7 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
         )?;
 
         // Grant control capability to user
-        storage_lock.add_capability(
-            &format!("cap_{}", user_id),
+        storage_lock.create_capability(
             user_id,
             "entity.control",
             serde_json::json!({"target_id": user_id}),
@@ -244,13 +243,19 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -261,10 +266,13 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("keys"),
+                        SExpr::string("keys").erase_type(),
                         SExpr::call(
                             "obj.keys",
-                            vec![SExpr::call("std.var", vec![SExpr::string("notes_map")])],
+                            vec![SExpr::call(
+                                "std.var",
+                                vec![SExpr::string("notes_map").erase_type()],
+                            )],
                         ),
                     ],
                 ),
@@ -272,23 +280,27 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_array"),
+                        SExpr::string("notes_array").erase_type(),
                         SExpr::call(
                             "list.map",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("keys")]),
+                                SExpr::call("std.var", vec![SExpr::string("keys").erase_type()]),
                                 SExpr::call(
                                     "std.lambda",
                                     vec![
-                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::list(vec![SExpr::string("key").erase_type()])
+                                            .erase_type(),
                                         SExpr::call(
                                             "obj.get",
                                             vec![
                                                 SExpr::call(
                                                     "std.var",
-                                                    vec![SExpr::string("notes_map")],
+                                                    vec![SExpr::string("notes_map").erase_type()],
                                                 ),
-                                                SExpr::call("std.var", vec![SExpr::string("key")]),
+                                                SExpr::call(
+                                                    "std.var",
+                                                    vec![SExpr::string("key").erase_type()],
+                                                ),
                                             ],
                                         ),
                                     ],
@@ -301,10 +313,10 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("notes_list"),
-                        SExpr::string("notes"),
-                        SExpr::call("std.var", vec![SExpr::string("notes_array")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("notes_list").erase_type(),
+                        SExpr::string("notes").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("notes_array").erase_type()]),
                     ],
                 ),
             ],
@@ -321,20 +333,20 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("title"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("title").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 // Get content argument (default to empty string)
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("content"),
+                        SExpr::string("content").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
-                                SExpr::call("std.arg", vec![SExpr::number(1)]),
-                                SExpr::string(""),
+                                SExpr::call("std.arg", vec![SExpr::number(1).erase_type()]),
+                                SExpr::string("").erase_type(),
                             ],
                         ),
                     ],
@@ -343,13 +355,19 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -360,7 +378,7 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("counter"),
+                        SExpr::string("counter").erase_type(),
                         SExpr::call(
                             "math.add",
                             vec![
@@ -370,14 +388,17 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                                         SExpr::call(
                                             "obj.get",
                                             vec![
-                                                SExpr::call("std.caller", vec![]),
-                                                SExpr::string("note_counter"),
+                                                SExpr::call(
+                                                    "entity",
+                                                    vec![SExpr::call("std.caller", vec![])],
+                                                ),
+                                                SExpr::string("note_counter").erase_type(),
                                             ],
                                         ),
-                                        SExpr::number(0),
+                                        SExpr::number(0).erase_type(),
                                     ],
                                 ),
-                                SExpr::number(1),
+                                SExpr::number(1).erase_type(),
                             ],
                         ),
                     ],
@@ -385,14 +406,17 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note_id"),
+                        SExpr::string("note_id").erase_type(),
                         SExpr::call(
                             "str.concat",
                             vec![
-                                SExpr::string("note_"),
+                                SExpr::string("note_").erase_type(),
                                 SExpr::call(
                                     "std.string",
-                                    vec![SExpr::call("std.var", vec![SExpr::string("counter")])],
+                                    vec![SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("counter").erase_type()],
+                                    )],
                                 ),
                             ],
                         ),
@@ -402,17 +426,17 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note"),
+                        SExpr::string("note").erase_type(),
                         SExpr::call(
                             "obj.new",
                             vec![
-                                SExpr::string("id"),
-                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
-                                SExpr::string("title"),
-                                SExpr::call("std.var", vec![SExpr::string("title")]),
-                                SExpr::string("content"),
-                                SExpr::call("std.var", vec![SExpr::string("content")]),
-                                SExpr::string("links"),
+                                SExpr::string("id").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
+                                SExpr::string("title").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("title").erase_type()]),
+                                SExpr::string("content").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("content").erase_type()]),
+                                SExpr::string("links").erase_type(),
                                 SExpr::call("list.new", vec![]),
                             ],
                         ),
@@ -422,36 +446,47 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "obj.set",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
-                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
-                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("note").erase_type()]),
                     ],
                 ),
-                // Update caller with new notes and counter
+                // Update caller with new notes and counter (using update for persistence)
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("notes"),
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
-                    ],
-                ),
-                SExpr::call(
-                    "obj.set",
-                    vec![
-                        SExpr::call("std.caller", vec![]),
-                        SExpr::string("note_counter"),
-                        SExpr::call("std.var", vec![SExpr::string("counter")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("notes").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("notes_map").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                                SExpr::list(vec![
+                                    SExpr::string("note_counter").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("counter").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
                 // Return result
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("note_created"),
-                        SExpr::string("note"),
-                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("note_created").erase_type(),
+                        SExpr::string("note").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("note").erase_type()]),
                     ],
                 ),
             ],
@@ -467,20 +502,26 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note_id"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("note_id").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -490,12 +531,15 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note"),
+                        SExpr::string("note").erase_type(),
                         SExpr::call(
                             "obj.get",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("notes_map")]),
-                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                                SExpr::call(
+                                    "std.var",
+                                    vec![SExpr::string("notes_map").erase_type()],
+                                ),
+                                SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
                             ],
                         ),
                     ],
@@ -503,10 +547,10 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("note_content"),
-                        SExpr::string("note"),
-                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("note_content").erase_type(),
+                        SExpr::string("note").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("note").erase_type()]),
                     ],
                 ),
             ],
@@ -521,20 +565,26 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note_id"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("note_id").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -544,25 +594,36 @@ async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> 
                 SExpr::call(
                     "obj.del",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
-                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
                     ],
                 ),
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("notes"),
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("notes").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("notes_map").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("note_deleted"),
-                        SExpr::string("id"),
-                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("note_deleted").erase_type(),
+                        SExpr::string("id").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
                     ],
                 ),
             ],
@@ -667,19 +728,19 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("title"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("title").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("content"),
+                        SExpr::string("content").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
-                                SExpr::call("std.arg", vec![SExpr::number(1)]),
-                                SExpr::string(""),
+                                SExpr::call("std.arg", vec![SExpr::number(1).erase_type()]),
+                                SExpr::string("").erase_type(),
                             ],
                         ),
                     ],
@@ -688,11 +749,11 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("links"),
+                        SExpr::string("links").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
-                                SExpr::call("std.arg", vec![SExpr::number(2)]),
+                                SExpr::call("std.arg", vec![SExpr::number(2).erase_type()]),
                                 SExpr::call("list.new", vec![]),
                             ],
                         ),
@@ -701,13 +762,19 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -717,7 +784,7 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("counter"),
+                        SExpr::string("counter").erase_type(),
                         SExpr::call(
                             "math.add",
                             vec![
@@ -727,14 +794,17 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                                         SExpr::call(
                                             "obj.get",
                                             vec![
-                                                SExpr::call("std.caller", vec![]),
-                                                SExpr::string("note_counter"),
+                                                SExpr::call(
+                                                    "entity",
+                                                    vec![SExpr::call("std.caller", vec![])],
+                                                ),
+                                                SExpr::string("note_counter").erase_type(),
                                             ],
                                         ),
-                                        SExpr::number(0),
+                                        SExpr::number(0).erase_type(),
                                     ],
                                 ),
-                                SExpr::number(1),
+                                SExpr::number(1).erase_type(),
                             ],
                         ),
                     ],
@@ -742,14 +812,17 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note_id"),
+                        SExpr::string("note_id").erase_type(),
                         SExpr::call(
                             "str.concat",
                             vec![
-                                SExpr::string("note_"),
+                                SExpr::string("note_").erase_type(),
                                 SExpr::call(
                                     "std.string",
-                                    vec![SExpr::call("std.var", vec![SExpr::string("counter")])],
+                                    vec![SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("counter").erase_type()],
+                                    )],
                                 ),
                             ],
                         ),
@@ -758,18 +831,18 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note"),
+                        SExpr::string("note").erase_type(),
                         SExpr::call(
                             "obj.new",
                             vec![
-                                SExpr::string("id"),
-                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
-                                SExpr::string("title"),
-                                SExpr::call("std.var", vec![SExpr::string("title")]),
-                                SExpr::string("content"),
-                                SExpr::call("std.var", vec![SExpr::string("content")]),
-                                SExpr::string("links"),
-                                SExpr::call("std.var", vec![SExpr::string("links")]),
+                                SExpr::string("id").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
+                                SExpr::string("title").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("title").erase_type()]),
+                                SExpr::string("content").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("content").erase_type()]),
+                                SExpr::string("links").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("links").erase_type()]),
                             ],
                         ),
                     ],
@@ -777,34 +850,46 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.set",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
-                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
-                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("note").erase_type()]),
                     ],
                 ),
+                // Persist to storage using update
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("notes"),
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
-                    ],
-                ),
-                SExpr::call(
-                    "obj.set",
-                    vec![
-                        SExpr::call("std.caller", vec![]),
-                        SExpr::string("note_counter"),
-                        SExpr::call("std.var", vec![SExpr::string("counter")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("notes").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("notes_map").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                                SExpr::list(vec![
+                                    SExpr::string("note_counter").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("counter").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("note_created"),
-                        SExpr::string("note"),
-                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("note_created").erase_type(),
+                        SExpr::string("note").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("note").erase_type()]),
                     ],
                 ),
             ],
@@ -818,20 +903,26 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("target_title"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("target_title").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -841,10 +932,13 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("keys"),
+                        SExpr::string("keys").erase_type(),
                         SExpr::call(
                             "obj.keys",
-                            vec![SExpr::call("std.var", vec![SExpr::string("notes_map")])],
+                            vec![SExpr::call(
+                                "std.var",
+                                vec![SExpr::string("notes_map").erase_type()],
+                            )],
                         ),
                     ],
                 ),
@@ -852,34 +946,39 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("matching_keys"),
+                        SExpr::string("matching_keys").erase_type(),
                         SExpr::call(
                             "list.filter",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("keys")]),
+                                SExpr::call("std.var", vec![SExpr::string("keys").erase_type()]),
                                 SExpr::call(
                                     "std.lambda",
                                     vec![
-                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::list(vec![SExpr::string("key").erase_type()])
+                                            .erase_type(),
                                         SExpr::call(
                                             "std.seq",
                                             vec![
                                                 SExpr::call(
                                                     "std.let",
                                                     vec![
-                                                        SExpr::string("note"),
+                                                        SExpr::string("note").erase_type(),
                                                         SExpr::call(
                                                             "obj.get",
                                                             vec![
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string(
-                                                                        "notes_map",
-                                                                    )],
+                                                                    vec![
+                                                                        SExpr::string("notes_map")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string("key")],
+                                                                    vec![
+                                                                        SExpr::string("key")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                             ],
                                                         ),
@@ -888,7 +987,7 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                                                 SExpr::call(
                                                     "std.let",
                                                     vec![
-                                                        SExpr::string("links"),
+                                                        SExpr::string("links").erase_type(),
                                                         SExpr::call(
                                                             "bool.guard",
                                                             vec![
@@ -897,11 +996,15 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                                                                     vec![
                                                                         SExpr::call(
                                                                             "std.var",
-                                                                            vec![SExpr::string(
-                                                                                "note",
-                                                                            )],
+                                                                            vec![
+                                                                                SExpr::string(
+                                                                                    "note",
+                                                                                )
+                                                                                .erase_type(),
+                                                                            ],
                                                                         ),
-                                                                        SExpr::string("links"),
+                                                                        SExpr::string("links")
+                                                                            .erase_type(),
                                                                     ],
                                                                 ),
                                                                 SExpr::call("list.new", vec![]),
@@ -914,11 +1017,16 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                                                     vec![
                                                         SExpr::call(
                                                             "std.var",
-                                                            vec![SExpr::string("links")],
+                                                            vec![
+                                                                SExpr::string("links").erase_type(),
+                                                            ],
                                                         ),
                                                         SExpr::call(
                                                             "std.var",
-                                                            vec![SExpr::string("target_title")],
+                                                            vec![
+                                                                SExpr::string("target_title")
+                                                                    .erase_type(),
+                                                            ],
                                                         ),
                                                     ],
                                                 ),
@@ -934,34 +1042,42 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("backlinks"),
+                        SExpr::string("backlinks").erase_type(),
                         SExpr::call(
                             "list.map",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("matching_keys")]),
+                                SExpr::call(
+                                    "std.var",
+                                    vec![SExpr::string("matching_keys").erase_type()],
+                                ),
                                 SExpr::call(
                                     "std.lambda",
                                     vec![
-                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::list(vec![SExpr::string("key").erase_type()])
+                                            .erase_type(),
                                         SExpr::call(
                                             "std.seq",
                                             vec![
                                                 SExpr::call(
                                                     "std.let",
                                                     vec![
-                                                        SExpr::string("note"),
+                                                        SExpr::string("note").erase_type(),
                                                         SExpr::call(
                                                             "obj.get",
                                                             vec![
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string(
-                                                                        "notes_map",
-                                                                    )],
+                                                                    vec![
+                                                                        SExpr::string("notes_map")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string("key")],
+                                                                    vec![
+                                                                        SExpr::string("key")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                             ],
                                                         ),
@@ -970,26 +1086,32 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                                                 SExpr::call(
                                                     "obj.new",
                                                     vec![
-                                                        SExpr::string("id"),
+                                                        SExpr::string("id").erase_type(),
                                                         SExpr::call(
                                                             "obj.get",
                                                             vec![
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string("note")],
+                                                                    vec![
+                                                                        SExpr::string("note")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
-                                                                SExpr::string("id"),
+                                                                SExpr::string("id").erase_type(),
                                                             ],
                                                         ),
-                                                        SExpr::string("title"),
+                                                        SExpr::string("title").erase_type(),
                                                         SExpr::call(
                                                             "obj.get",
                                                             vec![
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string("note")],
+                                                                    vec![
+                                                                        SExpr::string("note")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
-                                                                SExpr::string("title"),
+                                                                SExpr::string("title").erase_type(),
                                                             ],
                                                         ),
                                                     ],
@@ -1005,12 +1127,12 @@ async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("backlinks"),
-                        SExpr::string("title"),
-                        SExpr::call("std.var", vec![SExpr::string("target_title")]),
-                        SExpr::string("backlinks"),
-                        SExpr::call("std.var", vec![SExpr::string("backlinks")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("backlinks").erase_type(),
+                        SExpr::string("title").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("target_title").erase_type()]),
+                        SExpr::string("backlinks").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("backlinks").erase_type()]),
                     ],
                 ),
             ],
@@ -1120,19 +1242,19 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("title"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("title").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("content"),
+                        SExpr::string("content").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
-                                SExpr::call("std.arg", vec![SExpr::number(1)]),
-                                SExpr::string(""),
+                                SExpr::call("std.arg", vec![SExpr::number(1).erase_type()]),
+                                SExpr::string("").erase_type(),
                             ],
                         ),
                     ],
@@ -1140,13 +1262,19 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -1156,7 +1284,7 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("counter"),
+                        SExpr::string("counter").erase_type(),
                         SExpr::call(
                             "math.add",
                             vec![
@@ -1166,14 +1294,17 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                                         SExpr::call(
                                             "obj.get",
                                             vec![
-                                                SExpr::call("std.caller", vec![]),
-                                                SExpr::string("note_counter"),
+                                                SExpr::call(
+                                                    "entity",
+                                                    vec![SExpr::call("std.caller", vec![])],
+                                                ),
+                                                SExpr::string("note_counter").erase_type(),
                                             ],
                                         ),
-                                        SExpr::number(0),
+                                        SExpr::number(0).erase_type(),
                                     ],
                                 ),
-                                SExpr::number(1),
+                                SExpr::number(1).erase_type(),
                             ],
                         ),
                     ],
@@ -1181,14 +1312,17 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note_id"),
+                        SExpr::string("note_id").erase_type(),
                         SExpr::call(
                             "str.concat",
                             vec![
-                                SExpr::string("note_"),
+                                SExpr::string("note_").erase_type(),
                                 SExpr::call(
                                     "std.string",
-                                    vec![SExpr::call("std.var", vec![SExpr::string("counter")])],
+                                    vec![SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("counter").erase_type()],
+                                    )],
                                 ),
                             ],
                         ),
@@ -1197,16 +1331,16 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("note"),
+                        SExpr::string("note").erase_type(),
                         SExpr::call(
                             "obj.new",
                             vec![
-                                SExpr::string("id"),
-                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
-                                SExpr::string("title"),
-                                SExpr::call("std.var", vec![SExpr::string("title")]),
-                                SExpr::string("content"),
-                                SExpr::call("std.var", vec![SExpr::string("content")]),
+                                SExpr::string("id").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
+                                SExpr::string("title").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("title").erase_type()]),
+                                SExpr::string("content").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::string("content").erase_type()]),
                             ],
                         ),
                     ],
@@ -1214,28 +1348,40 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.set",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
-                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
-                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("note").erase_type()]),
                     ],
                 ),
+                // Persist to storage using update
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("notes"),
-                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("notes").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("notes_map").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                                SExpr::list(vec![
+                                    SExpr::string("note_counter").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("counter").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
-                SExpr::call(
-                    "obj.set",
-                    vec![
-                        SExpr::call("std.caller", vec![]),
-                        SExpr::string("note_counter"),
-                        SExpr::call("std.var", vec![SExpr::string("counter")]),
-                    ],
-                ),
-                SExpr::call("std.var", vec![SExpr::string("note")]),
+                SExpr::call("std.var", vec![SExpr::string("note").erase_type()]),
             ],
         );
         storage_lock.add_verb(user_id, "create_note", &create_note_verb)?;
@@ -1247,23 +1393,29 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("query"),
+                        SExpr::string("query").erase_type(),
                         SExpr::call(
                             "str.lower",
-                            vec![SExpr::call("std.arg", vec![SExpr::number(0)])],
+                            vec![SExpr::call("std.arg", vec![SExpr::number(0).erase_type()])],
                         ),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("notes_map"),
+                        SExpr::string("notes_map").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("notes").erase_type(),
+                                    ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
                             ],
@@ -1273,10 +1425,13 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("keys"),
+                        SExpr::string("keys").erase_type(),
                         SExpr::call(
                             "obj.keys",
-                            vec![SExpr::call("std.var", vec![SExpr::string("notes_map")])],
+                            vec![SExpr::call(
+                                "std.var",
+                                vec![SExpr::string("notes_map").erase_type()],
+                            )],
                         ),
                     ],
                 ),
@@ -1284,34 +1439,39 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("matching_keys"),
+                        SExpr::string("matching_keys").erase_type(),
                         SExpr::call(
                             "list.filter",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("keys")]),
+                                SExpr::call("std.var", vec![SExpr::string("keys").erase_type()]),
                                 SExpr::call(
                                     "std.lambda",
                                     vec![
-                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::list(vec![SExpr::string("key").erase_type()])
+                                            .erase_type(),
                                         SExpr::call(
                                             "std.seq",
                                             vec![
                                                 SExpr::call(
                                                     "std.let",
                                                     vec![
-                                                        SExpr::string("note"),
+                                                        SExpr::string("note").erase_type(),
                                                         SExpr::call(
                                                             "obj.get",
                                                             vec![
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string(
-                                                                        "notes_map",
-                                                                    )],
+                                                                    vec![
+                                                                        SExpr::string("notes_map")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string("key")],
+                                                                    vec![
+                                                                        SExpr::string("key")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                             ],
                                                         ),
@@ -1333,16 +1493,21 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                                                                                 vec![
                                                                                     SExpr::string(
                                                                                         "note",
-                                                                                    ),
+                                                                                    )
+                                                                                    .erase_type(),
                                                                                 ],
                                                                             ),
-                                                                            SExpr::string("title"),
+                                                                            SExpr::string("title")
+                                                                                .erase_type(),
                                                                         ],
                                                                     )],
                                                                 ),
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string("query")],
+                                                                    vec![
+                                                                        SExpr::string("query")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                             ],
                                                         ),
@@ -1359,18 +1524,23 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                                                                                 vec![
                                                                                     SExpr::string(
                                                                                         "note",
-                                                                                    ),
+                                                                                    )
+                                                                                    .erase_type(),
                                                                                 ],
                                                                             ),
                                                                             SExpr::string(
                                                                                 "content",
-                                                                            ),
+                                                                            )
+                                                                            .erase_type(),
                                                                         ],
                                                                     )],
                                                                 ),
                                                                 SExpr::call(
                                                                     "std.var",
-                                                                    vec![SExpr::string("query")],
+                                                                    vec![
+                                                                        SExpr::string("query")
+                                                                            .erase_type(),
+                                                                    ],
                                                                 ),
                                                             ],
                                                         ),
@@ -1388,23 +1558,30 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("results"),
+                        SExpr::string("results").erase_type(),
                         SExpr::call(
                             "list.map",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("matching_keys")]),
+                                SExpr::call(
+                                    "std.var",
+                                    vec![SExpr::string("matching_keys").erase_type()],
+                                ),
                                 SExpr::call(
                                     "std.lambda",
                                     vec![
-                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::list(vec![SExpr::string("key").erase_type()])
+                                            .erase_type(),
                                         SExpr::call(
                                             "obj.get",
                                             vec![
                                                 SExpr::call(
                                                     "std.var",
-                                                    vec![SExpr::string("notes_map")],
+                                                    vec![SExpr::string("notes_map").erase_type()],
                                                 ),
-                                                SExpr::call("std.var", vec![SExpr::string("key")]),
+                                                SExpr::call(
+                                                    "std.var",
+                                                    vec![SExpr::string("key").erase_type()],
+                                                ),
                                             ],
                                         ),
                                     ],
@@ -1416,12 +1593,12 @@ async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("search_results"),
-                        SExpr::string("query"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
-                        SExpr::string("notes"),
-                        SExpr::call("std.var", vec![SExpr::string("results")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("search_results").erase_type(),
+                        SExpr::string("query").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
+                        SExpr::string("notes").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("results").erase_type()]),
                     ],
                 ),
             ],

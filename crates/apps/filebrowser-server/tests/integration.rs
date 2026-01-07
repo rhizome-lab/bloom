@@ -212,30 +212,33 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("name"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("name").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 // Get path argument or default to cwd
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("target_path"),
+                        SExpr::string("target_path").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
-                                SExpr::call("std.arg", vec![SExpr::number(1)]),
+                                SExpr::call("std.arg", vec![SExpr::number(1).erase_type()]),
                                 SExpr::call(
                                     "bool.guard",
                                     vec![
                                         SExpr::call(
                                             "obj.get",
                                             vec![
-                                                SExpr::call("std.caller", vec![]),
-                                                SExpr::string("cwd"),
+                                                SExpr::call(
+                                                    "entity",
+                                                    vec![SExpr::call("std.caller", vec![])],
+                                                ),
+                                                SExpr::string("cwd").erase_type(),
                                             ],
                                         ),
-                                        SExpr::string("/"),
+                                        SExpr::string("/").erase_type(),
                                     ],
                                 ),
                             ],
@@ -246,15 +249,18 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("bookmarks"),
+                        SExpr::string("bookmarks").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.caller", vec![]),
-                                        SExpr::string("bookmarks"),
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("bookmarks").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
@@ -266,30 +272,41 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.set",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
-                        SExpr::call("std.var", vec![SExpr::string("name")]),
-                        SExpr::call("std.var", vec![SExpr::string("target_path")]),
+                        SExpr::call("std.var", vec![SExpr::string("bookmarks").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("name").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("target_path").erase_type()]),
                     ],
                 ),
                 // Update entity
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("bookmarks"),
-                        SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("bookmarks").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("bookmarks").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
                 // Return result
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("bookmark_created"),
-                        SExpr::string("name"),
-                        SExpr::call("std.var", vec![SExpr::string("name")]),
-                        SExpr::string("path"),
-                        SExpr::call("std.var", vec![SExpr::string("target_path")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("bookmark_created").erase_type(),
+                        SExpr::string("name").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("name").erase_type()]),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("target_path").erase_type()]),
                     ],
                 ),
             ],
@@ -303,15 +320,18 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("bookmarks"),
+                        SExpr::string("bookmarks").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.caller", vec![]),
-                                        SExpr::string("bookmarks"),
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("bookmarks").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
@@ -322,10 +342,10 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("bookmarks"),
-                        SExpr::string("bookmarks"),
-                        SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("bookmarks").erase_type(),
+                        SExpr::string("bookmarks").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("bookmarks").erase_type()]),
                     ],
                 ),
             ],
@@ -339,22 +359,25 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("name"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("name").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("bookmarks"),
+                        SExpr::string("bookmarks").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.caller", vec![]),
-                                        SExpr::string("bookmarks"),
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("bookmarks").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
@@ -371,8 +394,14 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                             vec![SExpr::call(
                                 "obj.has",
                                 vec![
-                                    SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
-                                    SExpr::call("std.var", vec![SExpr::string("name")]),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("bookmarks").erase_type()],
+                                    ),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("name").erase_type()],
+                                    ),
                                 ],
                             )],
                         ),
@@ -381,8 +410,11 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                             vec![SExpr::call(
                                 "str.concat",
                                 vec![
-                                    SExpr::string("Bookmark not found: "),
-                                    SExpr::call("std.var", vec![SExpr::string("name")]),
+                                    SExpr::string("Bookmark not found: ").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("name").erase_type()],
+                                    ),
                                 ],
                             )],
                         ),
@@ -392,35 +424,49 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("path"),
+                        SExpr::string("path").erase_type(),
                         SExpr::call(
                             "obj.get",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("bookmarks")]),
-                                SExpr::call("std.var", vec![SExpr::string("name")]),
+                                SExpr::call(
+                                    "std.var",
+                                    vec![SExpr::string("bookmarks").erase_type()],
+                                ),
+                                SExpr::call("std.var", vec![SExpr::string("name").erase_type()]),
                             ],
                         ),
                     ],
                 ),
                 // Update cwd
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("cwd"),
-                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("cwd").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("path").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
                 // Return result
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("jumped"),
-                        SExpr::string("name"),
-                        SExpr::call("std.var", vec![SExpr::string("name")]),
-                        SExpr::string("path"),
-                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("jumped").erase_type(),
+                        SExpr::string("name").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("name").erase_type()]),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("path").erase_type()]),
                     ],
                 ),
             ],
@@ -431,17 +477,20 @@ async fn test_bookmark_operations() -> Result<(), Box<dyn std::error::Error>> {
         let where_verb = SExpr::call(
             "obj.new",
             vec![
-                SExpr::string("type"),
-                SExpr::string("where"),
-                SExpr::string("path"),
+                SExpr::string("type").erase_type(),
+                SExpr::string("where").erase_type(),
+                SExpr::string("path").erase_type(),
                 SExpr::call(
                     "bool.guard",
                     vec![
                         SExpr::call(
                             "obj.get",
-                            vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                            vec![
+                                SExpr::call("entity", vec![SExpr::call("std.caller", vec![])]),
+                                SExpr::string("cwd").erase_type(),
+                            ],
                         ),
-                        SExpr::string("/"),
+                        SExpr::string("/").erase_type(),
                     ],
                 ),
             ],
@@ -546,17 +595,20 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
         let where_verb = SExpr::call(
             "obj.new",
             vec![
-                SExpr::string("type"),
-                SExpr::string("where"),
-                SExpr::string("path"),
+                SExpr::string("type").erase_type(),
+                SExpr::string("where").erase_type(),
+                SExpr::string("path").erase_type(),
                 SExpr::call(
                     "bool.guard",
                     vec![
                         SExpr::call(
                             "obj.get",
-                            vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                            vec![
+                                SExpr::call("entity", vec![SExpr::call("std.caller", vec![])]),
+                                SExpr::string("cwd").erase_type(),
+                            ],
                         ),
-                        SExpr::string("/"),
+                        SExpr::string("/").erase_type(),
                     ],
                 ),
             ],
@@ -570,22 +622,28 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("path"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("cwd"),
+                        SExpr::string("cwd").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("cwd").erase_type(),
+                                    ],
                                 ),
-                                SExpr::string("/"),
+                                SExpr::string("/").erase_type(),
                             ],
                         ),
                     ],
@@ -594,15 +652,18 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("new_path"),
+                        SExpr::string("new_path").erase_type(),
                         SExpr::call(
                             "std.if",
                             vec![
                                 SExpr::call(
                                     "bool.eq",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("path")]),
-                                        SExpr::string(".."),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("path").erase_type()],
+                                        ),
+                                        SExpr::string("..").erase_type(),
                                     ],
                                 ),
                                 // Go up one level
@@ -612,15 +673,15 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                                         SExpr::call(
                                             "std.let",
                                             vec![
-                                                SExpr::string("parts"),
+                                                SExpr::string("parts").erase_type(),
                                                 SExpr::call(
                                                     "str.split",
                                                     vec![
                                                         SExpr::call(
                                                             "std.var",
-                                                            vec![SExpr::string("cwd")],
+                                                            vec![SExpr::string("cwd").erase_type()],
                                                         ),
-                                                        SExpr::string("/"),
+                                                        SExpr::string("/").erase_type(),
                                                     ],
                                                 ),
                                             ],
@@ -629,7 +690,7 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                                             "list.pop",
                                             vec![SExpr::call(
                                                 "std.var",
-                                                vec![SExpr::string("parts")],
+                                                vec![SExpr::string("parts").erase_type()],
                                             )],
                                         ),
                                         SExpr::call(
@@ -642,21 +703,26 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                                                             "list.len",
                                                             vec![SExpr::call(
                                                                 "std.var",
-                                                                vec![SExpr::string("parts")],
+                                                                vec![
+                                                                    SExpr::string("parts")
+                                                                        .erase_type(),
+                                                                ],
                                                             )],
                                                         ),
-                                                        SExpr::number(0),
+                                                        SExpr::number(0).erase_type(),
                                                     ],
                                                 ),
-                                                SExpr::string("/"),
+                                                SExpr::string("/").erase_type(),
                                                 SExpr::call(
                                                     "str.join",
                                                     vec![
                                                         SExpr::call(
                                                             "std.var",
-                                                            vec![SExpr::string("parts")],
+                                                            vec![
+                                                                SExpr::string("parts").erase_type(),
+                                                            ],
                                                         ),
-                                                        SExpr::string("/"),
+                                                        SExpr::string("/").erase_type(),
                                                     ],
                                                 ),
                                             ],
@@ -667,9 +733,15 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                                 SExpr::call(
                                     "str.concat",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("cwd")]),
-                                        SExpr::string("/"),
-                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("cwd").erase_type()],
+                                        ),
+                                        SExpr::string("/").erase_type(),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("path").erase_type()],
+                                        ),
                                     ],
                                 ),
                             ],
@@ -678,21 +750,32 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                 ),
                 // Update cwd
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("cwd"),
-                        SExpr::call("std.var", vec![SExpr::string("new_path")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("cwd").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("new_path").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
                 // Return result
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("navigated"),
-                        SExpr::string("path"),
-                        SExpr::call("std.var", vec![SExpr::string("new_path")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("navigated").erase_type(),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("new_path").erase_type()]),
                     ],
                 ),
             ],
@@ -704,8 +787,8 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
             "call",
             vec![
                 SExpr::call("std.this", vec![]),
-                SExpr::string("go"),
-                SExpr::string(".."),
+                SExpr::string("go").erase_type(),
+                SExpr::string("..").erase_type(),
             ],
         );
         storage_lock.add_verb(user_id, "back", &back_verb)?;
@@ -717,15 +800,21 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("cwd"),
+                        SExpr::string("cwd").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
-                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("cwd")],
+                                    vec![
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("cwd").erase_type(),
+                                    ],
                                 ),
-                                SExpr::string("/"),
+                                SExpr::string("/").erase_type(),
                             ],
                         ),
                     ],
@@ -733,15 +822,18 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("fs_structure"),
+                        SExpr::string("fs_structure").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.caller", vec![]),
-                                        SExpr::string("fs_structure"),
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("fs_structure").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
@@ -752,15 +844,21 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("entries"),
+                        SExpr::string("entries").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("fs_structure")]),
-                                        SExpr::call("std.var", vec![SExpr::string("cwd")]),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("fs_structure").erase_type()],
+                                        ),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("cwd").erase_type()],
+                                        ),
                                     ],
                                 ),
                                 SExpr::call("list.new", vec![]),
@@ -771,12 +869,12 @@ async fn test_navigation_simulated() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("directory_listing"),
-                        SExpr::string("path"),
-                        SExpr::call("std.var", vec![SExpr::string("cwd")]),
-                        SExpr::string("entries"),
-                        SExpr::call("std.var", vec![SExpr::string("entries")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("directory_listing").erase_type(),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("cwd").erase_type()]),
+                        SExpr::string("entries").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("entries").erase_type()]),
                     ],
                 ),
             ],
@@ -869,30 +967,33 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("path"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("tag_name"),
-                        SExpr::call("std.arg", vec![SExpr::number(1)]),
+                        SExpr::string("tag_name").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(1).erase_type()]),
                     ],
                 ),
                 // Get metadata map
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("metadata"),
+                        SExpr::string("metadata").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.caller", vec![]),
-                                        SExpr::string("file_metadata"),
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("file_metadata").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
@@ -904,30 +1005,42 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("file_data"),
+                        SExpr::string("file_data").erase_type(),
                         SExpr::call(
                             "std.if",
                             vec![
                                 SExpr::call(
                                     "obj.has",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
-                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("metadata").erase_type()],
+                                        ),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("path").erase_type()],
+                                        ),
                                     ],
                                 ),
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
-                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("metadata").erase_type()],
+                                        ),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("path").erase_type()],
+                                        ),
                                     ],
                                 ),
                                 SExpr::call(
                                     "obj.new",
                                     vec![
-                                        SExpr::string("tags"),
+                                        SExpr::string("tags").erase_type(),
                                         SExpr::call("list.new", vec![]),
-                                        SExpr::string("annotations"),
+                                        SExpr::string("annotations").erase_type(),
                                         SExpr::call("list.new", vec![]),
                                     ],
                                 ),
@@ -939,15 +1052,18 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("tags"),
+                        SExpr::string("tags").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
-                                        SExpr::string("tags"),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("file_data").erase_type()],
+                                        ),
+                                        SExpr::string("tags").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("list.new", vec![]),
@@ -964,16 +1080,25 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                             vec![SExpr::call(
                                 "list.includes",
                                 vec![
-                                    SExpr::call("std.var", vec![SExpr::string("tags")]),
-                                    SExpr::call("std.var", vec![SExpr::string("tag_name")]),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("tags").erase_type()],
+                                    ),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("tag_name").erase_type()],
+                                    ),
                                 ],
                             )],
                         ),
                         SExpr::call(
                             "list.push",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("tags")]),
-                                SExpr::call("std.var", vec![SExpr::string("tag_name")]),
+                                SExpr::call("std.var", vec![SExpr::string("tags").erase_type()]),
+                                SExpr::call(
+                                    "std.var",
+                                    vec![SExpr::string("tag_name").erase_type()],
+                                ),
                             ],
                         ),
                     ],
@@ -982,39 +1107,50 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.set",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
-                        SExpr::string("tags"),
-                        SExpr::call("std.var", vec![SExpr::string("tags")]),
+                        SExpr::call("std.var", vec![SExpr::string("file_data").erase_type()]),
+                        SExpr::string("tags").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("tags").erase_type()]),
                     ],
                 ),
                 // Update metadata
                 SExpr::call(
                     "obj.set",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
-                        SExpr::call("std.var", vec![SExpr::string("path")]),
-                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
+                        SExpr::call("std.var", vec![SExpr::string("metadata").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("path").erase_type()]),
+                        SExpr::call("std.var", vec![SExpr::string("file_data").erase_type()]),
                     ],
                 ),
                 // Update entity
                 SExpr::call(
-                    "obj.set",
+                    "update",
                     vec![
                         SExpr::call("std.caller", vec![]),
-                        SExpr::string("file_metadata"),
-                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::list(vec![
+                                    SExpr::string("file_metadata").erase_type(),
+                                    SExpr::call(
+                                        "std.var",
+                                        vec![SExpr::string("metadata").erase_type()],
+                                    ),
+                                ])
+                                .erase_type(),
+                            ],
+                        ),
                     ],
                 ),
                 // Return result
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("tag_added"),
-                        SExpr::string("path"),
-                        SExpr::call("std.var", vec![SExpr::string("path")]),
-                        SExpr::string("tag"),
-                        SExpr::call("std.var", vec![SExpr::string("tag_name")]),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("tag_added").erase_type(),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("path").erase_type()]),
+                        SExpr::string("tag").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("tag_name").erase_type()]),
                     ],
                 ),
             ],
@@ -1028,22 +1164,25 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("path"),
-                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.arg", vec![SExpr::number(0).erase_type()]),
                     ],
                 ),
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("metadata"),
+                        SExpr::string("metadata").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.caller", vec![]),
-                                        SExpr::string("file_metadata"),
+                                        SExpr::call(
+                                            "entity",
+                                            vec![SExpr::call("std.caller", vec![])],
+                                        ),
+                                        SExpr::string("file_metadata").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("obj.new", vec![]),
@@ -1054,27 +1193,42 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("file_data"),
+                        SExpr::string("file_data").erase_type(),
                         SExpr::call(
                             "std.if",
                             vec![
                                 SExpr::call(
                                     "obj.has",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
-                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("metadata").erase_type()],
+                                        ),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("path").erase_type()],
+                                        ),
                                     ],
                                 ),
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("metadata")]),
-                                        SExpr::call("std.var", vec![SExpr::string("path")]),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("metadata").erase_type()],
+                                        ),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("path").erase_type()],
+                                        ),
                                     ],
                                 ),
                                 SExpr::call(
                                     "obj.new",
-                                    vec![SExpr::string("tags"), SExpr::call("list.new", vec![])],
+                                    vec![
+                                        SExpr::string("tags").erase_type(),
+                                        SExpr::call("list.new", vec![]),
+                                    ],
                                 ),
                             ],
                         ),
@@ -1083,19 +1237,22 @@ async fn test_file_metadata() -> Result<(), Box<dyn std::error::Error>> {
                 SExpr::call(
                     "obj.new",
                     vec![
-                        SExpr::string("type"),
-                        SExpr::string("tags"),
-                        SExpr::string("path"),
-                        SExpr::call("std.var", vec![SExpr::string("path")]),
-                        SExpr::string("tags"),
+                        SExpr::string("type").erase_type(),
+                        SExpr::string("tags").erase_type(),
+                        SExpr::string("path").erase_type(),
+                        SExpr::call("std.var", vec![SExpr::string("path").erase_type()]),
+                        SExpr::string("tags").erase_type(),
                         SExpr::call(
                             "bool.guard",
                             vec![
                                 SExpr::call(
                                     "obj.get",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("file_data")]),
-                                        SExpr::string("tags"),
+                                        SExpr::call(
+                                            "std.var",
+                                            vec![SExpr::string("file_data").erase_type()],
+                                        ),
+                                        SExpr::string("tags").erase_type(),
                                     ],
                                 ),
                                 SExpr::call("list.new", vec![]),

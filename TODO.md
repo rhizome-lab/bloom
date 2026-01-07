@@ -69,10 +69,11 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 ## Next Up
 
 1. ~~**Server**: Full verb discovery via System.get_available_verbs~~ ✅ (execute handler now searches player, room, contents, inventory)
-2. ~~**Notes App**: Integration tests for notes-specific verbs, backlinks, search~~ ✅ (3 tests: verb ops, backlinks, search)
-3. ~~**FileBrowser App**: Integration tests for navigation, file reading, bookmarks~~ ✅ (3 tests: bookmarks, navigation, metadata)
+2. ~~**Notes App**: Integration tests for notes-specific verbs, backlinks, search~~ ✅ (4 tests passing: basic ops, verb ops, backlinks, search)
+3. ~~**FileBrowser App**: Integration tests for navigation, file reading, bookmarks~~ (1/4 tests passing: bookmark ops)
 4. ~~**Transpiler**: Make dictionary/object access safer~~ ✅ (obj.get and list.get now support optional default value argument)
 5. ~~**viwo-ir**: Extract remaining opcode definitions from TypeScript to schema~~ ✅ (all stdlib opcodes: std, math, list, obj, str, bool, json, game)
+6. **Codegen**: Fix `str.split` to preserve empty strings between separators
 
 ---
 
@@ -89,7 +90,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Plugins**: Refactor `ai` plugin to native Lua C API (3 functions: generateText, embed, chat) ✅
 - [x] **Plugins**: Refactor `memory` plugin to native Lua C API (orchestrates sqlite+ai+vector) ✅
 - [x] **Plugins**: Generic plugin registration via `register_all_to_lua()` (no special-casing) ✅
-- [ ] **Plugins**: Port `diffusers` plugin (image generation - LOW PRIORITY, waiting on Rust diffusion impls)
+- [x] **Plugins**: Port `diffusers` plugin (image generation with burn-models SD 1.x, wgpu backend) ✅
 
 **Server & Transport:**
 - [x] **viwo-core**: Port scheduler system (periodic task execution from database queue) ✅
@@ -110,13 +111,22 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
   - [x] Bootstrap: load plugins → seed world → start WebSocket server ✅
   - [x] Reuse existing TypeScript entity definitions (`apps/notes-server/src/definitions/Notes.ts`) ✅
   - [x] Integration tests: WebSocket, JSON-RPC, entity CRUD ✅
-  - [ ] Test: Notes-specific verbs, backlinks, search (requires TypeScript transpiler fixes)
+  - [x] Test: Notes-specific verbs, backlinks, search (4 tests passing) ✅
 - [x] **filebrowser-server**: Port file browser server to Rust ✅
   - [x] Create `crates/apps/filebrowser-server` with main.rs ✅
   - [x] Bootstrap: load fs plugin → seed world → start WebSocket server ✅
   - [x] Reuse existing TypeScript entity definitions (`apps/filebrowser-server/src/definitions/FileBrowser.ts`) ✅
   - [x] Implement fs plugin ABI with native Lua C API ✅
-  - [ ] Test: navigation, file reading, bookmarks (fs plugin ready, need integration tests)
+  - [x] Test: bookmarks (1/4 tests passing - bookmark ops work) ✅
+  - [ ] Test: navigation, metadata (remaining tests need str.split fix)
+
+**Integration Test Notes:**
+- Core runtime tests pass (18 tests: object_creation + adversarial)
+- Notes-server integration tests pass (4 tests: basic ops, verbs, backlinks, search)
+- Fixed: `bool.guard` semantics, `obj.new` supports flat pairs format
+- Fixed: `entity()` opcode returns flattened props (matches TypeScript behavior)
+- Fixed: `std.if` generates IIFE when used as expression (Lua if is statement)
+- Known issue: `str.split` doesn't preserve empty strings (breaks path manipulation)
 
 ## 1. Deep Simulation (Sandbox)
 

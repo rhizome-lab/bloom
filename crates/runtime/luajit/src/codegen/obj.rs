@@ -45,20 +45,40 @@ pub fn compile_obj(op: &str, args: &[SExpr], prefix: &str) -> Result<Option<Stri
         }
 
         "obj.new" => {
-            // obj.new accepts pairs: ["obj.new", [key1, val1], [key2, val2], ...]
+            // obj.new accepts two formats:
+            // 1. Pair lists: ["obj.new", [key1, val1], [key2, val2], ...]
+            // 2. Flat pairs: ["obj.new", key1, val1, key2, val2, ...]
             let mut pairs = Vec::new();
-            for arg in args {
-                let pair = arg.as_list().ok_or_else(|| {
-                    CompileError::InvalidArgument("obj.new arg must be pair".into())
-                })?;
-                if pair.len() < 2 {
+
+            if args.is_empty() {
+                // Empty object
+            } else if args[0].as_list().is_some() {
+                // Format 1: pair lists
+                for arg in args {
+                    let pair = arg.as_list().ok_or_else(|| {
+                        CompileError::InvalidArgument("obj.new arg must be pair".into())
+                    })?;
+                    if pair.len() < 2 {
+                        return Err(CompileError::InvalidArgument(
+                            "obj.new pair must have key and value".into(),
+                        ));
+                    }
+                    let key = compile_value(&pair[0], false)?;
+                    let val = compile_value(&pair[1], false)?;
+                    pairs.push(format!("[{}] = {}", key, val));
+                }
+            } else {
+                // Format 2: flat alternating key-value pairs
+                if args.len() % 2 != 0 {
                     return Err(CompileError::InvalidArgument(
-                        "obj.new pair must have key and value".into(),
+                        "obj.new flat format requires even number of arguments".into(),
                     ));
                 }
-                let key = compile_value(&pair[0], false)?;
-                let val = compile_value(&pair[1], false)?;
-                pairs.push(format!("[{}] = {}", key, val));
+                for chunk in args.chunks(2) {
+                    let key = compile_value(&chunk[0], false)?;
+                    let val = compile_value(&chunk[1], false)?;
+                    pairs.push(format!("[{}] = {}", key, val));
+                }
             }
             format!("{}{{ {} }}", prefix, pairs.join(", "))
         }

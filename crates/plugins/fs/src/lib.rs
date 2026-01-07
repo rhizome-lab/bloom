@@ -17,7 +17,7 @@ type RegisterFunction =
 
 /// Plugin initialization - register all fs functions
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn fs_plugin_init(register_fn: RegisterFunction) -> c_int {
+pub unsafe extern "C" fn viwo_fs_plugin_init(register_fn: RegisterFunction) -> c_int {
     unsafe {
         let names = [
             "fs.read",
@@ -54,7 +54,7 @@ pub unsafe extern "C" fn fs_plugin_init(register_fn: RegisterFunction) -> c_int 
 
 /// Plugin cleanup (optional)
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn fs_plugin_cleanup() {
+pub unsafe extern "C" fn viwo_fs_plugin_cleanup() {
     // No cleanup needed
 }
 

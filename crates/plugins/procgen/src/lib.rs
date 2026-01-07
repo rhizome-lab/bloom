@@ -190,7 +190,7 @@ unsafe extern "C" fn procgen_between_lua(L: *mut mlua::ffi::lua_State) -> c_int 
 
 /// Plugin initialization - register all functions
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn procgen_plugin_init(register_fn: RegisterFunction) -> c_int {
+pub unsafe extern "C" fn viwo_procgen_plugin_init(register_fn: RegisterFunction) -> c_int {
     // Initialize plugin state
     init_state();
 
@@ -226,7 +226,7 @@ pub unsafe extern "C" fn procgen_plugin_init(register_fn: RegisterFunction) -> c
 
 /// Plugin cleanup - called when unloading
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn procgen_plugin_cleanup() -> c_int {
+pub unsafe extern "C" fn viwo_procgen_plugin_cleanup() -> c_int {
     clear_state();
     0 // Success
 }

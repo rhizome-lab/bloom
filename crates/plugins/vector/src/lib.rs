@@ -600,7 +600,7 @@ unsafe extern "C" fn vector_delete_lua(L: *mut mlua::ffi::lua_State) -> c_int {
 
 /// Plugin initialization - register all functions
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn vector_plugin_init(register_fn: RegisterFunction) -> c_int {
+pub unsafe extern "C" fn viwo_vector_plugin_init(register_fn: RegisterFunction) -> c_int {
     unsafe {
         let names = ["vector.insert", "vector.search", "vector.delete"];
         let funcs: [PluginLuaFunction; 3] =
@@ -621,7 +621,7 @@ pub unsafe extern "C" fn vector_plugin_init(register_fn: RegisterFunction) -> c_
 
 /// Plugin cleanup - called when unloading
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn vector_plugin_cleanup() -> c_int {
+pub unsafe extern "C" fn viwo_vector_plugin_cleanup() -> c_int {
     let mut conns = CONNECTIONS.lock().unwrap();
     *conns = None;
     0 // Success

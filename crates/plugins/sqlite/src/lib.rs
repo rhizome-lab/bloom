@@ -521,7 +521,7 @@ unsafe extern "C" fn sqlite_execute_lua(L: *mut mlua::ffi::lua_State) -> c_int {
 
 /// Plugin initialization - register all functions
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn sqlite_plugin_init(register_fn: RegisterFunction) -> c_int {
+pub unsafe extern "C" fn viwo_sqlite_plugin_init(register_fn: RegisterFunction) -> c_int {
     unsafe {
         let names = ["sqlite.query", "sqlite.execute"];
         let funcs: [PluginLuaFunction; 2] = [sqlite_query_lua, sqlite_execute_lua];
@@ -541,7 +541,7 @@ pub unsafe extern "C" fn sqlite_plugin_init(register_fn: RegisterFunction) -> c_
 
 /// Plugin cleanup - called when unloading
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn sqlite_plugin_cleanup() -> c_int {
+pub unsafe extern "C" fn viwo_sqlite_plugin_cleanup() -> c_int {
     // Close all connections
     let mut conns = CONNECTIONS.lock().unwrap();
     *conns = None;

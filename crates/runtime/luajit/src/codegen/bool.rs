@@ -53,9 +53,9 @@ pub fn compile_bool(
             }
             let left = compile_value(&args[0], false)?;
             let right = compile_value(&args[1], false)?;
-            // If left is nullish, return left (null/nil), else evaluate and return right
+            // If left is nullish, return right (the default), else return left
             format!(
-                "{}(function(l, r) if l == nil or l == null then return l else return r end end)({}, {})",
+                "{}(function(l, r) if l == nil or l == null then return r else return l end end)({}, {})",
                 prefix, left, right
             )
         }

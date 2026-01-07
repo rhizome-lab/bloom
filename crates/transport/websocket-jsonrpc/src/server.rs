@@ -263,38 +263,39 @@ async fn handle_message(
                 .and_then(|id| id.as_i64())
                 .ok_or("Missing entityId")?;
 
-            // Verify entity exists
-            let storage = runtime.storage().lock().unwrap();
-            match storage.get_entity(entity_id) {
-                Ok(Some(entity)) => {
-                    // Get room from entity props (location field)
-                    let room_id = entity.get("location").and_then(|l| l.as_i64()).unwrap_or(0);
-
-                    drop(storage);
-
-                    // Update session with player info
-                    {
-                        let mut sessions = sessions.write().await;
-                        if let Some(session) = sessions.get_mut(&session_id) {
-                            session.login(entity_id, room_id);
-                        }
-                    }
-
-                    info!("Client logged in as Entity {}", entity_id);
-
-                    // Send player_id notification
-                    let notification = serde_json::json!({
-                        "jsonrpc": "2.0",
-                        "method": "player_id",
-                        "params": { "playerId": entity_id }
-                    });
-                    let _ = tx.send(notification.to_string());
-
-                    Ok(serde_json::json!({ "playerId": entity_id, "status": "ok" }))
+            // Verify entity exists and get room_id (scoped to drop lock before await)
+            let room_id = {
+                let storage = runtime.storage().lock().unwrap();
+                match storage.get_entity(entity_id) {
+                    Ok(Some(entity)) => entity
+                        .props
+                        .get("location")
+                        .and_then(|l| l.as_i64())
+                        .unwrap_or(0),
+                    Ok(None) => return Err("Entity not found".into()),
+                    Err(err) => return Err(err.to_string().into()),
                 }
-                Ok(None) => Err("Entity not found".into()),
-                Err(err) => Err(err.to_string().into()),
+            };
+
+            // Update session with player info
+            {
+                let mut sessions = sessions.write().await;
+                if let Some(session) = sessions.get_mut(&session_id) {
+                    session.login(entity_id, room_id);
+                }
             }
+
+            info!("Client logged in as Entity {}", entity_id);
+
+            // Send player_id notification
+            let notification = serde_json::json!({
+                "jsonrpc": "2.0",
+                "method": "player_id",
+                "params": { "playerId": entity_id }
+            });
+            let _ = tx.send(notification.to_string());
+
+            Ok(serde_json::json!({ "playerId": entity_id, "status": "ok" }))
         }
 
         "execute" => {
@@ -329,14 +330,12 @@ async fn handle_message(
 
                 // Helper to get entity IDs from a contents array
                 let get_contents = |entity_id: i64| -> Vec<i64> {
-                    storage
-                        .get_entity(entity_id)
-                        .ok()
-                        .flatten()
-                        .and_then(|e| e.props.get("contents"))
-                        .and_then(|c| c.as_array())
-                        .map(|arr| arr.iter().filter_map(|v| v.as_i64()).collect())
-                        .unwrap_or_default()
+                    if let Ok(Some(e)) = storage.get_entity(entity_id) {
+                        if let Some(contents) = e.props.get("contents").and_then(|c| c.as_array()) {
+                            return contents.iter().filter_map(|v| v.as_i64()).collect();
+                        }
+                    }
+                    Vec::new()
                 };
 
                 // Get player entity
@@ -548,8 +547,7 @@ async fn handle_message(
                     Ok(serde_json::json!({
                         "id": verb.id,
                         "name": verb.name,
-                        "code": verb.code,
-                        "source": verb.source
+                        "code": verb.code
                     }))
                 }
                 Ok(None) => Err("Verb not found".into()),
@@ -572,7 +570,7 @@ async fn handle_message(
                             serde_json::json!({
                                 "id": v.id,
                                 "name": v.name,
-                                "source": v.source
+                                "code": v.code
                             })
                         })
                         .collect();

@@ -114,12 +114,25 @@ return {{ result = __result, this = __this }}
         let lua = runtime.lua();
         let storage = self.storage.clone();
 
-        // entity opcode - get entity by ID
+        // entity opcode - get entity by ID (returns flattened props at top level)
         let storage_clone = storage.clone();
         let entity_fn = lua.create_function(move |lua_ctx, entity_id: i64| {
             let entity = crate::opcodes::opcode_entity(entity_id as EntityId, &storage_clone)
-                .map_err(mlua::Error::external)?;
-            lua_ctx.to_value(&entity)
+                .map_err(mlua::Error::external)?
+                .ok_or_else(|| mlua::Error::external(format!("entity {} not found", entity_id)))?;
+            // Flatten entity: { id, prototype_id, ...props } to match TypeScript behavior
+            let mut result = serde_json::Map::new();
+            result.insert("id".to_string(), serde_json::json!(entity.id));
+            result.insert(
+                "prototype_id".to_string(),
+                serde_json::to_value(entity.prototype_id).unwrap(),
+            );
+            if let serde_json::Value::Object(props) = &entity.props {
+                for (key, value) in props {
+                    result.insert(key.clone(), value.clone());
+                }
+            }
+            lua_ctx.to_value(&serde_json::Value::Object(result))
         })?;
         lua.globals().set("__viwo_entity", entity_fn)?;
 

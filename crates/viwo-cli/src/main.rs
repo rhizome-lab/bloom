@@ -1,6 +1,7 @@
 //! Viwo CLI entry point.
 
 use std::io::Read;
+use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use tracing::info;
@@ -91,10 +92,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let config = ServerConfig {
                 host,
                 port,
-                db_path: db,
+                db_path: db.clone(),
             };
 
-            let server = Server::new(config)?;
+            let runtime = Arc::new(viwo_runtime::ViwoRuntime::open(&db)?);
+            let server = Server::new(runtime, config);
             server.run().await?;
         }
 

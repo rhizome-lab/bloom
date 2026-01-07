@@ -21,3 +21,4 @@ serde_json.workspace = true
 [dev-dependencies]
 tokio-tungstenite.workspace = true
 futures-util.workspace = true
+viwo-ir.workspace = true

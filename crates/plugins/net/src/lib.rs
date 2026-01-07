@@ -14,7 +14,7 @@ type RegisterFunction =
 
 /// Plugin initialization - register all net functions
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn net_plugin_init(register_fn: RegisterFunction) -> c_int {
+pub unsafe extern "C" fn viwo_net_plugin_init(register_fn: RegisterFunction) -> c_int {
     unsafe {
         let names = ["net.get", "net.post"];
         let funcs: [PluginLuaFunction; 2] = [net_get_lua, net_post_lua];
@@ -35,7 +35,7 @@ pub unsafe extern "C" fn net_plugin_init(register_fn: RegisterFunction) -> c_int
 
 /// Plugin cleanup (optional)
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn net_plugin_cleanup() {
+pub unsafe extern "C" fn viwo_net_plugin_cleanup() {
     // No cleanup needed
 }
 

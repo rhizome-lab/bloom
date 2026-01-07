@@ -5,17 +5,25 @@
 //! # Opcodes
 //!
 //! - `diffusers.generate` - Generate image from text prompt
-//! - `diffusers.img2img` - Transform image based on prompt
 //! - `diffusers.load` - Load a model into memory
 //! - `diffusers.unload` - Unload a model from memory
+//! - `diffusers.list` - List loaded models
 
 use image::{ImageBuffer, Rgb};
 use mlua::ffi::lua_State;
+use std::cell::RefCell;
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::os::raw::c_void;
 use std::path::PathBuf;
-use std::sync::{Mutex, OnceLock};
 use thiserror::Error;
+
+// Burn imports
+use burn_models::DiffusionPipeline;
+use burn_models_clip::{ClipConfig, ClipTokenizer};
+use burn_models_convert::sd_loader::SdWeightLoader;
+use burn_models_samplers::NoiseSchedule;
+use burn_models_unet::UNetConfig;
+use burn_models_vae::DecoderConfig;
 
 /// Plugin errors
 #[derive(Error, Debug)]
@@ -83,50 +91,177 @@ impl ModelType {
     }
 }
 
+// ============================================================================
+// SD 1.x Pipeline (wgpu backend)
+// ============================================================================
+
+#[cfg(feature = "wgpu")]
+mod sd1x_wgpu {
+    use super::*;
+    use burn_wgpu::{Wgpu, WgpuDevice};
+
+    type Backend = Wgpu<f32>;
+
+    /// Loaded SD 1.x pipeline
+    pub struct Sd1xPipeline {
+        pub pipeline: burn_models::StableDiffusion1x<Backend>,
+    }
+
+    impl Sd1xPipeline {
+        /// Load a new SD 1.x pipeline from weights
+        pub fn load(weights_path: &PathBuf) -> Result<Self, DiffusersError> {
+            let device = WgpuDevice::default();
+
+            // Load tokenizer (embedded CLIP vocab)
+            let tokenizer = ClipTokenizer::new();
+
+            // Open weight loader
+            let mut loader = SdWeightLoader::open(weights_path)
+                .map_err(|e| DiffusersError::LoadError(format!("Failed to open weights: {}", e)))?;
+
+            // Load CLIP text encoder
+            let clip_config = ClipConfig::sd1x();
+            let text_encoder = loader
+                .load_clip_text_encoder::<Backend>(&clip_config, &device)
+                .map_err(|e| DiffusersError::LoadError(format!("Failed to load CLIP: {}", e)))?;
+
+            // Load UNet
+            let unet_config = UNetConfig::sd1x();
+            let unet = loader
+                .load_unet::<Backend>(&unet_config, &device)
+                .map_err(|e| DiffusersError::LoadError(format!("Failed to load UNet: {}", e)))?;
+
+            // Load VAE decoder
+            let vae_config = DecoderConfig::sd();
+            let vae_decoder = loader
+                .load_vae_decoder::<Backend>(&vae_config, &device)
+                .map_err(|e| DiffusersError::LoadError(format!("Failed to load VAE: {}", e)))?;
+
+            // Create pipeline
+            let pipeline = burn_models::StableDiffusion1x {
+                tokenizer,
+                text_encoder,
+                unet,
+                vae_decoder,
+                scheduler: NoiseSchedule::sd1x(&device),
+                device,
+            };
+
+            Ok(Self { pipeline })
+        }
+
+        /// Generate an image
+        pub fn generate(&self, config: &GenerateConfig) -> Result<Vec<u8>, DiffusersError> {
+            let sample_config = burn_models::SampleConfig {
+                width: config.width,
+                height: config.height,
+                steps: config.steps,
+                guidance_scale: config.guidance_scale,
+                seed: config.seed,
+            };
+
+            // Run the pipeline
+            let image_tensor =
+                self.pipeline
+                    .generate(&config.prompt, &config.negative_prompt, &sample_config);
+
+            // Convert tensor to RGB bytes
+            let rgb_data = burn_models::tensor_to_rgb(image_tensor.clone());
+            let [_, _, h, w] = image_tensor.dims();
+
+            // Create image buffer
+            let img: ImageBuffer<Rgb<u8>, Vec<u8>> =
+                ImageBuffer::from_raw(w as u32, h as u32, rgb_data).ok_or_else(|| {
+                    DiffusersError::GenerationError("Failed to create image".into())
+                })?;
+
+            // Optionally save to file
+            if let Some(path) = &config.output_path {
+                img.save(path)?;
+            }
+
+            // Encode as PNG
+            let mut buffer = Vec::new();
+            {
+                use image::ImageEncoder;
+                let encoder = image::codecs::png::PngEncoder::new(&mut buffer);
+                encoder.write_image(
+                    img.as_raw(),
+                    w as u32,
+                    h as u32,
+                    image::ExtendedColorType::Rgb8,
+                )?;
+            }
+
+            Ok(buffer)
+        }
+    }
+}
+
+// ============================================================================
+// Model Registry
+// ============================================================================
+
+/// Model info stored in registry
+struct ModelInfo {
+    model_type: ModelType,
+    weights_path: PathBuf,
+    #[cfg(feature = "wgpu")]
+    sd1x_pipeline: Option<sd1x_wgpu::Sd1xPipeline>,
+}
+
 /// Model registry for caching loaded models
 struct ModelRegistry {
-    // In a real implementation, this would hold the actual model instances
-    // For now, just track which models are "loaded"
-    loaded_models: std::collections::HashMap<String, ModelType>,
-    weights_paths: std::collections::HashMap<String, PathBuf>,
+    models: std::collections::HashMap<String, ModelInfo>,
 }
 
 impl ModelRegistry {
     fn new() -> Self {
         Self {
-            loaded_models: std::collections::HashMap::new(),
-            weights_paths: std::collections::HashMap::new(),
+            models: std::collections::HashMap::new(),
         }
     }
 
-    fn load(&mut self, name: &str, model_type: ModelType, weights_path: PathBuf) {
-        self.loaded_models.insert(name.to_string(), model_type);
-        self.weights_paths.insert(name.to_string(), weights_path);
+    fn register(&mut self, name: &str, model_type: ModelType, weights_path: PathBuf) {
+        self.models.insert(
+            name.to_string(),
+            ModelInfo {
+                model_type,
+                weights_path,
+                #[cfg(feature = "wgpu")]
+                sd1x_pipeline: None,
+            },
+        );
     }
 
     fn unload(&mut self, name: &str) -> bool {
-        self.loaded_models.remove(name).is_some() && self.weights_paths.remove(name).is_some()
+        self.models.remove(name).is_some()
     }
 
-    fn get(&self, name: &str) -> Option<(ModelType, &PathBuf)> {
-        self.loaded_models
-            .get(name)
-            .zip(self.weights_paths.get(name))
-            .map(|(t, p)| (*t, p))
+    fn get(&self, name: &str) -> Option<&ModelInfo> {
+        self.models.get(name)
+    }
+
+    fn get_mut(&mut self, name: &str) -> Option<&mut ModelInfo> {
+        self.models.get_mut(name)
     }
 
     fn list(&self) -> Vec<String> {
-        self.loaded_models.keys().cloned().collect()
+        self.models.keys().cloned().collect()
     }
 }
 
-static REGISTRY: OnceLock<Mutex<ModelRegistry>> = OnceLock::new();
-
-fn registry() -> &'static Mutex<ModelRegistry> {
-    REGISTRY.get_or_init(|| Mutex::new(ModelRegistry::new()))
+// Use thread-local storage since wgpu types don't implement Send/Sync
+// (GPU resources must stay on the thread that created them)
+thread_local! {
+    static REGISTRY: RefCell<ModelRegistry> = RefCell::new(ModelRegistry::new());
 }
 
-/// Load a model into the registry
+// ============================================================================
+// Public API
+// ============================================================================
+
+/// Load a model into the registry (lazy - actual loading happens on first generate)
 pub fn load_model(name: &str, model_type: &str, weights_path: &str) -> Result<(), DiffusersError> {
     let model_type = match model_type.to_lowercase().as_str() {
         "sd1x" | "sd1.x" | "sd1" => ModelType::Sd1x,
@@ -147,64 +282,61 @@ pub fn load_model(name: &str, model_type: &str, weights_path: &str) -> Result<()
         )));
     }
 
-    let mut reg = registry().lock().unwrap();
-    reg.load(name, model_type, path);
+    REGISTRY.with_borrow_mut(|reg| {
+        reg.register(name, model_type, path);
+    });
 
     Ok(())
 }
 
 /// Unload a model from the registry
 pub fn unload_model(name: &str) -> bool {
-    let mut reg = registry().lock().unwrap();
-    reg.unload(name)
+    REGISTRY.with_borrow_mut(|reg| reg.unload(name))
 }
 
 /// List loaded models
 pub fn list_models() -> Vec<String> {
-    let reg = registry().lock().unwrap();
-    reg.list()
+    REGISTRY.with_borrow(|reg| reg.list())
 }
 
-/// Generate an image (stub implementation - actual generation requires backend setup)
+/// Generate an image using a loaded model
+#[cfg(feature = "wgpu")]
 pub fn generate(model_name: &str, config: &GenerateConfig) -> Result<Vec<u8>, DiffusersError> {
-    let reg = registry().lock().unwrap();
+    REGISTRY.with_borrow_mut(|reg| {
+        let info = reg
+            .get_mut(model_name)
+            .ok_or_else(|| DiffusersError::ModelNotLoaded(model_name.to_string()))?;
 
-    let (_model_type, _weights_path) = reg
-        .get(model_name)
-        .ok_or_else(|| DiffusersError::ModelNotLoaded(model_name.to_string()))?;
+        match info.model_type {
+            ModelType::Sd1x => {
+                // Lazy load the pipeline if not already loaded
+                if info.sd1x_pipeline.is_none() {
+                    eprintln!(
+                        "[diffusers] Loading SD 1.x pipeline from {:?}...",
+                        info.weights_path
+                    );
+                    let pipeline = sd1x_wgpu::Sd1xPipeline::load(&info.weights_path)?;
+                    info.sd1x_pipeline = Some(pipeline);
+                    eprintln!("[diffusers] Pipeline loaded successfully");
+                }
 
-    // Placeholder: In a full implementation, this would:
-    // 1. Initialize the burn backend
-    // 2. Load the model weights
-    // 3. Run the diffusion pipeline
-    // 4. Return the generated image bytes
+                // Generate
+                let pipeline = info.sd1x_pipeline.as_ref().unwrap();
+                pipeline.generate(config)
+            }
+            ModelType::Sdxl => Err(DiffusersError::GenerationError(
+                "SDXL generation not yet implemented".into(),
+            )),
+        }
+    })
+}
 
-    // For now, generate a placeholder gradient image
-    let width = config.width as u32;
-    let height = config.height as u32;
-    let mut img = ImageBuffer::<Rgb<u8>, Vec<u8>>::new(width, height);
-
-    for (x, y, pixel) in img.enumerate_pixels_mut() {
-        let r = (x as f32 / width as f32 * 255.0) as u8;
-        let g = (y as f32 / height as f32 * 255.0) as u8;
-        let b = 128u8;
-        *pixel = Rgb([r, g, b]);
-    }
-
-    // Encode as PNG
-    let mut buffer = Vec::new();
-    {
-        use image::ImageEncoder;
-        let encoder = image::codecs::png::PngEncoder::new(&mut buffer);
-        encoder.write_image(img.as_raw(), width, height, image::ExtendedColorType::Rgb8)?;
-    }
-
-    // Optionally save to file
-    if let Some(path) = &config.output_path {
-        img.save(path)?;
-    }
-
-    Ok(buffer)
+/// Fallback when wgpu is not enabled
+#[cfg(not(feature = "wgpu"))]
+pub fn generate(model_name: &str, config: &GenerateConfig) -> Result<Vec<u8>, DiffusersError> {
+    Err(DiffusersError::GenerationError(
+        "No backend enabled. Build with --features wgpu".into(),
+    ))
 }
 
 // ============================================================================
@@ -215,7 +347,7 @@ type RegisterFunction = unsafe extern "C" fn(name: *const c_char, func: *const c
 
 /// Plugin initialization
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn diffusers_plugin_init(register_fn: RegisterFunction) -> c_int {
+pub unsafe extern "C" fn viwo_diffusers_plugin_init(register_fn: RegisterFunction) -> c_int {
     unsafe {
         let names = [
             "diffusers.load",
@@ -242,13 +374,11 @@ pub unsafe extern "C" fn diffusers_plugin_init(register_fn: RegisterFunction) ->
 
 /// Plugin cleanup
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn diffusers_plugin_cleanup() -> c_int {
+pub unsafe extern "C" fn viwo_diffusers_plugin_cleanup() -> c_int {
     // Clear the model registry
-    if let Some(reg) = REGISTRY.get() {
-        let mut guard = reg.lock().unwrap();
-        guard.loaded_models.clear();
-        guard.weights_paths.clear();
-    }
+    REGISTRY.with_borrow_mut(|reg| {
+        reg.models.clear();
+    });
     0 // Success
 }
 
@@ -424,18 +554,14 @@ mod tests {
     #[test]
     fn test_load_and_list_models() {
         // Clear any existing state
-        if let Some(reg) = REGISTRY.get() {
-            let mut guard = reg.lock().unwrap();
-            guard.loaded_models.clear();
-            guard.weights_paths.clear();
-        }
+        REGISTRY.with_borrow_mut(|reg| reg.models.clear());
 
         // Create a temp file as weights
         let temp_dir = std::env::temp_dir();
         let weights_path = temp_dir.join("test_weights.safetensors");
         std::fs::write(&weights_path, b"fake").unwrap();
 
-        // Load model
+        // Load model (just registers, doesn't load pipeline)
         let result = load_model("test", "sd1x", weights_path.to_str().unwrap());
         assert!(result.is_ok());
 
