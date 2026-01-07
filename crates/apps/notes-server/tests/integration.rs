@@ -195,3 +195,1332 @@ async fn test_notes_server_basic_operations() -> Result<(), Box<dyn std::error::
     println!("\n✅ All integration tests passed!");
     Ok(())
 }
+
+/// Test notes-specific verbs: create, list, get, update, delete
+#[tokio::test]
+async fn test_notes_verb_operations() -> Result<(), Box<dyn std::error::Error>> {
+    use viwo_ir::SExpr;
+
+    // Create temporary test directory
+    let test_dir = std::env::temp_dir().join("viwo-test-notes-verbs");
+    let db_path = test_dir.join("test.db");
+
+    // Clean up from previous runs
+    let _ = std::fs::remove_dir_all(&test_dir);
+    std::fs::create_dir_all(&test_dir)?;
+
+    // Create runtime
+    let runtime = Arc::new(ViwoRuntime::open(db_path.to_str().unwrap())?);
+
+    // Create notes user entity with verbs
+    let user_id = {
+        let storage = runtime.storage();
+        let storage_lock = storage.lock().unwrap();
+
+        // Create user entity with notes storage
+        let user_id = storage_lock.create_entity(
+            serde_json::json!({
+                "name": "Notes User",
+                "notes": {},
+                "note_counter": 0
+            }),
+            None,
+        )?;
+
+        // Grant control capability to user
+        storage_lock.add_capability(
+            &format!("cap_{}", user_id),
+            user_id,
+            "entity.control",
+            serde_json::json!({"target_id": user_id}),
+        )?;
+
+        // Add list_notes verb - returns all notes
+        // Returns: { type: "notes_list", notes: [...] }
+        let list_notes_verb = SExpr::call(
+            "std.seq",
+            vec![
+                // Get notes map from this entity
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Get keys and map to notes array
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("keys"),
+                        SExpr::call(
+                            "obj.keys",
+                            vec![SExpr::call("std.var", vec![SExpr::string("notes_map")])],
+                        ),
+                    ],
+                ),
+                // Map keys to notes
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_array"),
+                        SExpr::call(
+                            "list.map",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("keys")]),
+                                SExpr::call(
+                                    "std.lambda",
+                                    vec![
+                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::call(
+                                            "obj.get",
+                                            vec![
+                                                SExpr::call(
+                                                    "std.var",
+                                                    vec![SExpr::string("notes_map")],
+                                                ),
+                                                SExpr::call("std.var", vec![SExpr::string("key")]),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                // Return result
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("notes_list"),
+                        SExpr::string("notes"),
+                        SExpr::call("std.var", vec![SExpr::string("notes_array")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "list_notes", &list_notes_verb)?;
+
+        // Add create_note verb
+        // Args: [title, content]
+        // Returns: { type: "note_created", note: {...} }
+        let create_note_verb = SExpr::call(
+            "std.seq",
+            vec![
+                // Get title argument
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("title"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                // Get content argument (default to empty string)
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("content"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call("std.arg", vec![SExpr::number(1)]),
+                                SExpr::string(""),
+                            ],
+                        ),
+                    ],
+                ),
+                // Get current notes map
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Generate note ID (increment counter)
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("counter"),
+                        SExpr::call(
+                            "math.add",
+                            vec![
+                                SExpr::call(
+                                    "bool.guard",
+                                    vec![
+                                        SExpr::call(
+                                            "obj.get",
+                                            vec![
+                                                SExpr::call("std.caller", vec![]),
+                                                SExpr::string("note_counter"),
+                                            ],
+                                        ),
+                                        SExpr::number(0),
+                                    ],
+                                ),
+                                SExpr::number(1),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note_id"),
+                        SExpr::call(
+                            "str.concat",
+                            vec![
+                                SExpr::string("note_"),
+                                SExpr::call(
+                                    "std.string",
+                                    vec![SExpr::call("std.var", vec![SExpr::string("counter")])],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                // Create note object
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note"),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::string("id"),
+                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                                SExpr::string("title"),
+                                SExpr::call("std.var", vec![SExpr::string("title")]),
+                                SExpr::string("content"),
+                                SExpr::call("std.var", vec![SExpr::string("content")]),
+                                SExpr::string("links"),
+                                SExpr::call("list.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                // Add note to map
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                    ],
+                ),
+                // Update caller with new notes and counter
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("notes"),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("note_counter"),
+                        SExpr::call("std.var", vec![SExpr::string("counter")]),
+                    ],
+                ),
+                // Return result
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("note_created"),
+                        SExpr::string("note"),
+                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "create_note", &create_note_verb)?;
+
+        // Add get_note verb
+        // Args: [note_id]
+        // Returns: { type: "note_content", note: {...} }
+        let get_note_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note_id"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note"),
+                        SExpr::call(
+                            "obj.get",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("note_content"),
+                        SExpr::string("note"),
+                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "get_note", &get_note_verb)?;
+
+        // Add delete_note verb
+        // Args: [note_id]
+        let delete_note_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note_id"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.del",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("notes"),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("note_deleted"),
+                        SExpr::string("id"),
+                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "delete_note", &delete_note_verb)?;
+
+        user_id
+    };
+
+    // Test verb execution directly via runtime (no server needed)
+
+    // Test 1: Create a note
+    let result = runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![json!("My First Note"), json!("Hello World")],
+        Some(user_id),
+    )?;
+    assert_eq!(result["type"], "note_created");
+    assert_eq!(result["note"]["title"], "My First Note");
+    assert_eq!(result["note"]["content"], "Hello World");
+    let note1_id = result["note"]["id"].as_str().unwrap().to_string();
+    println!("✓ Create note test passed: {}", note1_id);
+
+    // Test 2: Create another note
+    let result = runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![json!("Second Note"), json!("More content")],
+        Some(user_id),
+    )?;
+    let note2_id = result["note"]["id"].as_str().unwrap().to_string();
+    println!("✓ Create second note: {}", note2_id);
+
+    // Test 3: List notes
+    let result = runtime.execute_verb(user_id, "list_notes", vec![], Some(user_id))?;
+    assert_eq!(result["type"], "notes_list");
+    let notes = result["notes"].as_array().unwrap();
+    assert_eq!(notes.len(), 2);
+    println!("✓ List notes test passed: {} notes", notes.len());
+
+    // Test 4: Get specific note
+    let result = runtime.execute_verb(user_id, "get_note", vec![json!(note1_id)], Some(user_id))?;
+    assert_eq!(result["type"], "note_content");
+    assert_eq!(result["note"]["title"], "My First Note");
+    println!("✓ Get note test passed");
+
+    // Test 5: Delete note
+    let result =
+        runtime.execute_verb(user_id, "delete_note", vec![json!(note1_id)], Some(user_id))?;
+    assert_eq!(result["type"], "note_deleted");
+    assert_eq!(result["id"], note1_id);
+    println!("✓ Delete note test passed");
+
+    // Test 6: Verify deletion
+    let result = runtime.execute_verb(user_id, "list_notes", vec![], Some(user_id))?;
+    let notes = result["notes"].as_array().unwrap();
+    assert_eq!(notes.len(), 1);
+    println!("✓ Notes after deletion: {}", notes.len());
+
+    // Cleanup
+    std::fs::remove_dir_all(&test_dir)?;
+
+    println!("\n✅ All notes verb tests passed!");
+    Ok(())
+}
+
+/// Test backlinks functionality
+#[tokio::test]
+async fn test_notes_backlinks() -> Result<(), Box<dyn std::error::Error>> {
+    use viwo_ir::SExpr;
+
+    // Create temporary test directory
+    let test_dir = std::env::temp_dir().join("viwo-test-notes-backlinks");
+    let db_path = test_dir.join("test.db");
+
+    // Clean up from previous runs
+    let _ = std::fs::remove_dir_all(&test_dir);
+    std::fs::create_dir_all(&test_dir)?;
+
+    // Create runtime
+    let runtime = Arc::new(ViwoRuntime::open(db_path.to_str().unwrap())?);
+
+    // Create notes user entity with backlink support
+    let user_id = {
+        let storage = runtime.storage();
+        let storage_lock = storage.lock().unwrap();
+
+        let user_id = storage_lock.create_entity(
+            serde_json::json!({
+                "name": "Notes User",
+                "notes": {},
+                "note_counter": 0
+            }),
+            None,
+        )?;
+
+        // Create note verb with links support
+        let create_note_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("title"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("content"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call("std.arg", vec![SExpr::number(1)]),
+                                SExpr::string(""),
+                            ],
+                        ),
+                    ],
+                ),
+                // Links array from arg 2
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("links"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call("std.arg", vec![SExpr::number(2)]),
+                                SExpr::call("list.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("counter"),
+                        SExpr::call(
+                            "math.add",
+                            vec![
+                                SExpr::call(
+                                    "bool.guard",
+                                    vec![
+                                        SExpr::call(
+                                            "obj.get",
+                                            vec![
+                                                SExpr::call("std.caller", vec![]),
+                                                SExpr::string("note_counter"),
+                                            ],
+                                        ),
+                                        SExpr::number(0),
+                                    ],
+                                ),
+                                SExpr::number(1),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note_id"),
+                        SExpr::call(
+                            "str.concat",
+                            vec![
+                                SExpr::string("note_"),
+                                SExpr::call(
+                                    "std.string",
+                                    vec![SExpr::call("std.var", vec![SExpr::string("counter")])],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note"),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::string("id"),
+                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                                SExpr::string("title"),
+                                SExpr::call("std.var", vec![SExpr::string("title")]),
+                                SExpr::string("content"),
+                                SExpr::call("std.var", vec![SExpr::string("content")]),
+                                SExpr::string("links"),
+                                SExpr::call("std.var", vec![SExpr::string("links")]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("notes"),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("note_counter"),
+                        SExpr::call("std.var", vec![SExpr::string("counter")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("note_created"),
+                        SExpr::string("note"),
+                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "create_note", &create_note_verb)?;
+
+        // Get backlinks verb - finds notes that link to a given title
+        let get_backlinks_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("target_title"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("keys"),
+                        SExpr::call(
+                            "obj.keys",
+                            vec![SExpr::call("std.var", vec![SExpr::string("notes_map")])],
+                        ),
+                    ],
+                ),
+                // Filter notes that have target_title in their links
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("matching_keys"),
+                        SExpr::call(
+                            "list.filter",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("keys")]),
+                                SExpr::call(
+                                    "std.lambda",
+                                    vec![
+                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::call(
+                                            "std.seq",
+                                            vec![
+                                                SExpr::call(
+                                                    "std.let",
+                                                    vec![
+                                                        SExpr::string("note"),
+                                                        SExpr::call(
+                                                            "obj.get",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string(
+                                                                        "notes_map",
+                                                                    )],
+                                                                ),
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string("key")],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                                SExpr::call(
+                                                    "std.let",
+                                                    vec![
+                                                        SExpr::string("links"),
+                                                        SExpr::call(
+                                                            "bool.guard",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "obj.get",
+                                                                    vec![
+                                                                        SExpr::call(
+                                                                            "std.var",
+                                                                            vec![SExpr::string(
+                                                                                "note",
+                                                                            )],
+                                                                        ),
+                                                                        SExpr::string("links"),
+                                                                    ],
+                                                                ),
+                                                                SExpr::call("list.new", vec![]),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                                SExpr::call(
+                                                    "list.includes",
+                                                    vec![
+                                                        SExpr::call(
+                                                            "std.var",
+                                                            vec![SExpr::string("links")],
+                                                        ),
+                                                        SExpr::call(
+                                                            "std.var",
+                                                            vec![SExpr::string("target_title")],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                // Map to backlink objects
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("backlinks"),
+                        SExpr::call(
+                            "list.map",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("matching_keys")]),
+                                SExpr::call(
+                                    "std.lambda",
+                                    vec![
+                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::call(
+                                            "std.seq",
+                                            vec![
+                                                SExpr::call(
+                                                    "std.let",
+                                                    vec![
+                                                        SExpr::string("note"),
+                                                        SExpr::call(
+                                                            "obj.get",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string(
+                                                                        "notes_map",
+                                                                    )],
+                                                                ),
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string("key")],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                                SExpr::call(
+                                                    "obj.new",
+                                                    vec![
+                                                        SExpr::string("id"),
+                                                        SExpr::call(
+                                                            "obj.get",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string("note")],
+                                                                ),
+                                                                SExpr::string("id"),
+                                                            ],
+                                                        ),
+                                                        SExpr::string("title"),
+                                                        SExpr::call(
+                                                            "obj.get",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string("note")],
+                                                                ),
+                                                                SExpr::string("title"),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("backlinks"),
+                        SExpr::string("title"),
+                        SExpr::call("std.var", vec![SExpr::string("target_title")]),
+                        SExpr::string("backlinks"),
+                        SExpr::call("std.var", vec![SExpr::string("backlinks")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "get_backlinks", &get_backlinks_verb)?;
+
+        user_id
+    };
+
+    // Create Note A
+    let result = runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![json!("Note A"), json!("Content of A"), json!([])],
+        Some(user_id),
+    )?;
+    assert_eq!(result["note"]["title"], "Note A");
+    println!("✓ Created Note A");
+
+    // Create Note B that links to Note A
+    let result = runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![json!("Note B"), json!("Links to Note A"), json!(["Note A"])],
+        Some(user_id),
+    )?;
+    assert_eq!(result["note"]["title"], "Note B");
+    let links = result["note"]["links"].as_array().unwrap();
+    assert_eq!(links[0], "Note A");
+    println!("✓ Created Note B with link to Note A");
+
+    // Create Note C that also links to Note A
+    runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![
+            json!("Note C"),
+            json!("Also links to Note A"),
+            json!(["Note A"]),
+        ],
+        Some(user_id),
+    )?;
+    println!("✓ Created Note C with link to Note A");
+
+    // Test backlinks for Note A
+    let result = runtime.execute_verb(
+        user_id,
+        "get_backlinks",
+        vec![json!("Note A")],
+        Some(user_id),
+    )?;
+    assert_eq!(result["type"], "backlinks");
+    let backlinks = result["backlinks"].as_array().unwrap();
+    assert_eq!(backlinks.len(), 2, "Note A should have 2 backlinks");
+    println!("✓ Backlinks for Note A: {} links found", backlinks.len());
+
+    // Verify backlinks contain Note B and Note C
+    let titles: Vec<&str> = backlinks
+        .iter()
+        .map(|b| b["title"].as_str().unwrap())
+        .collect();
+    assert!(titles.contains(&"Note B"));
+    assert!(titles.contains(&"Note C"));
+    println!("✓ Backlinks contain Note B and Note C");
+
+    // Cleanup
+    std::fs::remove_dir_all(&test_dir)?;
+
+    println!("\n✅ All backlinks tests passed!");
+    Ok(())
+}
+
+/// Test search functionality
+#[tokio::test]
+async fn test_notes_search() -> Result<(), Box<dyn std::error::Error>> {
+    use viwo_ir::SExpr;
+
+    // Create temporary test directory
+    let test_dir = std::env::temp_dir().join("viwo-test-notes-search");
+    let db_path = test_dir.join("test.db");
+
+    // Clean up from previous runs
+    let _ = std::fs::remove_dir_all(&test_dir);
+    std::fs::create_dir_all(&test_dir)?;
+
+    // Create runtime
+    let runtime = Arc::new(ViwoRuntime::open(db_path.to_str().unwrap())?);
+
+    // Create notes user entity with search verb
+    let user_id = {
+        let storage = runtime.storage();
+        let storage_lock = storage.lock().unwrap();
+
+        let user_id = storage_lock.create_entity(
+            serde_json::json!({
+                "name": "Notes User",
+                "notes": {},
+                "note_counter": 0
+            }),
+            None,
+        )?;
+
+        // Simple create_note verb
+        let create_note_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("title"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("content"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call("std.arg", vec![SExpr::number(1)]),
+                                SExpr::string(""),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("counter"),
+                        SExpr::call(
+                            "math.add",
+                            vec![
+                                SExpr::call(
+                                    "bool.guard",
+                                    vec![
+                                        SExpr::call(
+                                            "obj.get",
+                                            vec![
+                                                SExpr::call("std.caller", vec![]),
+                                                SExpr::string("note_counter"),
+                                            ],
+                                        ),
+                                        SExpr::number(0),
+                                    ],
+                                ),
+                                SExpr::number(1),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note_id"),
+                        SExpr::call(
+                            "str.concat",
+                            vec![
+                                SExpr::string("note_"),
+                                SExpr::call(
+                                    "std.string",
+                                    vec![SExpr::call("std.var", vec![SExpr::string("counter")])],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("note"),
+                        SExpr::call(
+                            "obj.new",
+                            vec![
+                                SExpr::string("id"),
+                                SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                                SExpr::string("title"),
+                                SExpr::call("std.var", vec![SExpr::string("title")]),
+                                SExpr::string("content"),
+                                SExpr::call("std.var", vec![SExpr::string("content")]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                        SExpr::call("std.var", vec![SExpr::string("note_id")]),
+                        SExpr::call("std.var", vec![SExpr::string("note")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("notes"),
+                        SExpr::call("std.var", vec![SExpr::string("notes_map")]),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.set",
+                    vec![
+                        SExpr::call("std.caller", vec![]),
+                        SExpr::string("note_counter"),
+                        SExpr::call("std.var", vec![SExpr::string("counter")]),
+                    ],
+                ),
+                SExpr::call("std.var", vec![SExpr::string("note")]),
+            ],
+        );
+        storage_lock.add_verb(user_id, "create_note", &create_note_verb)?;
+
+        // Search verb - searches title and content
+        let search_verb = SExpr::call(
+            "std.seq",
+            vec![
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("query"),
+                        SExpr::call(
+                            "str.lower",
+                            vec![SExpr::call("std.arg", vec![SExpr::number(0)])],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("notes_map"),
+                        SExpr::call(
+                            "bool.guard",
+                            vec![
+                                SExpr::call(
+                                    "obj.get",
+                                    vec![SExpr::call("std.caller", vec![]), SExpr::string("notes")],
+                                ),
+                                SExpr::call("obj.new", vec![]),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("keys"),
+                        SExpr::call(
+                            "obj.keys",
+                            vec![SExpr::call("std.var", vec![SExpr::string("notes_map")])],
+                        ),
+                    ],
+                ),
+                // Filter notes that match query in title or content
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("matching_keys"),
+                        SExpr::call(
+                            "list.filter",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("keys")]),
+                                SExpr::call(
+                                    "std.lambda",
+                                    vec![
+                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::call(
+                                            "std.seq",
+                                            vec![
+                                                SExpr::call(
+                                                    "std.let",
+                                                    vec![
+                                                        SExpr::string("note"),
+                                                        SExpr::call(
+                                                            "obj.get",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string(
+                                                                        "notes_map",
+                                                                    )],
+                                                                ),
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string("key")],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                                SExpr::call(
+                                                    "bool.or",
+                                                    vec![
+                                                        SExpr::call(
+                                                            "str.includes",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "str.lower",
+                                                                    vec![SExpr::call(
+                                                                        "obj.get",
+                                                                        vec![
+                                                                            SExpr::call(
+                                                                                "std.var",
+                                                                                vec![
+                                                                                    SExpr::string(
+                                                                                        "note",
+                                                                                    ),
+                                                                                ],
+                                                                            ),
+                                                                            SExpr::string("title"),
+                                                                        ],
+                                                                    )],
+                                                                ),
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string("query")],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        SExpr::call(
+                                                            "str.includes",
+                                                            vec![
+                                                                SExpr::call(
+                                                                    "str.lower",
+                                                                    vec![SExpr::call(
+                                                                        "obj.get",
+                                                                        vec![
+                                                                            SExpr::call(
+                                                                                "std.var",
+                                                                                vec![
+                                                                                    SExpr::string(
+                                                                                        "note",
+                                                                                    ),
+                                                                                ],
+                                                                            ),
+                                                                            SExpr::string(
+                                                                                "content",
+                                                                            ),
+                                                                        ],
+                                                                    )],
+                                                                ),
+                                                                SExpr::call(
+                                                                    "std.var",
+                                                                    vec![SExpr::string("query")],
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                // Map to notes
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("results"),
+                        SExpr::call(
+                            "list.map",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("matching_keys")]),
+                                SExpr::call(
+                                    "std.lambda",
+                                    vec![
+                                        SExpr::list(vec![SExpr::string("key")]),
+                                        SExpr::call(
+                                            "obj.get",
+                                            vec![
+                                                SExpr::call(
+                                                    "std.var",
+                                                    vec![SExpr::string("notes_map")],
+                                                ),
+                                                SExpr::call("std.var", vec![SExpr::string("key")]),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                SExpr::call(
+                    "obj.new",
+                    vec![
+                        SExpr::string("type"),
+                        SExpr::string("search_results"),
+                        SExpr::string("query"),
+                        SExpr::call("std.arg", vec![SExpr::number(0)]),
+                        SExpr::string("notes"),
+                        SExpr::call("std.var", vec![SExpr::string("results")]),
+                    ],
+                ),
+            ],
+        );
+        storage_lock.add_verb(user_id, "search_notes", &search_verb)?;
+
+        user_id
+    };
+
+    // Create test notes
+    runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![
+            json!("Rust Programming"),
+            json!("Learn about ownership and borrowing"),
+        ],
+        Some(user_id),
+    )?;
+    println!("✓ Created: Rust Programming");
+
+    runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![
+            json!("JavaScript Guide"),
+            json!("Understanding async/await patterns"),
+        ],
+        Some(user_id),
+    )?;
+    println!("✓ Created: JavaScript Guide");
+
+    runtime.execute_verb(
+        user_id,
+        "create_note",
+        vec![
+            json!("Python Basics"),
+            json!("Python is great for scripting"),
+        ],
+        Some(user_id),
+    )?;
+    println!("✓ Created: Python Basics");
+
+    // Search for "rust" - should find 1 note
+    let result =
+        runtime.execute_verb(user_id, "search_notes", vec![json!("rust")], Some(user_id))?;
+    assert_eq!(result["type"], "search_results");
+    let notes = result["notes"].as_array().unwrap();
+    assert_eq!(notes.len(), 1);
+    assert_eq!(notes[0]["title"], "Rust Programming");
+    println!("✓ Search 'rust': found {} note(s)", notes.len());
+
+    // Search for "programming" - should find 1 note (in title)
+    let result = runtime.execute_verb(
+        user_id,
+        "search_notes",
+        vec![json!("programming")],
+        Some(user_id),
+    )?;
+    let notes = result["notes"].as_array().unwrap();
+    assert_eq!(notes.len(), 1);
+    println!("✓ Search 'programming': found {} note(s)", notes.len());
+
+    // Search for "patterns" - should find 1 note (in content)
+    let result = runtime.execute_verb(
+        user_id,
+        "search_notes",
+        vec![json!("patterns")],
+        Some(user_id),
+    )?;
+    let notes = result["notes"].as_array().unwrap();
+    assert_eq!(notes.len(), 1);
+    assert_eq!(notes[0]["title"], "JavaScript Guide");
+    println!("✓ Search 'patterns': found {} note(s)", notes.len());
+
+    // Search for "guide" - should find 1 note
+    let result = runtime.execute_verb(
+        user_id,
+        "search_notes",
+        vec![json!("Guide")], // Test case-insensitive
+        Some(user_id),
+    )?;
+    let notes = result["notes"].as_array().unwrap();
+    assert_eq!(notes.len(), 1);
+    println!(
+        "✓ Search 'Guide' (case-insensitive): found {} note(s)",
+        notes.len()
+    );
+
+    // Search for "xyz" - should find 0 notes
+    let result =
+        runtime.execute_verb(user_id, "search_notes", vec![json!("xyz")], Some(user_id))?;
+    let notes = result["notes"].as_array().unwrap();
+    assert_eq!(notes.len(), 0);
+    println!("✓ Search 'xyz': found {} note(s)", notes.len());
+
+    // Cleanup
+    std::fs::remove_dir_all(&test_dir)?;
+
+    println!("\n✅ All search tests passed!");
+    Ok(())
+}
