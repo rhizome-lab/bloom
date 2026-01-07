@@ -324,6 +324,7 @@ fn test_member_access() {
 
 #[test]
 fn test_subscript_access() {
+    // Numeric index uses list.get (for array access)
     assert_transpile(
         "arr[0]",
         SExpr::call(
@@ -331,6 +332,21 @@ fn test_subscript_access() {
             vec![
                 SExpr::call("std.var", vec![SExpr::string("arr").erase_type()]),
                 SExpr::number(0.0).erase_type(),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_subscript_string_key() {
+    // String key uses obj.get (for object property access)
+    assert_transpile(
+        r#"obj["key"]"#,
+        SExpr::call(
+            "obj.get",
+            vec![
+                SExpr::call("std.var", vec![SExpr::string("obj").erase_type()]),
+                SExpr::string("key").erase_type(),
             ],
         ),
     );

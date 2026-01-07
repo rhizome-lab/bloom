@@ -636,8 +636,17 @@ impl<'a> TranspileContext<'a> {
         let obj_expr = self.transpile_node(object)?;
         let idx_expr = self.transpile_node(index)?;
 
-        // Use list.get for arrays, obj.get for objects (we can't know at transpile time)
-        Ok(SExpr::call("list.get", vec![obj_expr, idx_expr]))
+        // Determine whether to use list.get or obj.get based on index type:
+        // - String literal: use obj.get (object property access)
+        // - Number literal or other: use list.get (array index access)
+        let index_kind = index.kind();
+        let use_obj_get = index_kind == "string" || index_kind == "template_string";
+
+        if use_obj_get {
+            Ok(SExpr::call("obj.get", vec![obj_expr, idx_expr]))
+        } else {
+            Ok(SExpr::call("list.get", vec![obj_expr, idx_expr]))
+        }
     }
 
     fn transpile_array(&self, node: Node) -> Result<SExpr, TranspileError> {
