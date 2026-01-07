@@ -133,21 +133,32 @@ async fn handle_connection(
     // Handle incoming messages
     while let Some(msg) = ws_receiver.next().await {
         match msg {
-            Ok(Message::Text(text)) => match handle_message(text.as_ref(), &runtime, &tx).await {
-                Ok(()) => {}
-                Err(err) => {
-                    warn!("Error handling message from {}: {}", addr, err);
-                    let error_response = serde_json::json!({
-                        "jsonrpc": "2.0",
-                        "error": {
-                            "code": -32000,
-                            "message": err.to_string()
-                        },
-                        "id": null
-                    });
-                    let _ = tx.send(error_response.to_string());
+            Ok(Message::Text(text)) => {
+                match handle_message(
+                    text.as_ref(),
+                    session_id,
+                    &sessions,
+                    &runtime,
+                    &tx,
+                    &broadcast_tx,
+                )
+                .await
+                {
+                    Ok(()) => {}
+                    Err(err) => {
+                        warn!("Error handling message from {}: {}", addr, err);
+                        let error_response = serde_json::json!({
+                            "jsonrpc": "2.0",
+                            "error": {
+                                "code": -32000,
+                                "message": err.to_string()
+                            },
+                            "id": null
+                        });
+                        let _ = tx.send(error_response.to_string());
+                    }
                 }
-            },
+            }
             Ok(Message::Close(_)) => {
                 info!("Client {} disconnected", addr);
                 break;
@@ -178,8 +189,11 @@ async fn handle_connection(
 /// Handle a JSON-RPC message.
 async fn handle_message(
     text: &str,
+    session_id: SessionId,
+    sessions: &Arc<RwLock<HashMap<SessionId, Session>>>,
     runtime: &Arc<ViwoRuntime>,
     tx: &mpsc::UnboundedSender<String>,
+    broadcast_tx: &broadcast::Sender<String>,
 ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let request: serde_json::Value = serde_json::from_str(text)?;
 
@@ -194,6 +208,96 @@ async fn handle_message(
     // Route to handler
     let result: Result<serde_json::Value, Box<dyn std::error::Error + Send + Sync>> = match method {
         "ping" => Ok(serde_json::json!("pong")),
+
+        "login" => {
+            let entity_id = params
+                .and_then(|p| p.get("entityId"))
+                .and_then(|id| id.as_i64())
+                .ok_or("Missing entityId")?;
+
+            // Verify entity exists
+            let storage = runtime.storage().lock().unwrap();
+            match storage.get_entity(entity_id) {
+                Ok(Some(entity)) => {
+                    // Get room from entity props (location field)
+                    let room_id = entity.get("location").and_then(|l| l.as_i64()).unwrap_or(0);
+
+                    drop(storage);
+
+                    // Update session with player info
+                    {
+                        let mut sessions = sessions.write().await;
+                        if let Some(session) = sessions.get_mut(&session_id) {
+                            session.login(entity_id, room_id);
+                        }
+                    }
+
+                    info!("Client logged in as Entity {}", entity_id);
+
+                    // Send player_id notification
+                    let notification = serde_json::json!({
+                        "jsonrpc": "2.0",
+                        "method": "player_id",
+                        "params": { "playerId": entity_id }
+                    });
+                    let _ = tx.send(notification.to_string());
+
+                    Ok(serde_json::json!({ "playerId": entity_id, "status": "ok" }))
+                }
+                Ok(None) => Err("Entity not found".into()),
+                Err(err) => Err(err.to_string().into()),
+            }
+        }
+
+        "execute" => {
+            // Get player from session
+            let player_id = {
+                let sessions = sessions.read().await;
+                sessions.get(&session_id).and_then(|s| s.player_id)
+            };
+
+            let player_id = match player_id {
+                Some(id) => id,
+                None => return Err("Not logged in".into()),
+            };
+
+            // Parse command and args
+            let cmd_params = params
+                .and_then(|p| p.as_array())
+                .ok_or("Invalid params: expected array")?;
+
+            if cmd_params.is_empty() {
+                return Err("Invalid params: command required".into());
+            }
+
+            let command = cmd_params[0]
+                .as_str()
+                .ok_or("Invalid command: expected string")?;
+            let args: Vec<serde_json::Value> = cmd_params[1..].to_vec();
+
+            // For now, call the verb directly on the player entity
+            // TODO: Implement verb discovery via System.get_available_verbs
+            match runtime.execute_verb(player_id, command, args, Some(player_id)) {
+                Ok(result) => Ok(serde_json::json!({ "status": "ok", "result": result })),
+                Err(err) => Err(format!("Verb execution failed: {}", err).into()),
+            }
+        }
+
+        "broadcast" => {
+            // Broadcast a message to all connected clients
+            let message = params
+                .and_then(|p| p.get("message"))
+                .ok_or("Missing message")?;
+
+            let notification = serde_json::json!({
+                "jsonrpc": "2.0",
+                "method": "broadcast",
+                "params": message
+            });
+
+            let _ = broadcast_tx.send(notification.to_string());
+            Ok(serde_json::json!({ "status": "ok" }))
+        }
 
         "get_entity" => {
             let entity_id = params

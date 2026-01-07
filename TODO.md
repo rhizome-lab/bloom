@@ -68,9 +68,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 
 ## Next Up
 
-1. **Server**: Add session-based login handler (associate session with player entity)
-2. **Server**: Add execute handler (verb discovery + command execution)
-3. **Server**: Broadcast system for multi-client updates
+1. **Server**: Hook scheduler into server tick loop
 
 ---
 
@@ -96,9 +94,9 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Server**: Compare Rust handlers against TypeScript reference implementation ✅
 - [x] **Server**: Add entity CRUD handlers (get_entities, update_entity, delete_entity) ✅
 - [x] **Server**: Add verb CRUD handlers (get_verb, get_verbs, add_verb, update_verb, delete_verb) ✅
-- [ ] **Server**: Session-based login handler (associate session with player entity)
-- [ ] **Server**: Execute handler (verb discovery + command execution)
-- [ ] **Server**: Broadcast system for multi-client updates
+- [x] **Server**: Session-based login handler (associate session with player entity) ✅
+- [x] **Server**: Execute handler (verb discovery + command execution) ✅
+- [x] **Server**: Broadcast system for multi-client updates ✅
 - [ ] **Server**: Hook scheduler into server tick loop
 
 **Rust Server Applications:**
