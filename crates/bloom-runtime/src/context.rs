@@ -275,6 +275,29 @@ return {{ result = __result, this = __this }}
                                 verb_name, target_id
                             ))
                         })?;
+
+                    // Check capability requirement if verb has one
+                    if let Some(ref required_cap) = verb.required_capability {
+                        let caller_caps = storage
+                            .get_capabilities(caller_id)
+                            .map_err(mlua::Error::external)?;
+
+                        let has_required = caller_caps.iter().any(|cap| {
+                            // Check if capability type matches (exact or prefix for wildcards)
+                            cap.cap_type == *required_cap
+                                || (cap.cap_type.ends_with(".*")
+                                    && required_cap
+                                        .starts_with(&cap.cap_type[..cap.cap_type.len() - 2]))
+                        });
+
+                        if !has_required {
+                            return Err(mlua::Error::external(format!(
+                                "call: caller {} lacks required capability '{}' to call verb '{}' on entity {}",
+                                caller_id, required_cap, verb_name, target_id
+                            )));
+                        }
+                    }
+
                     (entity, verb)
                 };
 

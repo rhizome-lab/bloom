@@ -44,4 +44,7 @@ pub struct Verb {
     pub entity_id: EntityId,
     pub name: String,
     pub code: SExpr,
+    /// Optional capability type required to call this verb.
+    /// If set, caller must hold a capability of this type to execute the verb.
+    pub required_capability: Option<String>,
 }

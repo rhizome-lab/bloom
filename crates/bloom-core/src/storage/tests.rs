@@ -506,3 +506,100 @@ fn test_rollback_without_transaction_fails() {
     let result = storage.rollback();
     assert!(result.is_err());
 }
+
+// =========================================================================
+// Capability-Gated Verb Tests
+// =========================================================================
+
+#[test]
+fn test_add_verb_with_capability_requirement() {
+    let storage = WorldStorage::in_memory().unwrap();
+
+    let id = storage
+        .create_entity(json!({"name": "Test Entity"}), None)
+        .unwrap();
+
+    // Add verb with required capability
+    let code = SExpr::call("std.return", vec![SExpr::number(42).erase_type()]);
+    storage
+        .add_verb_with_cap(id, "protected_verb", &code, Some("admin.execute"))
+        .unwrap();
+
+    let verb = storage.get_verb(id, "protected_verb").unwrap().unwrap();
+    assert_eq!(verb.required_capability, Some("admin.execute".to_string()));
+}
+
+#[test]
+fn test_add_verb_without_capability_requirement() {
+    let storage = WorldStorage::in_memory().unwrap();
+
+    let id = storage
+        .create_entity(json!({"name": "Test Entity"}), None)
+        .unwrap();
+
+    // Add verb without capability requirement
+    let code = SExpr::call("std.return", vec![SExpr::number(42).erase_type()]);
+    storage.add_verb(id, "public_verb", &code).unwrap();
+
+    let verb = storage.get_verb(id, "public_verb").unwrap().unwrap();
+    assert!(verb.required_capability.is_none());
+}
+
+#[test]
+fn test_get_verbs_includes_capability_requirement() {
+    let storage = WorldStorage::in_memory().unwrap();
+
+    let id = storage
+        .create_entity(json!({"name": "Test Entity"}), None)
+        .unwrap();
+
+    // Add verbs with and without capability requirements
+    let code = SExpr::number(1).erase_type();
+    storage.add_verb(id, "public", &code).unwrap();
+    storage
+        .add_verb_with_cap(id, "protected", &code, Some("admin.execute"))
+        .unwrap();
+
+    let verbs = storage.get_verbs(id).unwrap();
+    assert_eq!(verbs.len(), 2);
+
+    let public_verb = verbs.iter().find(|v| v.name == "public").unwrap();
+    assert!(public_verb.required_capability.is_none());
+
+    let protected_verb = verbs.iter().find(|v| v.name == "protected").unwrap();
+    assert_eq!(
+        protected_verb.required_capability,
+        Some("admin.execute".to_string())
+    );
+}
+
+#[test]
+fn test_inherited_verb_capability_requirement() {
+    let storage = WorldStorage::in_memory().unwrap();
+
+    let proto_id = storage
+        .create_entity(json!({"name": "Proto"}), None)
+        .unwrap();
+    let instance_id = storage
+        .create_entity(json!({"name": "Instance"}), Some(proto_id))
+        .unwrap();
+
+    // Add protected verb to prototype
+    let code = SExpr::number(1).erase_type();
+    storage
+        .add_verb_with_cap(
+            proto_id,
+            "inherited_protected",
+            &code,
+            Some("entity.control"),
+        )
+        .unwrap();
+
+    // Instance should inherit the verb with its capability requirement
+    let verb = storage
+        .get_verb(instance_id, "inherited_protected")
+        .unwrap()
+        .unwrap();
+    assert_eq!(verb.entity_id, proto_id);
+    assert_eq!(verb.required_capability, Some("entity.control".to_string()));
+}

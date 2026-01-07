@@ -153,6 +153,7 @@ impl WorldStorage {
                 entity_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
                 code TEXT NOT NULL,
+                required_capability TEXT,
                 FOREIGN KEY(entity_id) REFERENCES entities(id) ON DELETE CASCADE,
                 UNIQUE(entity_id, name)
             );
@@ -330,10 +331,21 @@ impl WorldStorage {
         name: &str,
         code: &bloom_ir::SExpr,
     ) -> Result<i64, StorageError> {
+        self.add_verb_with_cap(entity_id, name, code, None)
+    }
+
+    /// Add a verb to an entity with optional capability requirement.
+    pub fn add_verb_with_cap(
+        &self,
+        entity_id: EntityId,
+        name: &str,
+        code: &bloom_ir::SExpr,
+        required_capability: Option<&str>,
+    ) -> Result<i64, StorageError> {
         let code_str = serde_json::to_string(code)?;
         self.conn.execute(
-            "INSERT INTO verbs (entity_id, name, code) VALUES (?1, ?2, ?3)",
-            params![entity_id, name, code_str],
+            "INSERT INTO verbs (entity_id, name, code, required_capability) VALUES (?1, ?2, ?3, ?4)",
+            params![entity_id, name, code_str, required_capability],
         )?;
         Ok(self.conn.last_insert_rowid())
     }
@@ -349,7 +361,7 @@ impl WorldStorage {
                 FROM entities e
                 JOIN lineage l ON e.id = l.prototype_id
             )
-            SELECT v.id, v.entity_id, v.name, v.code, l.depth
+            SELECT v.id, v.entity_id, v.name, v.code, v.required_capability, l.depth
             FROM verbs v
             JOIN lineage l ON v.entity_id = l.id
             WHERE v.name = ?2
@@ -365,18 +377,20 @@ impl WorldStorage {
                     row.get::<_, EntityId>(1)?,
                     row.get::<_, String>(2)?,
                     row.get::<_, String>(3)?,
+                    row.get::<_, Option<String>>(4)?,
                 ))
             })
             .optional()?;
 
         match result {
-            Some((id, entity_id, name, code_str)) => {
+            Some((id, entity_id, name, code_str, required_capability)) => {
                 let code: bloom_ir::SExpr = serde_json::from_str(&code_str)?;
                 Ok(Some(Verb {
                     id,
                     entity_id,
                     name,
                     code,
+                    required_capability,
                 }))
             }
             None => Ok(None),
@@ -394,22 +408,28 @@ impl WorldStorage {
                 FROM entities e
                 JOIN lineage l ON e.id = l.prototype_id
             )
-            SELECT v.id, v.entity_id, v.name, v.code, l.depth
+            SELECT v.id, v.entity_id, v.name, v.code, v.required_capability, l.depth
             FROM verbs v
             JOIN lineage l ON v.entity_id = l.id
             ORDER BY l.depth DESC
             "#,
         )?;
 
-        let rows: Vec<(i64, EntityId, String, String)> = stmt
+        let rows: Vec<(i64, EntityId, String, String, Option<String>)> = stmt
             .query_map(params![entity_id], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
         // Use a map to ensure child verbs override parent verbs
         let mut verb_map = std::collections::HashMap::new();
-        for (id, entity_id, name, code_str) in rows {
+        for (id, entity_id, name, code_str, required_capability) in rows {
             let code: bloom_ir::SExpr = serde_json::from_str(&code_str)?;
             verb_map.insert(
                 name.clone(),
@@ -418,6 +438,7 @@ impl WorldStorage {
                     entity_id,
                     name,
                     code,
+                    required_capability,
                 },
             );
         }

@@ -16,7 +16,6 @@
 - [ ] **Web Editor**: Re-add visual script editor (needs Rust→WASM bindings for transpile/decompile)
 - [ ] **Hybrid ECS**: Optional structured components for hot data (Position, Health) alongside flexible props
 - [ ] **Smart Context Caching**: Optimize LLM context by caching static lore/bio data
-- [ ] **Capability Verbs**: Add capability-based permissions for verb execution
 
 ### Transpiler & Codegen
 
@@ -41,6 +40,7 @@
 - [x] Transpiler: Classic for-loops `for (init; cond; update)` and switch statements
 - [x] Rich Embeds: Message adapter system for Discord/Slack with formal GameMessage types
 - [x] Atomic Transactions: SQLite transactions with nested savepoint support for verb execution
+- [x] Capability Verbs: Optional required_capability field on verbs for authorization at call time
 </details>
 
 <details>
