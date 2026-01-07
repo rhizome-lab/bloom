@@ -110,7 +110,9 @@ impl<'a> TranspileContext<'a> {
             "variable_declaration" => self.transpile_variable_declaration(node),
             "if_statement" => self.transpile_if_statement(node),
             "while_statement" => self.transpile_while_statement(node),
+            "for_statement" => self.transpile_for_statement(node),
             "for_in_statement" => self.transpile_for_in_statement(node),
+            "switch_statement" => self.transpile_switch_statement(node),
             "break_statement" => Ok(SExpr::call("std.break", vec![])),
             "continue_statement" => Ok(SExpr::call("std.continue", vec![])),
             "return_statement" => self.transpile_return_statement(node),
@@ -880,6 +882,138 @@ impl<'a> TranspileContext<'a> {
         let body_expr = self.transpile_node(body)?;
 
         Ok(SExpr::call("std.while", vec![cond_expr, body_expr]))
+    }
+
+    /// Transpile classic for-loop: for (init; cond; update) { body }
+    /// Converts to: std.seq(init, std.while(cond, std.seq(body, update)))
+    fn transpile_for_statement(&self, node: Node) -> Result<SExpr, TranspileError> {
+        let initializer = node.child_by_field_name("initializer");
+        let condition = node.child_by_field_name("condition");
+        let increment = node.child_by_field_name("increment");
+        let body = node
+            .child_by_field_name("body")
+            .ok_or_else(|| TranspileError::Parse("for_statement missing body".into()))?;
+
+        // Build the while body: std.seq(body, update) if update exists
+        let body_expr = self.transpile_node(body)?;
+        let while_body = if let Some(incr) = increment {
+            let incr_expr = self.transpile_node(incr)?;
+            SExpr::call("std.seq", vec![body_expr, incr_expr])
+        } else {
+            body_expr
+        };
+
+        // Build condition (default to true if missing - infinite loop)
+        let cond_expr = if let Some(cond) = condition {
+            self.transpile_node(cond)?
+        } else {
+            SExpr::bool(true).erase_type()
+        };
+
+        // Build while loop
+        let while_loop = SExpr::call("std.while", vec![cond_expr, while_body]);
+
+        // Wrap with initializer if it exists
+        if let Some(init) = initializer {
+            let init_expr = self.transpile_node(init)?;
+            Ok(SExpr::call("std.seq", vec![init_expr, while_loop]))
+        } else {
+            Ok(while_loop)
+        }
+    }
+
+    /// Transpile switch statement: switch (expr) { case x: ...; default: ... }
+    /// Converts to nested if-else: std.if(eq(expr, x), case_body, std.if(..., ..., default))
+    fn transpile_switch_statement(&self, node: Node) -> Result<SExpr, TranspileError> {
+        let value = node
+            .child_by_field_name("value")
+            .ok_or_else(|| TranspileError::Parse("switch_statement missing value".into()))?;
+        let body = node
+            .child_by_field_name("body")
+            .ok_or_else(|| TranspileError::Parse("switch_statement missing body".into()))?;
+
+        let value_expr = self.transpile_node(value)?;
+
+        // Collect cases and default
+        let mut cases: Vec<(SExpr, Vec<SExpr>)> = Vec::new(); // (condition_value, body_statements)
+        let mut default_body: Vec<SExpr> = Vec::new();
+
+        let mut cursor = body.walk();
+        for child in body.children(&mut cursor) {
+            match child.kind() {
+                "switch_case" => {
+                    // Case with value: case x:
+                    if let Some(case_value) = child.child_by_field_name("value") {
+                        let case_expr = self.transpile_node(case_value)?;
+                        let mut body_stmts = Vec::new();
+
+                        // Collect all statements in this case (children after the value)
+                        let mut inner_cursor = child.walk();
+                        let mut past_colon = false;
+                        for inner_child in child.children(&mut inner_cursor) {
+                            if inner_child.kind() == ":" {
+                                past_colon = true;
+                                continue;
+                            }
+                            if past_colon && inner_child.is_named() {
+                                // Skip break statements in case bodies
+                                if inner_child.kind() != "break_statement" {
+                                    body_stmts.push(self.transpile_node(inner_child)?);
+                                }
+                            }
+                        }
+
+                        cases.push((case_expr, body_stmts));
+                    }
+                }
+                "switch_default" => {
+                    // Default case
+                    let mut inner_cursor = child.walk();
+                    let mut past_colon = false;
+                    for inner_child in child.children(&mut inner_cursor) {
+                        if inner_child.kind() == ":" {
+                            past_colon = true;
+                            continue;
+                        }
+                        if past_colon && inner_child.is_named() {
+                            if inner_child.kind() != "break_statement" {
+                                default_body.push(self.transpile_node(inner_child)?);
+                            }
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        // Build nested if-else from cases (reverse order to build from inside out)
+        let default_expr = if default_body.is_empty() {
+            SExpr::null().erase_type()
+        } else if default_body.len() == 1 {
+            default_body.into_iter().next().unwrap()
+        } else {
+            SExpr::call("std.seq", default_body)
+        };
+
+        let result =
+            cases
+                .into_iter()
+                .rev()
+                .fold(default_expr, |else_branch, (case_val, body_stmts)| {
+                    let body_expr = if body_stmts.is_empty() {
+                        SExpr::null().erase_type()
+                    } else if body_stmts.len() == 1 {
+                        body_stmts.into_iter().next().unwrap()
+                    } else {
+                        SExpr::call("std.seq", body_stmts)
+                    };
+
+                    let condition = SExpr::call("bool.eq", vec![value_expr.clone(), case_val]);
+
+                    SExpr::call("std.if", vec![condition, body_expr, else_branch])
+                });
+
+        Ok(result)
     }
 
     fn transpile_for_in_statement(&self, node: Node) -> Result<SExpr, TranspileError> {

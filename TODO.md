@@ -40,6 +40,7 @@
 - [x] Safe Object Access: Transpiler uses obj.get for bracket notation with string keys
 - [x] Type-Aware Linting: oxlint with --type-aware flag, oxlint-tsgolint, root tsconfig.json
 - [x] Wiki Transclusion: ![[Note]] syntax embeds note content with recursion/cycle detection
+- [x] Transpiler: Classic for-loops `for (init; cond; update)` and switch statements
 </details>
 
 <details>

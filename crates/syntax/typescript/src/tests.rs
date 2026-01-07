@@ -680,3 +680,106 @@ fn test_for_in_loop() {
         ),
     );
 }
+
+#[test]
+fn test_classic_for_loop() {
+    // for (let i = 0; i < 10; i += 1) { x }
+    // Should become: std.seq(std.let("i", 0), std.while(i < 10, std.seq(x, i += 1)))
+    assert_transpile(
+        "for (let i = 0; i < 10; i += 1) { x }",
+        SExpr::call(
+            "std.seq",
+            vec![
+                // Initializer: let i = 0
+                SExpr::call(
+                    "std.let",
+                    vec![
+                        SExpr::string("i").erase_type(),
+                        SExpr::number(0.0).erase_type(),
+                    ],
+                ),
+                // While loop
+                SExpr::call(
+                    "std.while",
+                    vec![
+                        // Condition: i < 10
+                        SExpr::call(
+                            "bool.lt",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("i").erase_type()]),
+                                SExpr::number(10.0).erase_type(),
+                            ],
+                        ),
+                        // Body: std.seq(x, i += 1)
+                        SExpr::call(
+                            "std.seq",
+                            vec![
+                                // Body: { x }
+                                SExpr::call("std.var", vec![SExpr::string("x").erase_type()]),
+                                // Update: i += 1
+                                SExpr::call(
+                                    "std.set",
+                                    vec![
+                                        SExpr::string("i").erase_type(),
+                                        SExpr::call(
+                                            "math.add",
+                                            vec![
+                                                SExpr::call(
+                                                    "std.var",
+                                                    vec![SExpr::string("i").erase_type()],
+                                                ),
+                                                SExpr::number(1.0).erase_type(),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_switch_statement() {
+    // switch (x) { case 1: a; break; case 2: b; break; default: c; }
+    // Should become nested if-else
+    assert_transpile(
+        "switch (x) { case 1: a; break; case 2: b; break; default: c; }",
+        SExpr::call(
+            "std.if",
+            vec![
+                // Condition: x == 1
+                SExpr::call(
+                    "bool.eq",
+                    vec![
+                        SExpr::call("std.var", vec![SExpr::string("x").erase_type()]),
+                        SExpr::number(1.0).erase_type(),
+                    ],
+                ),
+                // Case 1 body: a
+                SExpr::call("std.var", vec![SExpr::string("a").erase_type()]),
+                // Else branch: nested if for case 2
+                SExpr::call(
+                    "std.if",
+                    vec![
+                        // Condition: x == 2
+                        SExpr::call(
+                            "bool.eq",
+                            vec![
+                                SExpr::call("std.var", vec![SExpr::string("x").erase_type()]),
+                                SExpr::number(2.0).erase_type(),
+                            ],
+                        ),
+                        // Case 2 body: b
+                        SExpr::call("std.var", vec![SExpr::string("b").erase_type()]),
+                        // Default: c
+                        SExpr::call("std.var", vec![SExpr::string("c").erase_type()]),
+                    ],
+                ),
+            ],
+        ),
+    );
+}
