@@ -54,7 +54,7 @@ The project is organized as a monorepo with Rust backend and TypeScript frontend
 
 ```bash
 # Clone the repository
-git clone https://github.com/pterror/bloom.git
+git clone https://github.com/rhizome-lab/bloom.git
 cd bloom
 
 # Install TypeScript dependencies

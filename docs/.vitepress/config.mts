@@ -33,8 +33,8 @@ function getSidebarItems(dir: string) {
 
 export default withMermaid(
   defineConfig({
-    base: "/viwo/",
-    description: "Documentation for the Viwo project",
+    base: "/bloom/",
+    description: "Documentation for the Bloom project",
     themeConfig: {
       nav: [
         { link: "/", text: "Home" },
@@ -90,13 +90,13 @@ export default withMermaid(
         },
       ],
 
-      socialLinks: [{ icon: "github", link: "https://github.com/pterror/viwo" }],
+      socialLinks: [{ icon: "github", link: "https://github.com/rhizome-lab/bloom" }],
     },
-    title: "Viwo Docs",
+    title: "Bloom Docs",
     vite: {
       server: {
         proxy: {
-          "/viwo/playground": {
+          "/bloom/playground": {
             changeOrigin: true,
             target: `http://localhost:${process.env.PLAYGROUND_PORT ?? 3001}`,
           },

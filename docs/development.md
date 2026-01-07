@@ -13,7 +13,7 @@ Welcome to the Bloom development guide! This document will help you get set up a
 1.  Clone the repository:
 
     ```bash
-    git clone https://github.com/pterror/bloom.git
+    git clone https://github.com/rhizome-lab/bloom.git
     cd bloom
     ```
 
