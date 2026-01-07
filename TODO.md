@@ -4,18 +4,12 @@
 
 ### Frontends & Clients
 
-- [ ] **TUI**: Update TUI to match Web frontend layout
-- [ ] **Discord Bot**: Full feature parity with Web client
 - [ ] **Rich Embeds**: Map game state to platform-specific UI (Discord Embeds, Slack Blocks)
 - [ ] **Async Play**: Design mechanics suitable for slow, correspondence-style gameplay
 
-### Testing
-
-- [ ] **Integration Tests**: End-to-end tests via `packages/client` (boot server → connect → exercise login/move/verb flow → assert state)
-
 ### Knowledge & Productivity
 
-- [ ] **Wiki Features**: Revision history and transclusion support
+- [ ] **Wiki Transclusion**: Support for embedding note content in other notes
 - [ ] **Custom Views**: Support for defining custom DB views/indexes for performance
 - [ ] **Cloud Sync**: Plugins to sync DB to cloud storage (S3, R2, Google Drive, Dropbox, etc.)
 - [ ] **Graph Queries**: Standard library for traversing entity relationships (deferred - no fixed schema yet)
@@ -36,12 +30,21 @@
 ### Tooling
 
 - [ ] **Type-Aware Linting**: Enable oxlint type-aware rules for TypeScript frontends
-- [ ] **Fix Docs Build**: `bun run build:docs` script is missing/broken
-- [ ] **Fix Unused Check**: `bun run check:unused` is failing
 
 ---
 
 ## Completed
+
+<details>
+<summary>Session Jan 2026 ✅</summary>
+
+- [x] TUI: Compass and Inspector panels matching web layout
+- [x] Discord Bot: Embeds, help, room, inventory, inspect commands
+- [x] Wiki: Revision history (get_revisions, restore_revision)
+- [x] Integration Tests: get_opcodes RPC
+- [x] Fix docs build (dead links, missing script)
+- [x] Fix unused check (knip configuration)
+</details>
 
 <details>
 <summary>Rust Port - Scripting Layer ✅</summary>
@@ -126,5 +129,5 @@
 | Notes | `cargo run -p bloom-notes-server` (8081) | `bun dev:notes` (3004) | ✅ |
 | FileBrowser | `cargo run -p bloom-filebrowser-server` (8080) | `bun dev:filebrowser` (3003) | ✅ |
 | Web | - | `bun dev:web` (5173) | ✅ |
-| TUI | - | `bun dev:tui` | Needs update |
-| Discord | - | `bun dev:discord-bot` | Needs features |
+| TUI | - | `bun dev:tui` | ✅ |
+| Discord | - | `bun dev:discord-bot` | ✅ |
