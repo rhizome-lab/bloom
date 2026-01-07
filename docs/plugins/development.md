@@ -414,4 +414,4 @@ register_fn(name_cstr.as_ptr(), func);
 - [Lua 5.1 C API Reference](https://www.lua.org/manual/5.1/manual.html#3)
 - [LuaJIT FFI](https://luajit.org/ext_ffi.html)
 - [mlua crate docs](https://docs.rs/mlua/)
-- [Example: fs plugin](../../crates/plugins/fs/src/lib.rs)
+- Example: `crates/plugins/fs/src/lib.rs` in the repository

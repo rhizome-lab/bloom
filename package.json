@@ -24,6 +24,7 @@
     "lint": "oxlint",
     "format": "oxfmt",
     "dev:docs": "bun scripts/dev-docs.ts",
+    "build:docs": "bun run --cwd docs build",
     "preview:docs": "bun --filter @bloom/docs preview",
     "check:test": "bun test --only-failures",
     "check:lint": "bun lint",

@@ -353,4 +353,4 @@ unsafe extern "C" fn fs_read_lua(L: *mut mlua::ffi::lua_State) -> c_int {
 ## Related Documents
 
 - [Architecture](../architecture.md) - System architecture overview
-- [BloomScript](../bloomscript.md) - S-expression opcodes reference
+- [BloomScript](../scripting/spec.md) - S-expression opcodes reference
