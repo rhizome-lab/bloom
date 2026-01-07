@@ -445,7 +445,7 @@ fn test_string_method_trim() {
 }
 
 #[test]
-fn test_string_method_toLowerCase() {
+fn test_string_method_to_lower_case() {
     // s.toLowerCase() -> str.lower(s)
     assert_transpile(
         "s.toLowerCase()",
@@ -454,10 +454,42 @@ fn test_string_method_toLowerCase() {
 }
 
 #[test]
-fn test_string_method_toUpperCase() {
+fn test_string_method_to_upper_case() {
     // s.toUpperCase() -> str.upper(s)
     assert_transpile(
         "s.toUpperCase()",
         SExpr::call("str.upper", vec![SExpr::call("std.var", vec![SExpr::string("s").erase_type()])]),
+    );
+}
+
+#[test]
+fn test_for_of_loop() {
+    // for (const x of arr) { x }
+    assert_transpile(
+        "for (const x of arr) { x }",
+        SExpr::call(
+            "std.for",
+            vec![
+                SExpr::string("x").erase_type(),
+                SExpr::call("std.var", vec![SExpr::string("arr").erase_type()]),
+                SExpr::call("std.var", vec![SExpr::string("x").erase_type()]),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_for_in_loop() {
+    // for (const k in obj) { k } -> iterates over keys
+    assert_transpile(
+        "for (const k in obj) { k }",
+        SExpr::call(
+            "std.for",
+            vec![
+                SExpr::string("k").erase_type(),
+                SExpr::call("obj.keys", vec![SExpr::call("std.var", vec![SExpr::string("obj").erase_type()])]),
+                SExpr::call("std.var", vec![SExpr::string("k").erase_type()]),
+            ],
+        ),
     );
 }

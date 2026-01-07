@@ -178,7 +178,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - [x] **Transpiler**: Support ES6 shorthand property syntax - FIXED: now handles ShorthandPropertyAssignment
 - [x] **Transpiler**: Support native array methods (`.push()`, `.reverse()`, `.map()`, etc.) - FIXED: maps to list.* opcodes
 - [x] **Transpiler**: Support native string methods (`.split()`, `.trim()`, `.toLowerCase()`, etc.) - FIXED: maps to str.* opcodes
-- [ ] **Transpiler**: Fix for-in loop transpilation (currently causes `obj.get` errors during iteration)
+- [x] **Transpiler**: Fix for-in loop transpilation - FIXED: now correctly uses `obj.keys()` for `for...in` and direct iteration for `for...of`
 - [ ] **Transpiler**: Make dictionary/object access safer (bracket notation `obj[key]` throws if key missing - should use `obj.get` with defaults or add null-safe operator support)
 - [ ] **Compiler**: Consider tracking usages of `__ctx__` and removing it from the parameter list if it is unused
 - [ ] **Scripting**: Either document wildcard capability support (see `packages/core/src/runtime/lib/kernel.ts`), or remove it

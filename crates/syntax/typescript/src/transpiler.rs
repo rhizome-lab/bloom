@@ -701,8 +701,8 @@ impl<'a> TranspileContext<'a> {
     }
 
     fn transpile_for_in_statement(&self, node: Node) -> Result<SExpr, TranspileError> {
-        // for (const x of arr) { ... }
-        // In tree-sitter TS, "for (x of arr)" is for_in_statement with kind="of"
+        // tree-sitter TS uses "for_in_statement" for both "for (x in obj)" and "for (x of arr)"
+        // We need to check which operator is used by looking at the node's children
         let left = node
             .child_by_field_name("left")
             .ok_or_else(|| TranspileError::Parse("for_in_statement missing left".into()))?;
@@ -713,10 +713,35 @@ impl<'a> TranspileContext<'a> {
             .child_by_field_name("body")
             .ok_or_else(|| TranspileError::Parse("for_in_statement missing body".into()))?;
 
+        // Detect if this is "for...in" (object keys) or "for...of" (array/iterable values)
+        // In tree-sitter, the operator is a non-field child between left and right
+        let is_for_in = {
+            let mut cursor = node.walk();
+            let mut found_in = false;
+            for child in node.children(&mut cursor) {
+                let text = self.node_text(child);
+                if text == "in" {
+                    found_in = true;
+                    break;
+                } else if text == "of" {
+                    break;
+                }
+            }
+            found_in
+        };
+
         // Get the variable name from left (could be "const x", "let x", or just "x")
         let var_name = self.extract_for_variable(left)?;
-        let iter_expr = self.transpile_node(right)?;
+        let right_expr = self.transpile_node(right)?;
         let body_expr = self.transpile_node(body)?;
+
+        // For "for...in", we iterate over obj.keys(obj)
+        // For "for...of", we iterate over the iterable directly
+        let iter_expr = if is_for_in {
+            SExpr::call("obj.keys", vec![right_expr])
+        } else {
+            right_expr
+        };
 
         Ok(SExpr::call(
             "std.for",
