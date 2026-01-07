@@ -128,6 +128,7 @@ Goal: Mirror `packages/scripting/src/compiler.ts` semantics exactly.
 - Fixed: `std.if` generates IIFE when used as expression (Lua if is statement)
 - Fixed: `str.split` preserves empty strings (like JavaScript)
 - Fixed: `std.seq` adds semicolons to prevent Lua parsing ambiguity
+- Fixed: `std.if` avoids IIFE when branches contain break/continue/return
 
 ## 1. Deep Simulation (Sandbox)
 
