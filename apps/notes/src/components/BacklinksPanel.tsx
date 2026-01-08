@@ -30,10 +30,7 @@ export function BacklinksPanel() {
           <ul class="backlinks-panel__list">
             <For each={state.backlinks}>
               {(backlink) => (
-                <li
-                  class="backlinks-panel__item"
-                  onClick={() => handleBacklinkClick(backlink.id)}
-                >
+                <li class="backlinks-panel__item" onClick={() => handleBacklinkClick(backlink.id)}>
                   <div class="backlinks-panel__item-title">{backlink.title}</div>
                   <div class="backlinks-panel__item-context">
                     {getContextSnippet(backlink.context)}

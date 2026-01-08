@@ -20,11 +20,7 @@ const SERVER_STARTUP_MS = 5000;
 const REQUEST_TIMEOUT_MS = 10000;
 
 /** Wait for a condition with timeout */
-async function waitFor(
-  condition: () => boolean,
-  timeoutMs: number,
-  pollMs = 100,
-): Promise<void> {
+async function waitFor(condition: () => boolean, timeoutMs: number, pollMs = 100): Promise<void> {
   const start = Date.now();
   while (!condition()) {
     if (Date.now() - start > timeoutMs) {
@@ -38,9 +34,7 @@ async function waitFor(
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return Promise.race([
     promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms),
-    ),
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms)),
   ]);
 }
 
@@ -170,10 +164,7 @@ describe("BloomClient Integration", () => {
     const playerId = client!.getState().playerId;
     expect(playerId).not.toBeNull();
 
-    const entities = await withTimeout(
-      client!.fetchEntities([playerId!]),
-      REQUEST_TIMEOUT_MS,
-    );
+    const entities = await withTimeout(client!.fetchEntities([playerId!]), REQUEST_TIMEOUT_MS);
 
     expect(entities.length).toBe(1);
     expect(entities[0].id).toBe(playerId);
@@ -181,10 +172,7 @@ describe("BloomClient Integration", () => {
 
   it("should get opcodes", async () => {
     if (skipIfSetupFailed()) return;
-    const result = await withTimeout(
-      client!.sendRequest("get_opcodes", {}),
-      REQUEST_TIMEOUT_MS,
-    );
+    const result = await withTimeout(client!.sendRequest("get_opcodes", {}), REQUEST_TIMEOUT_MS);
 
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(0);

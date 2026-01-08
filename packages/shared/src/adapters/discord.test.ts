@@ -54,7 +54,10 @@ describe("DiscordAdapter", () => {
       const msg: InventoryMessage = {
         type: "inventory",
         playerId: 1,
-        items: [{ id: 1, name: "Sword" }, { id: 2, name: "Shield" }],
+        items: [
+          { id: 1, name: "Sword" },
+          { id: 2, name: "Shield" },
+        ],
       };
 
       const output = discordAdapter.formatInventory(msg);

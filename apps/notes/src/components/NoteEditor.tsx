@@ -119,7 +119,10 @@ export function NoteEditor() {
                     <button class="note-editor__btn" onClick={handleEdit}>
                       Edit
                     </button>
-                    <button class="note-editor__btn note-editor__btn--danger" onClick={handleDelete}>
+                    <button
+                      class="note-editor__btn note-editor__btn--danger"
+                      onClick={handleDelete}
+                    >
                       Delete
                     </button>
                   </>

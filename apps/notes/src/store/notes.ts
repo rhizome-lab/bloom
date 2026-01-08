@@ -135,11 +135,7 @@ async function getNote(noteId: string): Promise<void> {
   }
 }
 
-async function updateNote(
-  noteId: string,
-  content: string,
-  title?: string,
-): Promise<void> {
+async function updateNote(noteId: string, content: string, title?: string): Promise<void> {
   setState("loading", true);
   setState("error", null);
   try {

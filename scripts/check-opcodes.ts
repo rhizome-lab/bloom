@@ -8,16 +8,13 @@
 import { execSync } from "node:child_process";
 
 const CODEGEN_DIR = "crates/runtime/luajit/src/codegen";
-const TEST_FILES = [
-  "crates/runtime/luajit/src/tests.rs",
-];
+const TEST_FILES = ["crates/runtime/luajit/src/tests.rs"];
 
 // Extract opcodes from codegen match statements
 function getDefinedOpcodes(): Set<string> {
-  const output = execSync(
-    `grep -ohE '"[a-z]+\\.[a-z_]+"' ${CODEGEN_DIR}/*.rs`,
-    { encoding: "utf8" }
-  );
+  const output = execSync(`grep -ohE '"[a-z]+\\.[a-z_]+"' ${CODEGEN_DIR}/*.rs`, {
+    encoding: "utf8",
+  });
 
   const opcodes = new Set<string>();
   for (const line of output.split("\n")) {
@@ -36,10 +33,7 @@ function getTestedOpcodes(): Set<string> {
 
   for (const testFile of TEST_FILES) {
     try {
-      const output = execSync(
-        `grep -ohE '"[a-z]+\\.[a-z_]+"' ${testFile}`,
-        { encoding: "utf8" }
-      );
+      const output = execSync(`grep -ohE '"[a-z]+\\.[a-z_]+"' ${testFile}`, { encoding: "utf8" });
 
       for (const line of output.split("\n")) {
         const trimmed = line.trim();
@@ -56,7 +50,7 @@ function getTestedOpcodes(): Set<string> {
   try {
     const output = execSync(
       `grep -A50 '#\\[test\\]' ${CODEGEN_DIR}/*.rs | grep -ohE '"[a-z]+\\.[a-z_]+"'`,
-      { encoding: "utf8" }
+      { encoding: "utf8" },
     );
 
     for (const line of output.split("\n")) {

@@ -114,13 +114,21 @@ function Toolbar() {
           </div>
         }
       >
-        <button class="fb-toolbar__btn" onClick={() => setShowCreateDir(true)} title="Create directory">
+        <button
+          class="fb-toolbar__btn"
+          onClick={() => setShowCreateDir(true)}
+          title="Create directory"
+        >
           + Dir
         </button>
         <button class="fb-toolbar__btn" onClick={() => setShowCreateFile(true)} title="Create file">
           + File
         </button>
-        <button class="fb-toolbar__btn" onClick={() => setShowBookmark(true)} title="Bookmark current directory">
+        <button
+          class="fb-toolbar__btn"
+          onClick={() => setShowBookmark(true)}
+          title="Bookmark current directory"
+        >
           Bookmark
         </button>
         <Show when={browserStore.state.selectedPath}>
@@ -298,7 +306,10 @@ function Preview() {
 
   return (
     <div class="fb-preview">
-      <Show when={preview()} fallback={<div class="fb-preview__empty">Select a file to preview</div>}>
+      <Show
+        when={preview()}
+        fallback={<div class="fb-preview__empty">Select a file to preview</div>}
+      >
         <div class="fb-preview__header">
           <span class="fb-preview__name">{preview()!.name}</span>
           <span class="fb-preview__size">{formatSize(preview()!.size)}</span>

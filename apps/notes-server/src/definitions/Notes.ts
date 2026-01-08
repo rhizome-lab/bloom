@@ -75,7 +75,6 @@ export class NotesBase extends EntityBase {
 
     return str.concat(String(timestamp), "_", String(counter));
   }
-
 }
 
 /**
@@ -165,7 +164,12 @@ export class NotesUser extends NotesBase {
     }
 
     const note = obj.get(notesMap, noteId) as Note;
-    const backlinks = call(std.this_(), "_get_backlinks_for", note.title, note.aliases ?? []) as Array<{
+    const backlinks = call(
+      std.this_(),
+      "_get_backlinks_for",
+      note.title,
+      note.aliases ?? [],
+    ) as Array<{
       id: string;
       title: string;
       context: string;
@@ -282,7 +286,12 @@ export class NotesUser extends NotesBase {
     }
 
     const targetNote = obj.get(notesMap, noteId) as Note;
-    const backlinks = call(std.this_(), "_get_backlinks_for", targetNote.title, targetNote.aliases) as Array<{
+    const backlinks = call(
+      std.this_(),
+      "_get_backlinks_for",
+      targetNote.title,
+      targetNote.aliases,
+    ) as Array<{
       id: string;
       title: string;
       context: string;
@@ -507,11 +516,16 @@ export class NotesUser extends NotesBase {
       }
 
       // Search in tags
-      const matchingTag = list.find(note.tags, (tag: string) => str.includes(str.lower(tag), lowerQuery));
+      const matchingTag = list.find(note.tags, (tag: string) =>
+        str.includes(str.lower(tag), lowerQuery),
+      );
       return matchingTag !== null;
     });
 
-    const results = list.map(matchingKeys, (key: string) => obj.get(notesMap, key) as Note) as Note[];
+    const results = list.map(
+      matchingKeys,
+      (key: string) => obj.get(notesMap, key) as Note,
+    ) as Note[];
 
     return {
       notes: results,
@@ -543,7 +557,10 @@ export class NotesUser extends NotesBase {
       }
 
       // Check aliases
-      const matchingAlias = list.find(note.aliases, (alias: string) => str.lower(alias) === lowerTitle);
+      const matchingAlias = list.find(
+        note.aliases,
+        (alias: string) => str.lower(alias) === lowerTitle,
+      );
       return matchingAlias !== null;
     });
 

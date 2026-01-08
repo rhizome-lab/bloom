@@ -144,9 +144,7 @@ const App = () => {
         const itemName = args[0]!.toLowerCase();
         // Search in room contents and inventory
         const allItems = [...getRoomContents(), ...inventory];
-        const item = allItems.find(
-          (i) => (i["name"] as string)?.toLowerCase() === itemName
-        );
+        const item = allItems.find((i) => (i["name"] as string)?.toLowerCase() === itemName);
         if (item) {
           handleInspect(item);
           addLog(`Inspecting: ${item["name"]}`, "info");
@@ -342,18 +340,12 @@ const App = () => {
           <Box height={8}>
             {/* Left: Compass */}
             <Box width="35%" borderStyle="single">
-              <Compass
-                room={room}
-                entities={clientState.entities}
-              />
+              <Compass room={room} entities={clientState.entities} />
             </Box>
 
             {/* Right: Inspector */}
             <Box width="65%" borderStyle="single">
-              <Inspector
-                inspectedItem={inspectedItem}
-                entities={clientState.entities}
-              />
+              <Inspector inspectedItem={inspectedItem} entities={clientState.entities} />
             </Box>
           </Box>
 

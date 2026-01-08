@@ -59,9 +59,7 @@ function extractWikilinks(content: string): string[] {
   // First, get transclusions to exclude them
   const transclusions = new Set(extractTransclusions(content).map((t) => t.toLowerCase()));
 
-  const processor = unified()
-    .use(remarkParse)
-    .use(remarkWikiLink, { aliasDivider: "|" });
+  const processor = unified().use(remarkParse).use(remarkWikiLink, { aliasDivider: "|" });
 
   const tree = processor.parse(content);
 
@@ -168,10 +166,7 @@ function processTransclusions(
  * Render markdown with wikilinks to HTML.
  * @param resolver - Function to resolve a link target to a note ID (null if missing)
  */
-function renderMarkdown(
-  content: string,
-  resolver: (target: string) => string | null,
-): string {
+function renderMarkdown(content: string, resolver: (target: string) => string | null): string {
   const processor = unified()
     .use(remarkParse)
     .use(remarkGfm)
