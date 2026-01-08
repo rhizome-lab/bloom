@@ -233,6 +233,74 @@ mod tests {
         assert!(def.verbs.contains_key("greet"));
     }
 
-    // Note: More comprehensive tests with actual database integration
-    // are in the integration tests.
+    fn get_seeds_path() -> PathBuf {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        manifest_dir
+            .parent() // crates
+            .and_then(|p| p.parent()) // workspace root
+            .map(|p| p.join("seeds/definitions"))
+            .expect("Failed to find seeds directory")
+    }
+
+    #[test]
+    fn test_load_entity_base() {
+        let seed_system = SeedSystem::new(get_seeds_path());
+        let def = seed_system
+            .load_definition("EntityBase.ts", "EntityBase", None)
+            .expect("Failed to load EntityBase");
+
+        // EntityBase should have verbs (properties may be optional)
+        assert!(def.verbs.contains_key("find"), "Missing 'find' verb");
+        assert!(
+            def.verbs.contains_key("find_exit"),
+            "Missing 'find_exit' verb"
+        );
+        assert!(
+            def.verbs.contains_key("on_enter"),
+            "Missing 'on_enter' verb"
+        );
+    }
+
+    #[test]
+    fn test_load_system() {
+        let seed_system = SeedSystem::new(get_seeds_path());
+        let def = seed_system
+            .load_definition("System.ts", "System", None)
+            .expect("Failed to load System");
+
+        // System extends EntityBase and adds system verbs
+        assert!(
+            def.verbs.contains_key("get_available_verbs"),
+            "Missing 'get_available_verbs' verb"
+        );
+    }
+
+    #[test]
+    fn test_load_items_watch() {
+        let seed_system = SeedSystem::new(get_seeds_path());
+
+        // Items.ts has Watch class
+        let watch = seed_system
+            .load_definition("Items.ts", "Watch", None)
+            .expect("Failed to load Watch");
+        assert!(watch.verbs.contains_key("tell"), "Missing 'tell' verb");
+    }
+
+    #[test]
+    fn test_load_items_teleporter() {
+        let seed_system = SeedSystem::new(get_seeds_path());
+
+        let teleporter = seed_system
+            .load_definition("Items.ts", "Teleporter", None)
+            .expect("Failed to load Teleporter");
+        assert!(
+            teleporter.verbs.contains_key("teleport"),
+            "Missing 'teleport' verb"
+        );
+    }
+
+    // Note: Hotel.ts and Player.ts use syntax not yet supported by the transpiler:
+    // - Numeric separators (10_000)
+    // - Computed property names [key]: value
+    // These will be enabled once transpiler support is added.
 }
