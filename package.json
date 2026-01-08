@@ -32,7 +32,8 @@
     "check:format": "bun format --check",
     "check:types": "bun --filter '*' check:types",
     "check:readmes": "bun scripts/check-readmes.ts",
-    "check:unused": "knip"
+    "check:unused": "knip",
+    "check:opcodes": "bun scripts/check-opcodes.ts"
   },
   "workspaces": [
     "apps/*",
