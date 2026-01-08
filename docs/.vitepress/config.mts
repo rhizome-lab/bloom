@@ -92,7 +92,7 @@ export default withMermaid(
 
       socialLinks: [{ icon: "github", link: "https://github.com/rhizome-lab/bloom" }],
     },
-    title: "Bloom Docs",
+    title: "Bloom",
     vite: {
       server: {
         proxy: {
