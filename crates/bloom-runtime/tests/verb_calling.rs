@@ -25,10 +25,13 @@ fn test_update_entity_from_verb() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("current"),
+                    SExpr::str("current").erase_type(),
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::call("std.this", vec![]), SExpr::string("count")],
+                        vec![
+                            SExpr::call("std.this", vec![]),
+                            SExpr::str("count").erase_type(),
+                        ],
                     ),
                 ],
             ),
@@ -37,12 +40,12 @@ fn test_update_entity_from_verb() {
                 "obj.set",
                 vec![
                     SExpr::call("std.this", vec![]),
-                    SExpr::string("count"),
+                    SExpr::str("count").erase_type(),
                     SExpr::call(
                         "math.add",
                         vec![
-                            SExpr::call("std.var", vec![SExpr::string("current")]),
-                            SExpr::number(1),
+                            SExpr::call("std.var", vec![SExpr::str("current").erase_type()]),
+                            SExpr::num(1).erase_type(),
                         ],
                     ),
                 ],
@@ -50,7 +53,10 @@ fn test_update_entity_from_verb() {
             // Return new count
             SExpr::call(
                 "obj.get",
-                vec![SExpr::call("std.this", vec![]), SExpr::string("count")],
+                vec![
+                    SExpr::call("std.this", vec![]),
+                    SExpr::str("count").erase_type(),
+                ],
             ),
         ],
     );
@@ -91,13 +97,16 @@ fn test_call_another_verb() {
 
         // Add a helper verb
         storage
-            .add_verb(id, "helper", &SExpr::string("helper_result"))
+            .add_verb(id, "helper", &SExpr::str("helper_result").erase_type())
             .unwrap();
 
         // Add a verb that calls helper
         let caller_verb = SExpr::call(
             "call",
-            vec![SExpr::call("std.this", vec![]), SExpr::string("helper")],
+            vec![
+                SExpr::call("std.this", vec![]),
+                SExpr::str("helper").erase_type(),
+            ],
         );
         storage.add_verb(id, "caller", &caller_verb).unwrap();
 

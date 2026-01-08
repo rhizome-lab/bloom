@@ -42,7 +42,7 @@ fn test_procgen_seed() {
     let verb = SExpr::call(
         "std.seq",
         vec![
-            SExpr::call("procgen.seed", vec![SExpr::number(42)]),
+            SExpr::call("procgen.seed", vec![SExpr::num(42)]),
             SExpr::call("procgen.random", vec![]),
         ],
     );
@@ -89,11 +89,8 @@ fn test_procgen_noise() {
     let verb = SExpr::call(
         "std.seq",
         vec![
-            SExpr::call("procgen.seed", vec![SExpr::number(100)]),
-            SExpr::call(
-                "procgen.noise",
-                vec![SExpr::number(1.0), SExpr::number(2.0)],
-            ),
+            SExpr::call("procgen.seed", vec![SExpr::num(100)]),
+            SExpr::call("procgen.noise", vec![SExpr::num(1.0), SExpr::num(2.0)]),
         ],
     );
 
@@ -139,8 +136,8 @@ fn test_procgen_between() {
     let verb = SExpr::call(
         "std.seq",
         vec![
-            SExpr::call("procgen.seed", vec![SExpr::number(999)]),
-            SExpr::call("procgen.between", vec![SExpr::number(1), SExpr::number(10)]),
+            SExpr::call("procgen.seed", vec![SExpr::num(999)]),
+            SExpr::call("procgen.between", vec![SExpr::num(1), SExpr::num(10)]),
         ],
     );
 
@@ -179,8 +176,8 @@ fn test_procgen_random_range() {
     let verb = SExpr::call(
         "std.seq",
         vec![
-            SExpr::call("procgen.seed", vec![SExpr::number(777)]),
-            SExpr::call("procgen.random", vec![SExpr::number(0), SExpr::number(100)]),
+            SExpr::call("procgen.seed", vec![SExpr::num(777)]),
+            SExpr::call("procgen.random", vec![SExpr::num(0), SExpr::num(100)]),
         ],
     );
 

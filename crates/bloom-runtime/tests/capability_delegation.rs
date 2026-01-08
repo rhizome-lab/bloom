@@ -30,14 +30,14 @@ fn test_mint_capability() {
     let mint_verb = SExpr::call(
         "mint",
         vec![
-            SExpr::object(
+            SExpr::obj(
                 [
-                    ("id".to_string(), SExpr::string(&mint_authority_id)),
-                    ("type".to_string(), SExpr::string("sys.mint")),
+                    ("id".to_string(), SExpr::str(&mint_authority_id)),
+                    ("type".to_string(), SExpr::str("sys.mint")),
                     (
                         "params".to_string(),
-                        SExpr::object(
-                            [("namespace".to_string(), SExpr::string("*"))]
+                        SExpr::obj(
+                            [("namespace".to_string(), SExpr::str("*"))]
                                 .into_iter()
                                 .collect(),
                         ),
@@ -46,9 +46,9 @@ fn test_mint_capability() {
                 .into_iter()
                 .collect(),
             ),
-            SExpr::string("fs.write"),
-            SExpr::object(
-                [("path".to_string(), SExpr::string("/tmp/test"))]
+            SExpr::str("fs.write"),
+            SExpr::obj(
+                [("path".to_string(), SExpr::str("/tmp/test"))]
                     .into_iter()
                     .collect(),
             ),
@@ -114,24 +114,24 @@ fn test_delegate_capability_valid_restriction() {
     let delegate_verb = SExpr::call(
         "delegate",
         vec![
-            SExpr::object(
+            SExpr::obj(
                 [
-                    ("id".to_string(), SExpr::string(&parent_cap_id)),
-                    ("type".to_string(), SExpr::string("fs.write")),
+                    ("id".to_string(), SExpr::str(&parent_cap_id)),
+                    ("type".to_string(), SExpr::str("fs.write")),
                     (
                         "params".to_string(),
-                        SExpr::object(
+                        SExpr::obj(
                             [
-                                ("path".to_string(), SExpr::string("/home/user")),
+                                ("path".to_string(), SExpr::str("/home/user")),
                                 (
                                     "methods".to_string(),
                                     SExpr::call(
                                         "list.new",
                                         vec![
-                                            SExpr::string("GET"),
-                                            SExpr::string("POST"),
-                                            SExpr::string("PUT"),
-                                            SExpr::string("DELETE"),
+                                            SExpr::str("GET"),
+                                            SExpr::str("POST"),
+                                            SExpr::str("PUT"),
+                                            SExpr::str("DELETE"),
                                         ],
                                     ),
                                 ),
@@ -144,15 +144,12 @@ fn test_delegate_capability_valid_restriction() {
                 .into_iter()
                 .collect(),
             ),
-            SExpr::object(
+            SExpr::obj(
                 [
-                    ("path".to_string(), SExpr::string("/home/user/docs")),
+                    ("path".to_string(), SExpr::str("/home/user/docs")),
                     (
                         "methods".to_string(),
-                        SExpr::call(
-                            "list.new",
-                            vec![SExpr::string("GET"), SExpr::string("POST")],
-                        ),
+                        SExpr::call("list.new", vec![SExpr::str("GET"), SExpr::str("POST")]),
                     ),
                 ]
                 .into_iter()
@@ -215,14 +212,14 @@ fn test_delegate_capability_invalid_path_restriction() {
     let delegate_verb = SExpr::call(
         "delegate",
         vec![
-            SExpr::object(
+            SExpr::obj(
                 [
-                    ("id".to_string(), SExpr::string(&parent_cap_id)),
-                    ("type".to_string(), SExpr::string("fs.write")),
+                    ("id".to_string(), SExpr::str(&parent_cap_id)),
+                    ("type".to_string(), SExpr::str("fs.write")),
                     (
                         "params".to_string(),
-                        SExpr::object(
-                            [("path".to_string(), SExpr::string("/home/user"))]
+                        SExpr::obj(
+                            [("path".to_string(), SExpr::str("/home/user"))]
                                 .into_iter()
                                 .collect(),
                         ),
@@ -231,8 +228,8 @@ fn test_delegate_capability_invalid_path_restriction() {
                 .into_iter()
                 .collect(),
             ),
-            SExpr::object(
-                [("path".to_string(), SExpr::string("/home"))]
+            SExpr::obj(
+                [("path".to_string(), SExpr::str("/home"))]
                     .into_iter()
                     .collect(),
             ),
@@ -286,18 +283,18 @@ fn test_delegate_capability_invalid_array_superset() {
     let delegate_verb = SExpr::call(
         "delegate",
         vec![
-            SExpr::object(
+            SExpr::obj(
                 [
-                    ("id".to_string(), SExpr::string(&parent_cap_id)),
-                    ("type".to_string(), SExpr::string("http.request")),
+                    ("id".to_string(), SExpr::str(&parent_cap_id)),
+                    ("type".to_string(), SExpr::str("http.request")),
                     (
                         "params".to_string(),
-                        SExpr::object(
+                        SExpr::obj(
                             [(
                                 "methods".to_string(),
                                 SExpr::call(
                                     "list.new",
-                                    vec![SExpr::string("GET"), SExpr::string("POST")],
+                                    vec![SExpr::str("GET"), SExpr::str("POST")],
                                 ),
                             )]
                             .into_iter()
@@ -308,16 +305,12 @@ fn test_delegate_capability_invalid_array_superset() {
                 .into_iter()
                 .collect(),
             ),
-            SExpr::object(
+            SExpr::obj(
                 [(
                     "methods".to_string(),
                     SExpr::call(
                         "list.new",
-                        vec![
-                            SExpr::string("GET"),
-                            SExpr::string("POST"),
-                            SExpr::string("DELETE"),
-                        ],
+                        vec![SExpr::str("GET"), SExpr::str("POST"), SExpr::str("DELETE")],
                     ),
                 )]
                 .into_iter()
@@ -369,14 +362,14 @@ fn test_delegate_namespace_restriction() {
     let delegate_verb = SExpr::call(
         "delegate",
         vec![
-            SExpr::object(
+            SExpr::obj(
                 [
-                    ("id".to_string(), SExpr::string(&parent_cap_id)),
-                    ("type".to_string(), SExpr::string("custom.cap")),
+                    ("id".to_string(), SExpr::str(&parent_cap_id)),
+                    ("type".to_string(), SExpr::str("custom.cap")),
                     (
                         "params".to_string(),
-                        SExpr::object(
-                            [("namespace".to_string(), SExpr::string("user"))]
+                        SExpr::obj(
+                            [("namespace".to_string(), SExpr::str("user"))]
                                 .into_iter()
                                 .collect(),
                         ),
@@ -385,8 +378,8 @@ fn test_delegate_namespace_restriction() {
                 .into_iter()
                 .collect(),
             ),
-            SExpr::object(
-                [("namespace".to_string(), SExpr::string("user.admin"))]
+            SExpr::obj(
+                [("namespace".to_string(), SExpr::str("user.admin"))]
                     .into_iter()
                     .collect(),
             ),

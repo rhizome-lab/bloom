@@ -30,7 +30,7 @@ fn test_update_persists_counter() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("current").erase_type(),
+                    SExpr::str("current").erase_type(),
                     SExpr::call(
                         "bool.guard",
                         vec![
@@ -38,10 +38,10 @@ fn test_update_persists_counter() {
                                 "obj.get",
                                 vec![
                                     SExpr::call("entity", vec![SExpr::call("std.caller", vec![])]),
-                                    SExpr::string("counter").erase_type(),
+                                    SExpr::str("counter").erase_type(),
                                 ],
                             ),
-                            SExpr::number(0).erase_type(),
+                            SExpr::num(0).erase_type(),
                         ],
                     ),
                 ],
@@ -50,12 +50,12 @@ fn test_update_persists_counter() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("new_val").erase_type(),
+                    SExpr::str("new_val").erase_type(),
                     SExpr::call(
                         "math.add",
                         vec![
-                            SExpr::call("std.var", vec![SExpr::string("current").erase_type()]),
-                            SExpr::number(1).erase_type(),
+                            SExpr::call("std.var", vec![SExpr::str("current").erase_type()]),
+                            SExpr::num(1).erase_type(),
                         ],
                     ),
                 ],
@@ -69,8 +69,8 @@ fn test_update_persists_counter() {
                         "obj.new",
                         vec![
                             SExpr::list(vec![
-                                SExpr::string("counter").erase_type(),
-                                SExpr::call("std.var", vec![SExpr::string("new_val").erase_type()]),
+                                SExpr::str("counter").erase_type(),
+                                SExpr::call("std.var", vec![SExpr::str("new_val").erase_type()]),
                             ])
                             .erase_type(),
                         ],
@@ -78,7 +78,7 @@ fn test_update_persists_counter() {
                 ],
             ),
             // Return new value
-            SExpr::call("std.var", vec![SExpr::string("new_val").erase_type()]),
+            SExpr::call("std.var", vec![SExpr::str("new_val").erase_type()]),
         ],
     );
 

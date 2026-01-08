@@ -23,7 +23,7 @@ fn test_execute_simple_verb() {
     {
         let storage = runtime.storage().lock().unwrap();
         storage
-            .add_verb(entity_id, "test", &SExpr::from(42))
+            .add_verb(entity_id, "test", &SExpr::num(42))
             .unwrap();
     }
 
@@ -48,7 +48,7 @@ fn test_execute_verb_with_math() {
     };
 
     // Add a verb that does 1 + 2
-    let verb_code = SExpr::call("math.add", vec![SExpr::number(1.0), SExpr::number(2.0)]);
+    let verb_code = SExpr::call("math.add", vec![SExpr::num(1.0), SExpr::num(2.0)]);
 
     {
         let storage = runtime.storage().lock().unwrap();
@@ -75,7 +75,7 @@ fn test_execute_verb_with_args() {
     };
 
     // Verb that returns arg 0
-    let verb_code = SExpr::call("std.arg", vec![SExpr::number(0.0)]);
+    let verb_code = SExpr::call("std.arg", vec![SExpr::num(0.0)]);
 
     {
         let storage = runtime.storage().lock().unwrap();

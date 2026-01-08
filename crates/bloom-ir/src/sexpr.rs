@@ -142,6 +142,42 @@ impl SExpr<Any> {
         }
     }
 
+    /// Creates a string value that's already type-erased.
+    /// Shorthand for `SExpr::string(value).erase_type()`.
+    pub fn str(value: impl Into<String>) -> SExpr<Any> {
+        SExpr::string(value).erase_type()
+    }
+
+    /// Creates a number value that's already type-erased.
+    /// Shorthand for `SExpr::number(value).erase_type()`.
+    pub fn num(value: impl Into<f64>) -> SExpr<Any> {
+        SExpr::number(value).erase_type()
+    }
+
+    /// Creates a boolean value that's already type-erased.
+    /// Shorthand for `SExpr::bool(value).erase_type()`.
+    pub fn boolean(value: bool) -> SExpr<Any> {
+        SExpr::bool(value).erase_type()
+    }
+
+    /// Creates a null value that's already type-erased.
+    /// Shorthand for `SExpr::null().erase_type()`.
+    pub fn nil() -> SExpr<Any> {
+        SExpr::null().erase_type()
+    }
+
+    /// Creates an array value that's already type-erased.
+    /// Shorthand for `SExpr::list(value).erase_type()`.
+    pub fn arr(value: Vec<SExpr>) -> SExpr<Any> {
+        SExpr::list(value).erase_type()
+    }
+
+    /// Creates an object value that's already type-erased.
+    /// Shorthand for `SExpr::object(value).erase_type()`.
+    pub fn obj(value: HashMap<String, SExpr>) -> SExpr<Any> {
+        SExpr::object(value).erase_type()
+    }
+
     /// Casts this SExpr to a specific type.
     ///
     /// This is safe because the type parameter is only a compile-time marker

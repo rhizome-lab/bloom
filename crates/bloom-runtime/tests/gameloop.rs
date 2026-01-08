@@ -28,15 +28,18 @@ fn test_state_persistence() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("current"),
+                    SExpr::str("current").erase_type(),
                     SExpr::call(
                         "obj.get",
-                        vec![SExpr::call("std.this", vec![]), SExpr::string("count")],
+                        vec![
+                            SExpr::call("std.this", vec![]),
+                            SExpr::str("count").erase_type(),
+                        ],
                     ),
                 ],
             ),
             // Return the current count
-            SExpr::call("std.var", vec![SExpr::string("current")]),
+            SExpr::call("std.var", vec![SExpr::str("current").erase_type()]),
         ],
     );
 
@@ -84,7 +87,7 @@ fn test_verb_inheritance() {
 
         // Add verb to base
         storage
-            .add_verb(base, "greet", &SExpr::string("Hello from base"))
+            .add_verb(base, "greet", &SExpr::str("Hello from base").erase_type())
             .unwrap();
 
         // Create child that inherits from base
@@ -106,7 +109,11 @@ fn test_verb_inheritance() {
     {
         let storage = runtime.storage().lock().unwrap();
         storage
-            .add_verb(child_id, "greet", &SExpr::string("Hello from child"))
+            .add_verb(
+                child_id,
+                "greet",
+                &SExpr::str("Hello from child").erase_type(),
+            )
             .unwrap();
     }
 

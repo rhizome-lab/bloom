@@ -28,19 +28,19 @@ fn test_break_in_for_loop() {
     let verb = SExpr::call(
         "std.seq",
         vec![
-            SExpr::call("std.let", vec![SExpr::string("sum"), SExpr::number(0.0)]),
+            SExpr::call("std.let", vec![SExpr::str("sum"), SExpr::num(0.0)]),
             SExpr::call(
                 "std.for",
                 vec![
-                    SExpr::string("x"),
+                    SExpr::str("x"),
                     SExpr::call(
                         "list.new",
                         vec![
-                            SExpr::number(1.0),
-                            SExpr::number(2.0),
-                            SExpr::number(3.0),
-                            SExpr::number(4.0),
-                            SExpr::number(5.0),
+                            SExpr::num(1.0),
+                            SExpr::num(2.0),
+                            SExpr::num(3.0),
+                            SExpr::num(4.0),
+                            SExpr::num(5.0),
                         ],
                     ),
                     SExpr::call(
@@ -52,8 +52,8 @@ fn test_break_in_for_loop() {
                                     SExpr::call(
                                         "bool.gt",
                                         vec![
-                                            SExpr::call("std.var", vec![SExpr::string("x")]),
-                                            SExpr::number(3.0),
+                                            SExpr::call("std.var", vec![SExpr::str("x")]),
+                                            SExpr::num(3.0),
                                         ],
                                     ),
                                     SExpr::call("std.break", vec![]),
@@ -62,12 +62,12 @@ fn test_break_in_for_loop() {
                             SExpr::call(
                                 "std.set",
                                 vec![
-                                    SExpr::string("sum"),
+                                    SExpr::str("sum"),
                                     SExpr::call(
                                         "math.add",
                                         vec![
-                                            SExpr::call("std.var", vec![SExpr::string("sum")]),
-                                            SExpr::call("std.var", vec![SExpr::string("x")]),
+                                            SExpr::call("std.var", vec![SExpr::str("sum")]),
+                                            SExpr::call("std.var", vec![SExpr::str("x")]),
                                         ],
                                     ),
                                 ],
@@ -76,7 +76,7 @@ fn test_break_in_for_loop() {
                     ),
                 ],
             ),
-            SExpr::call("std.var", vec![SExpr::string("sum")]),
+            SExpr::call("std.var", vec![SExpr::str("sum")]),
         ],
     );
 
@@ -99,23 +99,23 @@ fn test_break_in_while_loop() {
     let verb = SExpr::call(
         "std.seq",
         vec![
-            SExpr::call("std.let", vec![SExpr::string("i"), SExpr::number(0.0)]),
+            SExpr::call("std.let", vec![SExpr::str("i"), SExpr::num(0.0)]),
             SExpr::call(
                 "std.while",
                 vec![
-                    SExpr::Bool(true),
+                    SExpr::boolean(true),
                     SExpr::call(
                         "std.seq",
                         vec![
                             SExpr::call(
                                 "std.set",
                                 vec![
-                                    SExpr::string("i"),
+                                    SExpr::str("i"),
                                     SExpr::call(
                                         "math.add",
                                         vec![
-                                            SExpr::call("std.var", vec![SExpr::string("i")]),
-                                            SExpr::number(1.0),
+                                            SExpr::call("std.var", vec![SExpr::str("i")]),
+                                            SExpr::num(1.0),
                                         ],
                                     ),
                                 ],
@@ -126,8 +126,8 @@ fn test_break_in_while_loop() {
                                     SExpr::call(
                                         "bool.gt",
                                         vec![
-                                            SExpr::call("std.var", vec![SExpr::string("i")]),
-                                            SExpr::number(3.0),
+                                            SExpr::call("std.var", vec![SExpr::str("i")]),
+                                            SExpr::num(3.0),
                                         ],
                                     ),
                                     SExpr::call("std.break", vec![]),
@@ -137,7 +137,7 @@ fn test_break_in_while_loop() {
                     ),
                 ],
             ),
-            SExpr::call("std.var", vec![SExpr::string("i")]),
+            SExpr::call("std.var", vec![SExpr::str("i")]),
         ],
     );
 
@@ -160,19 +160,19 @@ fn test_continue_in_for_loop() {
     let verb = SExpr::call(
         "std.seq",
         vec![
-            SExpr::call("std.let", vec![SExpr::string("sum"), SExpr::number(0.0)]),
+            SExpr::call("std.let", vec![SExpr::str("sum"), SExpr::num(0.0)]),
             SExpr::call(
                 "std.for",
                 vec![
-                    SExpr::string("x"),
+                    SExpr::str("x"),
                     SExpr::call(
                         "list.new",
                         vec![
-                            SExpr::number(1.0),
-                            SExpr::number(2.0),
-                            SExpr::number(3.0),
-                            SExpr::number(4.0),
-                            SExpr::number(5.0),
+                            SExpr::num(1.0),
+                            SExpr::num(2.0),
+                            SExpr::num(3.0),
+                            SExpr::num(4.0),
+                            SExpr::num(5.0),
                         ],
                     ),
                     SExpr::call(
@@ -184,8 +184,8 @@ fn test_continue_in_for_loop() {
                                     SExpr::call(
                                         "bool.eq",
                                         vec![
-                                            SExpr::call("std.var", vec![SExpr::string("x")]),
-                                            SExpr::number(3.0),
+                                            SExpr::call("std.var", vec![SExpr::str("x")]),
+                                            SExpr::num(3.0),
                                         ],
                                     ),
                                     SExpr::call("std.continue", vec![]),
@@ -194,12 +194,12 @@ fn test_continue_in_for_loop() {
                             SExpr::call(
                                 "std.set",
                                 vec![
-                                    SExpr::string("sum"),
+                                    SExpr::str("sum"),
                                     SExpr::call(
                                         "math.add",
                                         vec![
-                                            SExpr::call("std.var", vec![SExpr::string("sum")]),
-                                            SExpr::call("std.var", vec![SExpr::string("x")]),
+                                            SExpr::call("std.var", vec![SExpr::str("sum")]),
+                                            SExpr::call("std.var", vec![SExpr::str("x")]),
                                         ],
                                     ),
                                 ],
@@ -208,7 +208,7 @@ fn test_continue_in_for_loop() {
                     ),
                 ],
             ),
-            SExpr::call("std.var", vec![SExpr::string("sum")]),
+            SExpr::call("std.var", vec![SExpr::str("sum")]),
         ],
     );
 
@@ -231,9 +231,9 @@ fn test_try_catch() {
     let verb = SExpr::call(
         "std.try",
         vec![
-            SExpr::call("std.throw", vec![SExpr::string("oops")]),
-            SExpr::string("err"),
-            SExpr::string("caught"),
+            SExpr::call("std.throw", vec![SExpr::str("oops")]),
+            SExpr::str("err"),
+            SExpr::str("caught"),
         ],
     );
 
@@ -256,9 +256,9 @@ fn test_try_catch_with_error_variable() {
     let verb = SExpr::call(
         "std.try",
         vec![
-            SExpr::call("std.throw", vec![SExpr::string("error message")]),
-            SExpr::string("err"),
-            SExpr::call("std.var", vec![SExpr::string("err")]),
+            SExpr::call("std.throw", vec![SExpr::str("error message")]),
+            SExpr::str("err"),
+            SExpr::call("std.var", vec![SExpr::str("err")]),
         ],
     );
 
@@ -280,11 +280,7 @@ fn test_try_no_error() {
     // try { return "ok" } catch { return "bad" }
     let verb = SExpr::call(
         "std.try",
-        vec![
-            SExpr::string("ok"),
-            SExpr::string("err"),
-            SExpr::string("bad"),
-        ],
+        vec![SExpr::str("ok"), SExpr::str("err"), SExpr::str("bad")],
     );
 
     {
@@ -303,7 +299,7 @@ fn test_if_without_else_returns_null() {
     let (runtime, entity_id) = setup_entity();
 
     // if (false) { "then" } // no else branch
-    let verb = SExpr::call("std.if", vec![SExpr::Bool(false), SExpr::string("then")]);
+    let verb = SExpr::call("std.if", vec![SExpr::boolean(false), SExpr::str("then")]);
 
     {
         let storage = runtime.storage().lock().unwrap();
@@ -324,10 +320,10 @@ fn test_comparisons() {
     let verb = SExpr::call(
         "list.new",
         vec![
-            SExpr::call("bool.neq", vec![SExpr::number(1.0), SExpr::number(2.0)]),
-            SExpr::call("bool.lt", vec![SExpr::number(1.0), SExpr::number(2.0)]),
-            SExpr::call("bool.gte", vec![SExpr::number(2.0), SExpr::number(2.0)]),
-            SExpr::call("bool.lte", vec![SExpr::number(2.0), SExpr::number(2.0)]),
+            SExpr::call("bool.neq", vec![SExpr::num(1.0), SExpr::num(2.0)]),
+            SExpr::call("bool.lt", vec![SExpr::num(1.0), SExpr::num(2.0)]),
+            SExpr::call("bool.gte", vec![SExpr::num(2.0), SExpr::num(2.0)]),
+            SExpr::call("bool.lte", vec![SExpr::num(2.0), SExpr::num(2.0)]),
         ],
     );
 
@@ -350,7 +346,7 @@ fn test_comparisons() {
 fn test_unknown_variable_returns_null() {
     let (runtime, entity_id) = setup_entity();
 
-    let verb = SExpr::call("std.var", vec![SExpr::string("nonexistent")]);
+    let verb = SExpr::call("std.var", vec![SExpr::str("nonexistent")]);
 
     {
         let storage = runtime.storage().lock().unwrap();
@@ -373,20 +369,12 @@ fn test_string_operations() {
         vec![
             SExpr::call(
                 "str.concat",
-                vec![
-                    SExpr::string("hello"),
-                    SExpr::string(" "),
-                    SExpr::string("world"),
-                ],
+                vec![SExpr::str("hello"), SExpr::str(" "), SExpr::str("world")],
             ),
-            SExpr::call("str.len", vec![SExpr::string("hello")]),
+            SExpr::call("str.len", vec![SExpr::str("hello")]),
             SExpr::call(
                 "str.slice",
-                vec![
-                    SExpr::string("hello"),
-                    SExpr::number(1.0),
-                    SExpr::number(4.0),
-                ],
+                vec![SExpr::str("hello"), SExpr::num(1.0), SExpr::num(4.0)],
             ),
         ],
     );
@@ -417,15 +405,15 @@ fn test_list_map_filter() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("nums"),
+                    SExpr::str("nums"),
                     SExpr::call(
                         "list.new",
                         vec![
-                            SExpr::number(1.0),
-                            SExpr::number(2.0),
-                            SExpr::number(3.0),
-                            SExpr::number(4.0),
-                            SExpr::number(5.0),
+                            SExpr::num(1.0),
+                            SExpr::num(2.0),
+                            SExpr::num(3.0),
+                            SExpr::num(4.0),
+                            SExpr::num(5.0),
                         ],
                     ),
                 ],
@@ -434,20 +422,20 @@ fn test_list_map_filter() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("doubled"),
+                    SExpr::str("doubled"),
                     SExpr::call(
                         "list.map",
                         vec![
-                            SExpr::call("std.var", vec![SExpr::string("nums")]),
+                            SExpr::call("std.var", vec![SExpr::str("nums")]),
                             SExpr::call(
                                 "std.lambda",
                                 vec![
-                                    SExpr::list(vec![SExpr::string("x").erase_type()]).erase_type(),
+                                    SExpr::arr(vec![SExpr::str("x")]),
                                     SExpr::call(
                                         "math.mul",
                                         vec![
-                                            SExpr::call("std.var", vec![SExpr::string("x")]),
-                                            SExpr::number(2.0),
+                                            SExpr::call("std.var", vec![SExpr::str("x")]),
+                                            SExpr::num(2.0),
                                         ],
                                     ),
                                 ],
@@ -457,7 +445,7 @@ fn test_list_map_filter() {
                 ],
             ),
             // Return doubled
-            SExpr::call("std.var", vec![SExpr::string("doubled")]),
+            SExpr::call("std.var", vec![SExpr::str("doubled")]),
         ],
     );
 

@@ -25,13 +25,13 @@ fn test_multi_verb_workflow() {
                     "obj.set",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("value"),
-                        SExpr::call("std.arg", vec![SExpr::number(0.0)]),
+                        SExpr::str("value"),
+                        SExpr::call("std.arg", vec![SExpr::num(0.0)]),
                     ],
                 ),
                 SExpr::call(
                     "obj.get",
-                    vec![SExpr::call("std.this", vec![]), SExpr::string("value")],
+                    vec![SExpr::call("std.this", vec![]), SExpr::str("value")],
                 ),
             ],
         );
@@ -40,7 +40,7 @@ fn test_multi_verb_workflow() {
         // Add a "get_value" verb
         let get_verb = SExpr::call(
             "obj.get",
-            vec![SExpr::call("std.this", vec![]), SExpr::string("value")],
+            vec![SExpr::call("std.this", vec![]), SExpr::str("value")],
         );
         storage.add_verb(id, "get_value", &get_verb).unwrap();
 
@@ -79,12 +79,12 @@ fn test_conditional_verb() {
                 SExpr::call(
                     "bool.gt",
                     vec![
-                        SExpr::call("std.arg", vec![SExpr::number(0.0)]),
-                        SExpr::number(10.0),
+                        SExpr::call("std.arg", vec![SExpr::num(0.0)]),
+                        SExpr::num(10.0),
                     ],
                 ),
-                SExpr::string("big"),
-                SExpr::string("small"),
+                SExpr::str("big"),
+                SExpr::str("small"),
             ],
         );
         storage.add_verb(id, "check_size", &check_verb).unwrap();
@@ -119,9 +119,9 @@ fn test_loop_in_verb() {
             "std.seq",
             vec![
                 // let total = 0
-                SExpr::call("std.let", vec![SExpr::string("total"), SExpr::number(0.0)]),
+                SExpr::call("std.let", vec![SExpr::str("total"), SExpr::num(0.0)]),
                 // let i = 1
-                SExpr::call("std.let", vec![SExpr::string("i"), SExpr::number(1.0)]),
+                SExpr::call("std.let", vec![SExpr::str("i"), SExpr::num(1.0)]),
                 // while i <= arg0
                 SExpr::call(
                     "std.while",
@@ -129,8 +129,8 @@ fn test_loop_in_verb() {
                         SExpr::call(
                             "bool.lte",
                             vec![
-                                SExpr::call("std.var", vec![SExpr::string("i")]),
-                                SExpr::call("std.arg", vec![SExpr::number(0.0)]),
+                                SExpr::call("std.var", vec![SExpr::str("i")]),
+                                SExpr::call("std.arg", vec![SExpr::num(0.0)]),
                             ],
                         ),
                         SExpr::call(
@@ -140,15 +140,12 @@ fn test_loop_in_verb() {
                                 SExpr::call(
                                     "std.set",
                                     vec![
-                                        SExpr::string("total"),
+                                        SExpr::str("total"),
                                         SExpr::call(
                                             "math.add",
                                             vec![
-                                                SExpr::call(
-                                                    "std.var",
-                                                    vec![SExpr::string("total")],
-                                                ),
-                                                SExpr::call("std.var", vec![SExpr::string("i")]),
+                                                SExpr::call("std.var", vec![SExpr::str("total")]),
+                                                SExpr::call("std.var", vec![SExpr::str("i")]),
                                             ],
                                         ),
                                     ],
@@ -157,12 +154,12 @@ fn test_loop_in_verb() {
                                 SExpr::call(
                                     "std.set",
                                     vec![
-                                        SExpr::string("i"),
+                                        SExpr::str("i"),
                                         SExpr::call(
                                             "math.add",
                                             vec![
-                                                SExpr::call("std.var", vec![SExpr::string("i")]),
-                                                SExpr::number(1.0),
+                                                SExpr::call("std.var", vec![SExpr::str("i")]),
+                                                SExpr::num(1.0),
                                             ],
                                         ),
                                     ],
@@ -172,7 +169,7 @@ fn test_loop_in_verb() {
                     ],
                 ),
                 // return total
-                SExpr::call("std.var", vec![SExpr::string("total")]),
+                SExpr::call("std.var", vec![SExpr::str("total")]),
             ],
         );
         storage.add_verb(id, "sum", &sum_verb).unwrap();
@@ -212,16 +209,16 @@ fn test_lambda_in_verb() {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("double"),
+                        SExpr::str("double"),
                         SExpr::call(
                             "std.lambda",
                             vec![
-                                SExpr::list(vec![SExpr::string("x").erase_type()]).erase_type(),
+                                SExpr::list(vec![SExpr::str("x").erase_type()]).erase_type(),
                                 SExpr::call(
                                     "math.mul",
                                     vec![
-                                        SExpr::call("std.var", vec![SExpr::string("x")]),
-                                        SExpr::number(2.0),
+                                        SExpr::call("std.var", vec![SExpr::str("x")]),
+                                        SExpr::num(2.0),
                                     ],
                                 ),
                             ],
@@ -232,8 +229,8 @@ fn test_lambda_in_verb() {
                 SExpr::call(
                     "std.apply",
                     vec![
-                        SExpr::call("std.var", vec![SExpr::string("double")]),
-                        SExpr::call("std.arg", vec![SExpr::number(0.0)]),
+                        SExpr::call("std.var", vec![SExpr::str("double")]),
+                        SExpr::call("std.arg", vec![SExpr::num(0.0)]),
                     ],
                 ),
             ],
@@ -267,16 +264,16 @@ fn test_list_operations_in_verb() {
                 SExpr::call(
                     "std.let",
                     vec![
-                        SExpr::string("mylist"),
+                        SExpr::str("mylist"),
                         SExpr::call(
                             "list.new",
-                            vec![SExpr::number(1.0), SExpr::number(2.0), SExpr::number(3.0)],
+                            vec![SExpr::num(1.0), SExpr::num(2.0), SExpr::num(3.0)],
                         ),
                     ],
                 ),
                 SExpr::call(
                     "list.len",
-                    vec![SExpr::call("std.var", vec![SExpr::string("mylist")])],
+                    vec![SExpr::call("std.var", vec![SExpr::str("mylist")])],
                 ),
             ],
         );

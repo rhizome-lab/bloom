@@ -45,21 +45,25 @@ fn test_prototype_chain_multiple_levels() {
             .create_entity(json!({"type": "root", "a": 1}), None)
             .unwrap();
         storage
-            .add_verb(root, "root_verb", &SExpr::string("from_root"))
+            .add_verb(root, "root_verb", &SExpr::str("from_root").erase_type())
             .unwrap();
 
         let parent = storage
             .create_entity(json!({"type": "parent", "b": 2}), Some(root))
             .unwrap();
         storage
-            .add_verb(parent, "parent_verb", &SExpr::string("from_parent"))
+            .add_verb(
+                parent,
+                "parent_verb",
+                &SExpr::str("from_parent").erase_type(),
+            )
             .unwrap();
 
         let child = storage
             .create_entity(json!({"type": "child", "c": 3}), Some(parent))
             .unwrap();
         storage
-            .add_verb(child, "child_verb", &SExpr::string("from_child"))
+            .add_verb(child, "child_verb", &SExpr::str("from_child").erase_type())
             .unwrap();
 
         (root, parent, child)
@@ -142,7 +146,9 @@ fn test_delete_entity_cascade() {
             .unwrap();
 
         // Add verbs and capabilities
-        storage.add_verb(id, "test", &SExpr::null()).unwrap();
+        storage
+            .add_verb(id, "test", &SExpr::nil().erase_type())
+            .unwrap();
         storage
             .create_capability(id, "test.cap", json!({}))
             .unwrap();

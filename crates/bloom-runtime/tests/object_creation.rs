@@ -60,13 +60,13 @@ fn test_create_entity_via_opcode() {
             "obj.new",
             vec![
                 SExpr::list(vec![
-                    SExpr::string("name").erase_type(),
-                    SExpr::string("New Object").erase_type(),
+                    SExpr::str("name").erase_type(),
+                    SExpr::str("New Object").erase_type(),
                 ])
                 .erase_type(),
                 SExpr::list(vec![
-                    SExpr::string("location").erase_type(),
-                    SExpr::call("std.var", vec![SExpr::string("room_id").erase_type()]),
+                    SExpr::str("location").erase_type(),
+                    SExpr::call("std.var", vec![SExpr::str("room_id").erase_type()]),
                 ])
                 .erase_type(),
             ],
@@ -115,7 +115,7 @@ fn test_create_entity_with_prototype() {
             .unwrap();
 
         // Add a verb to the prototype
-        let verb = SExpr::string("I am an item!").erase_type();
+        let verb = SExpr::str("I am an item!").erase_type();
         storage.add_verb(proto_id, "describe", &verb).unwrap();
 
         let player_id = storage
@@ -133,13 +133,13 @@ fn test_create_entity_with_prototype() {
                 "obj.new",
                 vec![
                     SExpr::list(vec![
-                        SExpr::string("name").erase_type(),
-                        SExpr::string("Sword").erase_type(),
+                        SExpr::str("name").erase_type(),
+                        SExpr::str("Sword").erase_type(),
                     ])
                     .erase_type(),
                 ],
             ),
-            SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]),
+            SExpr::call("std.arg", vec![SExpr::num(0.0).erase_type()]),
         ],
     );
 
@@ -189,18 +189,18 @@ fn test_update_entity_modifies_props() {
     let verb = SExpr::call(
         "update",
         vec![
-            SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]),
+            SExpr::call("std.arg", vec![SExpr::num(0.0).erase_type()]),
             SExpr::call(
                 "obj.new",
                 vec![
                     SExpr::list(vec![
-                        SExpr::string("health").erase_type(),
-                        SExpr::number(75.0).erase_type(),
+                        SExpr::str("health").erase_type(),
+                        SExpr::num(75.0).erase_type(),
                     ])
                     .erase_type(),
                     SExpr::list(vec![
-                        SExpr::string("status").erase_type(),
-                        SExpr::string("wounded").erase_type(),
+                        SExpr::str("status").erase_type(),
+                        SExpr::str("wounded").erase_type(),
                     ])
                     .erase_type(),
                 ],
@@ -239,7 +239,7 @@ fn test_prototype_chain_verb_resolution() {
             .unwrap();
 
         // Grandparent has a verb
-        let gp_verb = SExpr::string("grandparent verb").erase_type();
+        let gp_verb = SExpr::str("grandparent verb").erase_type();
         storage
             .add_verb(grandparent_id, "inherited", &gp_verb)
             .unwrap();
@@ -249,7 +249,7 @@ fn test_prototype_chain_verb_resolution() {
             .unwrap();
 
         // Parent overrides and adds verbs
-        let parent_verb = SExpr::string("parent verb").erase_type();
+        let parent_verb = SExpr::str("parent verb").erase_type();
         storage
             .add_verb(parent_id, "parent_only", &parent_verb)
             .unwrap();
@@ -314,20 +314,20 @@ fn test_entity_location_tracking() {
             SExpr::call(
                 "update",
                 vec![
-                    SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]), // item_id
+                    SExpr::call("std.arg", vec![SExpr::num(0.0).erase_type()]), // item_id
                     SExpr::call(
                         "obj.new",
                         vec![
                             SExpr::list(vec![
-                                SExpr::string("location").erase_type(),
-                                SExpr::call("std.arg", vec![SExpr::number(1.0).erase_type()]), // new_room
+                                SExpr::str("location").erase_type(),
+                                SExpr::call("std.arg", vec![SExpr::num(1.0).erase_type()]), // new_room
                             ])
                             .erase_type(),
                         ],
                     ),
                 ],
             ),
-            SExpr::string("moved").erase_type(),
+            SExpr::str("moved").erase_type(),
         ],
     );
 
@@ -370,23 +370,23 @@ fn test_nested_object_creation() {
             "obj.new",
             vec![
                 SExpr::list(vec![
-                    SExpr::string("name").erase_type(),
-                    SExpr::string("Complex Item").erase_type(),
+                    SExpr::str("name").erase_type(),
+                    SExpr::str("Complex Item").erase_type(),
                 ])
                 .erase_type(),
                 SExpr::list(vec![
-                    SExpr::string("stats").erase_type(),
+                    SExpr::str("stats").erase_type(),
                     SExpr::call(
                         "obj.new",
                         vec![
                             SExpr::list(vec![
-                                SExpr::string("attack").erase_type(),
-                                SExpr::number(10.0).erase_type(),
+                                SExpr::str("attack").erase_type(),
+                                SExpr::num(10.0).erase_type(),
                             ])
                             .erase_type(),
                             SExpr::list(vec![
-                                SExpr::string("defense").erase_type(),
-                                SExpr::number(5.0).erase_type(),
+                                SExpr::str("defense").erase_type(),
+                                SExpr::num(5.0).erase_type(),
                             ])
                             .erase_type(),
                         ],
@@ -394,12 +394,12 @@ fn test_nested_object_creation() {
                 ])
                 .erase_type(),
                 SExpr::list(vec![
-                    SExpr::string("tags").erase_type(),
+                    SExpr::str("tags").erase_type(),
                     SExpr::call(
                         "list.new",
                         vec![
-                            SExpr::string("weapon").erase_type(),
-                            SExpr::string("rare").erase_type(),
+                            SExpr::str("weapon").erase_type(),
+                            SExpr::str("rare").erase_type(),
                         ],
                     ),
                 ])

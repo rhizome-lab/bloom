@@ -207,8 +207,8 @@ fn test_deeply_nested_loop_terminates() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("count").erase_type(),
-                    SExpr::number(0.0).erase_type(),
+                    SExpr::str("count").erase_type(),
+                    SExpr::num(0.0).erase_type(),
                 ],
             ),
             SExpr::call(
@@ -217,29 +217,26 @@ fn test_deeply_nested_loop_terminates() {
                     SExpr::call(
                         "bool.lt",
                         vec![
-                            SExpr::call("std.var", vec![SExpr::string("count").erase_type()]),
-                            SExpr::number(100.0).erase_type(), // Reasonable limit
+                            SExpr::call("std.var", vec![SExpr::str("count").erase_type()]),
+                            SExpr::num(100.0).erase_type(), // Reasonable limit
                         ],
                     ),
                     SExpr::call(
                         "std.set",
                         vec![
-                            SExpr::string("count").erase_type(),
+                            SExpr::str("count").erase_type(),
                             SExpr::call(
                                 "math.add",
                                 vec![
-                                    SExpr::call(
-                                        "std.var",
-                                        vec![SExpr::string("count").erase_type()],
-                                    ),
-                                    SExpr::number(1.0).erase_type(),
+                                    SExpr::call("std.var", vec![SExpr::str("count").erase_type()]),
+                                    SExpr::num(1.0).erase_type(),
                                 ],
                             ),
                         ],
                     ),
                 ],
             ),
-            SExpr::call("std.var", vec![SExpr::string("count").erase_type()]),
+            SExpr::call("std.var", vec![SExpr::str("count").erase_type()]),
         ],
     );
 
@@ -269,8 +266,8 @@ fn test_excessive_recursion_handling() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("n").erase_type(),
-                    SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]),
+                    SExpr::str("n").erase_type(),
+                    SExpr::call("std.arg", vec![SExpr::num(0.0).erase_type()]),
                 ],
             ),
             SExpr::call(
@@ -279,28 +276,28 @@ fn test_excessive_recursion_handling() {
                     SExpr::call(
                         "bool.lte",
                         vec![
-                            SExpr::call("std.var", vec![SExpr::string("n").erase_type()]),
-                            SExpr::number(0.0).erase_type(),
+                            SExpr::call("std.var", vec![SExpr::str("n").erase_type()]),
+                            SExpr::num(0.0).erase_type(),
                         ],
                     ),
-                    SExpr::number(0.0).erase_type(),
+                    SExpr::num(0.0).erase_type(),
                     SExpr::call(
                         "math.add",
                         vec![
-                            SExpr::call("std.var", vec![SExpr::string("n").erase_type()]),
+                            SExpr::call("std.var", vec![SExpr::str("n").erase_type()]),
                             SExpr::call(
                                 "call",
                                 vec![
                                     SExpr::call("std.this", vec![]),
-                                    SExpr::string("recurse").erase_type(),
+                                    SExpr::str("recurse").erase_type(),
                                     SExpr::call(
                                         "math.sub",
                                         vec![
                                             SExpr::call(
                                                 "std.var",
-                                                vec![SExpr::string("n").erase_type()],
+                                                vec![SExpr::str("n").erase_type()],
                                             ),
-                                            SExpr::number(1.0).erase_type(),
+                                            SExpr::num(1.0).erase_type(),
                                         ],
                                     ),
                                 ],
@@ -341,13 +338,13 @@ fn test_entity_mutation_is_persisted() {
     let verb = SExpr::call(
         "update",
         vec![
-            SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]),
+            SExpr::call("std.arg", vec![SExpr::num(0.0).erase_type()]),
             SExpr::call(
                 "obj.new",
                 vec![
                     SExpr::list(vec![
-                        SExpr::string("modified").erase_type(),
-                        SExpr::bool(true).erase_type(),
+                        SExpr::str("modified").erase_type(),
+                        SExpr::boolean(true).erase_type(),
                     ])
                     .erase_type(),
                 ],
@@ -384,16 +381,16 @@ fn test_verb_execution_isolation() {
             SExpr::call(
                 "std.let",
                 vec![
-                    SExpr::string("secret").erase_type(),
-                    SExpr::string("verb1_secret").erase_type(),
+                    SExpr::str("secret").erase_type(),
+                    SExpr::str("verb1_secret").erase_type(),
                 ],
             ),
-            SExpr::call("std.var", vec![SExpr::string("secret").erase_type()]),
+            SExpr::call("std.var", vec![SExpr::str("secret").erase_type()]),
         ],
     );
 
     // Verb that tries to read another verb's variable
-    let verb2 = SExpr::call("std.var", vec![SExpr::string("secret").erase_type()]);
+    let verb2 = SExpr::call("std.var", vec![SExpr::str("secret").erase_type()]);
 
     {
         let storage = runtime.storage().lock().unwrap();
@@ -460,13 +457,13 @@ fn test_cannot_modify_prototype_via_child() {
     let verb = SExpr::call(
         "update",
         vec![
-            SExpr::call("std.arg", vec![SExpr::number(0.0).erase_type()]),
+            SExpr::call("std.arg", vec![SExpr::num(0.0).erase_type()]),
             SExpr::call(
                 "obj.new",
                 vec![
                     SExpr::list(vec![
-                        SExpr::string("base_value").erase_type(),
-                        SExpr::number(999.0).erase_type(),
+                        SExpr::str("base_value").erase_type(),
+                        SExpr::num(999.0).erase_type(),
                     ])
                     .erase_type(),
                 ],
@@ -507,7 +504,7 @@ fn test_verb_error_doesnt_crash_runtime() {
     // Verb that throws an error
     let verb = SExpr::call(
         "std.throw",
-        vec![SExpr::string("intentional error").erase_type()],
+        vec![SExpr::str("intentional error").erase_type()],
     );
 
     {
@@ -519,7 +516,7 @@ fn test_verb_error_doesnt_crash_runtime() {
     assert!(result.is_err(), "Should return error");
 
     // Runtime should still be usable
-    let simple_verb = SExpr::string("still working").erase_type();
+    let simple_verb = SExpr::str("still working").erase_type();
     {
         let storage = runtime.storage().lock().unwrap();
         storage.add_verb(player_id, "simple", &simple_verb).unwrap();

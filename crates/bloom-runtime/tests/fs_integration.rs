@@ -69,12 +69,12 @@ fn test_fs_write_and_read() {
                     "obj.get",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("write_cap_id").erase_type(),
+                        SExpr::str("write_cap_id").erase_type(),
                     ],
                 )],
             ),
-            SExpr::string(file_path_str).erase_type(),
-            SExpr::string("Hello, Bloom!").erase_type(),
+            SExpr::str(file_path_str).erase_type(),
+            SExpr::str("Hello, Bloom!").erase_type(),
         ],
     );
 
@@ -117,11 +117,11 @@ fn test_fs_write_and_read() {
                     "obj.get",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("read_cap_id").erase_type(),
+                        SExpr::str("read_cap_id").erase_type(),
                     ],
                 )],
             ),
-            SExpr::string(file_path_str).erase_type(),
+            SExpr::str(file_path_str).erase_type(),
         ],
     );
 
@@ -178,11 +178,11 @@ fn test_fs_list() {
                     "obj.get",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("read_cap_id").erase_type(),
+                        SExpr::str("read_cap_id").erase_type(),
                     ],
                 )],
             ),
-            SExpr::string(temp_path).erase_type(),
+            SExpr::str(temp_path).erase_type(),
         ],
     );
 
@@ -241,11 +241,11 @@ fn test_fs_stat() {
                     "obj.get",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("read_cap_id").erase_type(),
+                        SExpr::str("read_cap_id").erase_type(),
                     ],
                 )],
             ),
-            SExpr::string(file_path.to_str().unwrap()).erase_type(),
+            SExpr::str(file_path.to_str().unwrap()).erase_type(),
         ],
     );
 
@@ -309,11 +309,11 @@ fn test_fs_capability_validation() {
                     "obj.get",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("read_cap_id").erase_type(),
+                        SExpr::str("read_cap_id").erase_type(),
                     ],
                 )],
             ),
-            SExpr::string(restricted_file.to_str().unwrap()).erase_type(),
+            SExpr::str(restricted_file.to_str().unwrap()).erase_type(),
         ],
     );
 
@@ -367,11 +367,11 @@ fn test_fs_mkdir_and_remove() {
                     "obj.get",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("write_cap_id").erase_type(),
+                        SExpr::str("write_cap_id").erase_type(),
                     ],
                 )],
             ),
-            SExpr::string(new_dir.to_str().unwrap()).erase_type(),
+            SExpr::str(new_dir.to_str().unwrap()).erase_type(),
         ],
     );
 
@@ -399,11 +399,11 @@ fn test_fs_mkdir_and_remove() {
                     "obj.get",
                     vec![
                         SExpr::call("std.this", vec![]),
-                        SExpr::string("write_cap_id").erase_type(),
+                        SExpr::str("write_cap_id").erase_type(),
                     ],
                 )],
             ),
-            SExpr::string(new_dir.to_str().unwrap()).erase_type(),
+            SExpr::str(new_dir.to_str().unwrap()).erase_type(),
         ],
     );
 
