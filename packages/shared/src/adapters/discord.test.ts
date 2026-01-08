@@ -27,10 +27,11 @@ describe("DiscordAdapter", () => {
       const output = discordAdapter.formatRoom(msg);
 
       expect(output.embeds).toHaveLength(1);
-      expect(output.embeds![0].title).toBe("Town Square");
-      expect(output.embeds![0].description).toBe("A bustling town square with a fountain.");
-      expect(output.embeds![0].color).toBe(MessageColors.room);
-      expect(output.embeds![0].fields).toHaveLength(2);
+      const embed = output.embeds![0]!;
+      expect(embed.title).toBe("Town Square");
+      expect(embed.description).toBe("A bustling town square with a fountain.");
+      expect(embed.color).toBe(MessageColors.room);
+      expect(embed.fields).toHaveLength(2);
     });
 
     it("handles locked exits", () => {
@@ -44,7 +45,7 @@ describe("DiscordAdapter", () => {
       };
 
       const output = discordAdapter.formatRoom(msg);
-      const exitField = output.embeds![0].fields![0];
+      const exitField = output.embeds![0]!.fields![0]!;
       expect(exitField.value).toContain("\u{1F512}"); // Lock emoji
     });
   });
@@ -63,8 +64,9 @@ describe("DiscordAdapter", () => {
       const output = discordAdapter.formatInventory(msg);
 
       expect(output.embeds).toHaveLength(1);
-      expect(output.embeds![0].description).toBe("Sword\nShield");
-      expect(output.embeds![0].color).toBe(MessageColors.inventory);
+      const embed = output.embeds![0]!;
+      expect(embed.description).toBe("Sword\nShield");
+      expect(embed.color).toBe(MessageColors.inventory);
     });
 
     it("shows empty message when no items", () => {
@@ -75,7 +77,7 @@ describe("DiscordAdapter", () => {
       };
 
       const output = discordAdapter.formatInventory(msg);
-      expect(output.embeds![0].description).toBe("*Your inventory is empty*");
+      expect(output.embeds![0]!.description).toBe("*Your inventory is empty*");
     });
   });
 
@@ -91,9 +93,9 @@ describe("DiscordAdapter", () => {
 
       const output = discordAdapter.formatItem(msg);
 
-      expect(output.embeds![0].title).toBe("Magic Sword");
-      expect(output.embeds![0].color).toBe(MessageColors.item);
-      expect(output.embeds![0].fields).toBeDefined();
+      expect(output.embeds![0]!.title).toBe("Magic Sword");
+      expect(output.embeds![0]!.color).toBe(MessageColors.item);
+      expect(output.embeds![0]!.fields).toBeDefined();
     });
   });
 
@@ -118,7 +120,7 @@ describe("DiscordAdapter", () => {
 
       const output = discordAdapter.formatText(msg);
       expect(output.embeds).toHaveLength(1);
-      expect(output.embeds![0].color).toBe(MessageColors.success);
+      expect(output.embeds![0]!.color).toBe(MessageColors.success);
     });
   });
 
@@ -132,8 +134,8 @@ describe("DiscordAdapter", () => {
 
       const output = discordAdapter.formatError(msg);
 
-      expect(output.embeds![0].color).toBe(MessageColors.error);
-      expect(output.embeds![0].footer?.text).toBe("Code: ERR_PERMISSION");
+      expect(output.embeds![0]!.color).toBe(MessageColors.error);
+      expect(output.embeds![0]!.footer?.text).toBe("Code: ERR_PERMISSION");
     });
   });
 
@@ -149,8 +151,8 @@ describe("DiscordAdapter", () => {
 
       const output = discordAdapter.formatAction(msg);
 
-      expect(output.embeds![0].description).toContain("**Hero** attacks **Goblin**");
-      expect(output.embeds![0].description).toContain("**15** damage");
+      expect(output.embeds![0]!.description).toContain("**Hero** attacks **Goblin**");
+      expect(output.embeds![0]!.description).toContain("**15** damage");
     });
   });
 
@@ -165,9 +167,9 @@ describe("DiscordAdapter", () => {
 
       const output = discordAdapter.formatDialogue(msg);
 
-      expect(output.embeds![0].title).toContain("Merchant");
-      expect(output.embeds![0].description).toBe("Welcome to my shop!");
-      expect(output.embeds![0].fields![0].value).toContain("1. Buy");
+      expect(output.embeds![0]!.title).toContain("Merchant");
+      expect(output.embeds![0]!.description).toBe("Welcome to my shop!");
+      expect(output.embeds![0]!.fields![0]!.value).toContain("1. Buy");
     });
   });
 
@@ -182,9 +184,9 @@ describe("DiscordAdapter", () => {
 
       const output = discordAdapter.formatStatus(msg);
 
-      expect(output.embeds![0].fields).toHaveLength(3);
-      expect(output.embeds![0].fields![0].value).toContain("75/100");
-      expect(output.embeds![0].fields![1].value).toContain("30/50");
+      expect(output.embeds![0]!.fields).toHaveLength(3);
+      expect(output.embeds![0]!.fields![0]!.value).toContain("75/100");
+      expect(output.embeds![0]!.fields![1]!.value).toContain("30/50");
     });
   });
 
@@ -200,7 +202,7 @@ describe("DiscordAdapter", () => {
       };
 
       const output = discordAdapter.format(room);
-      expect(output.embeds![0].color).toBe(MessageColors.room);
+      expect(output.embeds![0]!.color).toBe(MessageColors.room);
     });
   });
 });

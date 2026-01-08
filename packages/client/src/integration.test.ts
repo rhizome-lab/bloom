@@ -167,7 +167,7 @@ describe("BloomClient Integration", () => {
     const entities = await withTimeout(client!.fetchEntities([playerId!]), REQUEST_TIMEOUT_MS);
 
     expect(entities.length).toBe(1);
-    expect(entities[0].id).toBe(playerId);
+    expect(entities[0]!.id).toBe(playerId!);
   });
 
   it("should get opcodes", async () => {

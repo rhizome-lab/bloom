@@ -143,7 +143,7 @@ const App = () => {
       if (command === "inspect" && args.length >= 1) {
         const itemName = args[0]!.toLowerCase();
         // Search in room contents and inventory
-        const allItems = [...getRoomContents(), ...inventory];
+        const allItems = [...getRoomContents(), ...inventory].filter((i): i is Entity => i !== undefined);
         const item = allItems.find((i) => (i["name"] as string)?.toLowerCase() === itemName);
         if (item) {
           handleInspect(item);
@@ -313,9 +313,11 @@ const App = () => {
                   <Text italic>{room["description"] as string}</Text>
                   <Box marginTop={1} flexDirection="column">
                     <Text underline>Contents:</Text>
-                    {getRoomContents().map((item: Entity, idx: number) => (
-                      <Text key={idx}>- {item["name"] as string}</Text>
-                    ))}
+                    {getRoomContents()
+                      .filter((item): item is Entity => item !== undefined)
+                      .map((item, idx) => (
+                        <Text key={idx}>- {item["name"] as string}</Text>
+                      ))}
                   </Box>
                 </>
               ) : (
