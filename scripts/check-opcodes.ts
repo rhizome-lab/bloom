@@ -10,7 +10,6 @@ import { execSync } from "node:child_process";
 const CODEGEN_DIR = "crates/runtime/luajit/src/codegen";
 const TEST_FILES = [
   "crates/runtime/luajit/src/tests.rs",
-  "crates/bloom-runtime/src/tests.rs",
 ];
 
 // Extract opcodes from codegen match statements
