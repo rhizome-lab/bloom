@@ -299,8 +299,38 @@ mod tests {
         );
     }
 
-    // Note: Hotel.ts and Player.ts use syntax not yet supported by the transpiler:
-    // - Numeric separators (10_000)
-    // - Computed property names [key]: value
-    // These will be enabled once transpiler support is added.
+    #[test]
+    fn test_load_hotel() {
+        let seed_system = SeedSystem::new(get_seeds_path());
+        let def = seed_system
+            .load_definition("Hotel.ts", "HotelManager", None)
+            .expect("Failed to load HotelManager");
+
+        // Hotel should have management verbs
+        assert!(def.verbs.contains_key("enter"), "Missing 'enter' verb");
+        assert!(
+            def.verbs.contains_key("create_lobby"),
+            "Missing 'create_lobby' verb"
+        );
+        assert!(
+            def.verbs.contains_key("create_room"),
+            "Missing 'create_room' verb"
+        );
+    }
+
+    #[test]
+    fn test_load_player() {
+        let seed_system = SeedSystem::new(get_seeds_path());
+        let def = seed_system
+            .load_definition("Player.ts", "Player", None)
+            .expect("Failed to load Player");
+
+        // Player should have interaction verbs
+        assert!(def.verbs.contains_key("look"), "Missing 'look' verb");
+        assert!(
+            def.verbs.contains_key("inventory"),
+            "Missing 'inventory' verb"
+        );
+        assert!(def.verbs.contains_key("whoami"), "Missing 'whoami' verb");
+    }
 }

@@ -16,6 +16,13 @@ fn test_number_literals() {
 }
 
 #[test]
+fn test_numeric_separators() {
+    // TypeScript numeric separators: 10_000 -> 10000
+    assert_transpile("10_000", SExpr::number(10000.0).erase_type());
+    assert_transpile("1_000_000", SExpr::number(1000000.0).erase_type());
+}
+
+#[test]
 fn test_string_literals() {
     assert_transpile("\"hello\"", SExpr::string("hello").erase_type());
     assert_transpile("'world'", SExpr::string("world").erase_type());
@@ -301,6 +308,24 @@ fn test_object_literal() {
                 SExpr::list(vec![
                     SExpr::string("b").erase_type(),
                     SExpr::number(2.0).erase_type(),
+                ])
+                .erase_type(),
+            ],
+        ),
+    );
+}
+
+#[test]
+fn test_computed_property_name() {
+    // Computed property: { [key]: value }
+    assert_transpile(
+        "{ [k]: 42 }",
+        SExpr::call(
+            "obj.new",
+            vec![
+                SExpr::list(vec![
+                    SExpr::call("std.var", vec![SExpr::string("k").erase_type()]),
+                    SExpr::number(42.0).erase_type(),
                 ])
                 .erase_type(),
             ],

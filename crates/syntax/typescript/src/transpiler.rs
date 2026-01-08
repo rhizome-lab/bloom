@@ -135,7 +135,9 @@ impl<'a> TranspileContext<'a> {
 
     fn transpile_number(&self, node: Node) -> Result<SExpr, TranspileError> {
         let text = self.node_text(node);
-        let value: f64 = text
+        // Strip numeric separators (e.g., 10_000 -> 10000)
+        let clean_text = text.replace('_', "");
+        let value: f64 = clean_text
             .parse()
             .map_err(|_| TranspileError::Parse(format!("invalid number: {}", text)))?;
         Ok(SExpr::number(value).erase_type())
@@ -677,11 +679,25 @@ impl<'a> TranspileContext<'a> {
                     .child_by_field_name("value")
                     .ok_or_else(|| TranspileError::Parse("pair missing value".into()))?;
 
-                let key_str = match key.kind() {
-                    "property_identifier" | "identifier" => self.node_text(key).to_string(),
+                let key_expr = match key.kind() {
+                    "property_identifier" | "identifier" => {
+                        SExpr::string(self.node_text(key)).erase_type()
+                    }
                     "string" => {
                         let text = self.node_text(key);
-                        text[1..text.len() - 1].to_string()
+                        SExpr::string(&text[1..text.len() - 1]).erase_type()
+                    }
+                    "number" => {
+                        // Numeric keys like { 0: "a", 1: "b" }
+                        SExpr::string(self.node_text(key)).erase_type()
+                    }
+                    "computed_property_name" => {
+                        // Computed property: [expr]: value
+                        // Get the inner expression (skip the brackets)
+                        let inner = key.named_child(0).ok_or_else(|| {
+                            TranspileError::Parse("empty computed property".into())
+                        })?;
+                        self.transpile_node(inner)?
                     }
                     _ => {
                         return Err(TranspileError::Unsupported(format!(
@@ -692,13 +708,7 @@ impl<'a> TranspileContext<'a> {
                 };
 
                 // Generate pair as [key, value]
-                pairs.push(
-                    SExpr::list(vec![
-                        SExpr::string(key_str).erase_type(),
-                        self.transpile_node(value)?,
-                    ])
-                    .erase_type(),
-                );
+                pairs.push(SExpr::list(vec![key_expr, self.transpile_node(value)?]).erase_type());
             } else if child.kind() == "shorthand_property_identifier" {
                 // { foo } is shorthand for { foo: foo }
                 let name = self.node_text(child);

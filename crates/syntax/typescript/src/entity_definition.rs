@@ -202,7 +202,9 @@ impl<'a> EntityDefContext<'a> {
             }
             "number" => {
                 let text = self.node_text(node);
-                let num: f64 = text
+                // Strip numeric separators (e.g., 10_000 -> 10000)
+                let clean_text = text.replace('_', "");
+                let num: f64 = clean_text
                     .parse()
                     .map_err(|_| TranspileError::Parse(format!("invalid number: {}", text)))?;
                 Ok(serde_json::Number::from_f64(num)
