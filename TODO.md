@@ -19,6 +19,12 @@
 
 - [ ] **Handle All Constructs**: Complete coverage of TypeScript language features
 
+### Testing & Fixes
+
+- [ ] **Scheduler Tests**: Rewrite scheduler_integration tests for new async API (process() now takes callback)
+- [ ] **Try/Catch Runtime**: Fix std.try codegen (tests failing in edge_cases.rs)
+- [ ] **Plugin Loader Test**: Fix plugin init in test environment
+
 ---
 
 ## Completed
