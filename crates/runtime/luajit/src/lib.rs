@@ -6,8 +6,8 @@ mod codegen;
 
 pub use codegen::{CompileError, compile};
 
-use rhizome_lotus_ir::SExpr;
 use mlua::{Lua, LuaSerdeExt, Result as LuaResult};
+use rhizome_lotus_ir::SExpr;
 use thiserror::Error;
 
 /// Errors that can occur during execution.

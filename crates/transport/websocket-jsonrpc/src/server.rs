@@ -592,7 +592,7 @@ async fn handle_message(
             let code = params.and_then(|p| p.get("code")).ok_or("Missing code")?;
 
             // Parse code as SExpr
-            let sexpr: lotus_ir::SExpr =
+            let sexpr: rhizome_lotus_ir::SExpr =
                 serde_json::from_value(code.clone()).map_err(|e| format!("Invalid code: {}", e))?;
 
             let storage = runtime.storage().lock().unwrap();
@@ -610,7 +610,7 @@ async fn handle_message(
             let code = params.and_then(|p| p.get("code")).ok_or("Missing code")?;
 
             // Parse code as SExpr
-            let sexpr: lotus_ir::SExpr =
+            let sexpr: rhizome_lotus_ir::SExpr =
                 serde_json::from_value(code.clone()).map_err(|e| format!("Invalid code: {}", e))?;
 
             let storage = runtime.storage().lock().unwrap();
@@ -635,13 +635,13 @@ async fn handle_message(
 
         "get_opcodes" => {
             // Get core library opcodes
-            let mut opcodes: Vec<String> = lotus_ir::CORE_LIBRARIES
+            let mut opcodes: Vec<String> = rhizome_lotus_ir::CORE_LIBRARIES
                 .iter()
                 .map(|lib| format!("{}.*", lib))
                 .collect();
 
             // Add plugin-registered opcodes
-            let plugin_opcodes = lotus_runtime::get_registered_opcodes();
+            let plugin_opcodes = rhizome_lotus_runtime::get_registered_opcodes();
             opcodes.extend(plugin_opcodes);
 
             Ok(serde_json::json!(opcodes))

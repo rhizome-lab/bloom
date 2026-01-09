@@ -95,7 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 db_path: db.clone(),
             };
 
-            let runtime = Arc::new(lotus_runtime::LotusRuntime::open(&db)?);
+            let runtime = Arc::new(rhizome_lotus_runtime::LotusRuntime::open(&db)?);
             let server = Server::new(runtime, config);
             server.run().await?;
         }
@@ -130,7 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::fs::read_to_string(&file)?
             };
 
-            let sexpr: lotus_ir::SExpr = serde_json::from_str(&input)?;
+            let sexpr: rhizome_lotus_ir::SExpr = serde_json::from_str(&input)?;
             let lua_code = compile(&sexpr)?;
 
             if stdout {
@@ -155,8 +155,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 std::fs::read_to_string(&file)?
             };
 
-            let sexpr: lotus_ir::SExpr = serde_json::from_str(&input)?;
-            let result = lotus_runtime_luajit::execute(&sexpr)?;
+            let sexpr: rhizome_lotus_ir::SExpr = serde_json::from_str(&input)?;
+            let result = rhizome_lotus_runtime_luajit::execute(&sexpr)?;
 
             println!("{}", serde_json::to_string_pretty(&result)?);
         }

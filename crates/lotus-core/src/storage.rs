@@ -329,7 +329,7 @@ impl WorldStorage {
         &self,
         entity_id: EntityId,
         name: &str,
-        code: &lotus_ir::SExpr,
+        code: &rhizome_lotus_ir::SExpr,
     ) -> Result<i64, StorageError> {
         self.add_verb_with_cap(entity_id, name, code, None)
     }
@@ -339,7 +339,7 @@ impl WorldStorage {
         &self,
         entity_id: EntityId,
         name: &str,
-        code: &lotus_ir::SExpr,
+        code: &rhizome_lotus_ir::SExpr,
         required_capability: Option<&str>,
     ) -> Result<i64, StorageError> {
         let code_str = serde_json::to_string(code)?;
@@ -384,7 +384,7 @@ impl WorldStorage {
 
         match result {
             Some((id, entity_id, name, code_str, required_capability)) => {
-                let code: lotus_ir::SExpr = serde_json::from_str(&code_str)?;
+                let code: rhizome_lotus_ir::SExpr = serde_json::from_str(&code_str)?;
                 Ok(Some(Verb {
                     id,
                     entity_id,
@@ -430,7 +430,7 @@ impl WorldStorage {
         // Use a map to ensure child verbs override parent verbs
         let mut verb_map = std::collections::HashMap::new();
         for (id, entity_id, name, code_str, required_capability) in rows {
-            let code: lotus_ir::SExpr = serde_json::from_str(&code_str)?;
+            let code: rhizome_lotus_ir::SExpr = serde_json::from_str(&code_str)?;
             verb_map.insert(
                 name.clone(),
                 Verb {
@@ -447,7 +447,7 @@ impl WorldStorage {
     }
 
     /// Update a verb's code.
-    pub fn update_verb(&self, id: i64, code: &lotus_ir::SExpr) -> Result<(), StorageError> {
+    pub fn update_verb(&self, id: i64, code: &rhizome_lotus_ir::SExpr) -> Result<(), StorageError> {
         let code_str = serde_json::to_string(code)?;
         self.conn.execute(
             "UPDATE verbs SET code = ?1 WHERE id = ?2",

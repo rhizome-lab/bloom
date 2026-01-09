@@ -23,7 +23,7 @@ impl KernelOps {
         owner_id: EntityId,
         cap_type: &str,
         filter: Option<serde_json::Value>,
-    ) -> Result<Option<Capability>, lotus_core::StorageError> {
+    ) -> Result<Option<Capability>, rhizome_lotus_core::StorageError> {
         let storage = self.storage.lock().unwrap();
         let caps = storage.get_capabilities(owner_id)?;
 
@@ -69,7 +69,7 @@ impl KernelOps {
         owner_id: EntityId,
         cap_type: &str,
         filter: Option<serde_json::Value>,
-    ) -> Result<bool, lotus_core::StorageError> {
+    ) -> Result<bool, rhizome_lotus_core::StorageError> {
         Ok(self.get_capability(owner_id, cap_type, filter)?.is_some())
     }
 
@@ -78,7 +78,7 @@ impl KernelOps {
         &self,
         cap_id: &str,
         new_owner_id: EntityId,
-    ) -> Result<(), lotus_core::StorageError> {
+    ) -> Result<(), rhizome_lotus_core::StorageError> {
         let storage = self.storage.lock().unwrap();
         storage.update_capability_owner(cap_id, new_owner_id)
     }

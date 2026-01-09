@@ -1,9 +1,9 @@
 //! Execution context for running scripts with access to storage.
 
+use mlua::LuaSerdeExt;
 use rhizome_lotus_core::{Entity, EntityId, Scheduler, WorldStorage};
 use rhizome_lotus_ir::SExpr;
 use rhizome_lotus_runtime_luajit::Runtime as LuaRuntime;
-use mlua::LuaSerdeExt;
 use std::sync::{Arc, Mutex};
 
 /// Execution context for a script.
@@ -32,7 +32,7 @@ impl ExecutionContext {
         self.inject_opcodes(&runtime)?;
 
         // Compile to Lua code first
-        let lua_code = lotus_runtime_luajit::compile(expr)?;
+        let lua_code = rhizome_lotus_runtime_luajit::compile(expr)?;
 
         // Flatten entity for Lua (merge props into top level like TypeScript does)
         let flattened_this = self.flatten_entity(&self.this);
@@ -98,9 +98,11 @@ return {{ result = __result, this = __this }}
                         &self.storage,
                     )
                     .map_err(|e| {
-                        crate::ExecutionError::Runtime(lotus_runtime_luajit::ExecutionError::Lua(
-                            mlua::Error::external(e),
-                        ))
+                        crate::ExecutionError::Runtime(
+                            rhizome_lotus_runtime_luajit::ExecutionError::Lua(
+                                mlua::Error::external(e),
+                            ),
+                        )
                     })?;
                 }
             }
@@ -504,7 +506,7 @@ return {{ result = __result, this = __this }}
                     .as_array()
                     .ok_or_else(|| mlua::Error::external("sqlite.query params must be an array"))?;
 
-                let results = lotus_plugin_sqlite::sqlite_query(
+                let results = rhizome_lotus_plugin_sqlite::sqlite_query(
                     &cap_json,
                     this_id,
                     &db_path,
@@ -533,7 +535,7 @@ return {{ result = __result, this = __this }}
                     mlua::Error::external("sqlite.execute params must be an array")
                 })?;
 
-                let rows_affected = lotus_plugin_sqlite::sqlite_execute(
+                let rows_affected = rhizome_lotus_plugin_sqlite::sqlite_execute(
                     &cap_json,
                     this_id,
                     &db_path,
@@ -561,7 +563,7 @@ return {{ result = __result, this = __this }}
                 // Block on async operation
                 let result = tokio::runtime::Handle::try_current()
                     .map_err(|_| mlua::Error::external("net.get: no tokio runtime found"))?
-                    .block_on(lotus_plugin_net::net_get(
+                    .block_on(rhizome_lotus_plugin_net::net_get(
                         &cap_json,
                         this_id,
                         &url,
@@ -595,7 +597,7 @@ return {{ result = __result, this = __this }}
                     // Block on async operation
                     let result = tokio::runtime::Handle::try_current()
                         .map_err(|_| mlua::Error::external("net.post: no tokio runtime found"))?
-                        .block_on(lotus_plugin_net::net_post(
+                        .block_on(rhizome_lotus_plugin_net::net_post(
                             &cap_json,
                             this_id,
                             &url,
@@ -632,7 +634,7 @@ return {{ result = __result, this = __this }}
                     .map(|v| v.as_f64().unwrap_or(0.0) as f32)
                     .collect();
 
-                let id = lotus_plugin_vector::vector_insert(
+                let id = rhizome_lotus_plugin_vector::vector_insert(
                     &cap_json,
                     this_id,
                     &db_path,
@@ -668,7 +670,7 @@ return {{ result = __result, this = __this }}
                     .map(|v| v.as_f64().unwrap_or(0.0) as f32)
                     .collect();
 
-                let results = lotus_plugin_vector::vector_search(
+                let results = rhizome_lotus_plugin_vector::vector_search(
                     &cap_json,
                     this_id,
                     &db_path,
@@ -689,7 +691,7 @@ return {{ result = __result, this = __this }}
                 let cap_json: serde_json::Value = lua_ctx.from_value(capability)?;
 
                 let rows_affected =
-                    lotus_plugin_vector::vector_delete(&cap_json, this_id, &db_path, &key)
+                    rhizome_lotus_plugin_vector::vector_delete(&cap_json, this_id, &db_path, &key)
                         .map_err(mlua::Error::external)?;
                 Ok(rows_affected)
             },
@@ -714,7 +716,7 @@ return {{ result = __result, this = __this }}
                 // Block on async operation
                 let result = tokio::runtime::Handle::try_current()
                     .map_err(|_| mlua::Error::external("ai.generate_text: no tokio runtime found"))?
-                    .block_on(lotus_plugin_ai::ai_generate_text(
+                    .block_on(rhizome_lotus_plugin_ai::ai_generate_text(
                         &cap_json,
                         this_id,
                         &provider,
@@ -746,7 +748,7 @@ return {{ result = __result, this = __this }}
                     // Block on async operation
                     let result = tokio::runtime::Handle::try_current()
                         .map_err(|_| mlua::Error::external("ai.embed: no tokio runtime found"))?
-                        .block_on(lotus_plugin_ai::ai_embed(
+                        .block_on(rhizome_lotus_plugin_ai::ai_embed(
                             &cap_json, this_id, &provider, &model, &text,
                         ))
                         .map_err(mlua::Error::external)?;
@@ -778,7 +780,7 @@ return {{ result = __result, this = __this }}
                 // Block on async operation
                 let result = tokio::runtime::Handle::try_current()
                     .map_err(|_| mlua::Error::external("ai.chat: no tokio runtime found"))?
-                    .block_on(lotus_plugin_ai::ai_chat(
+                    .block_on(rhizome_lotus_plugin_ai::ai_chat(
                         &cap_json,
                         this_id,
                         &provider,

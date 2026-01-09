@@ -19,13 +19,13 @@ pub use plugin_registry::{get_registered_opcodes, init_registry};
 pub struct LotusRuntime {
     storage: Arc<Mutex<WorldStorage>>,
     scheduler_storage: Arc<TokioMutex<WorldStorage>>,
-    scheduler: Arc<lotus_core::Scheduler>,
+    scheduler: Arc<rhizome_lotus_core::Scheduler>,
     plugins: Arc<Mutex<plugin_loader::PluginRegistry>>,
 }
 
 impl LotusRuntime {
     /// Create a new runtime from a database path.
-    pub fn open(db_path: &str) -> Result<Self, lotus_core::StorageError> {
+    pub fn open(db_path: &str) -> Result<Self, rhizome_lotus_core::StorageError> {
         Self::open_with_interval(db_path, 100)
     }
 
@@ -33,7 +33,7 @@ impl LotusRuntime {
     pub fn open_with_interval(
         db_path: &str,
         interval_ms: u64,
-    ) -> Result<Self, lotus_core::StorageError> {
+    ) -> Result<Self, rhizome_lotus_core::StorageError> {
         // Initialize plugin registry
         plugin_registry::init_registry();
 
@@ -43,7 +43,7 @@ impl LotusRuntime {
 
         let storage = Arc::new(Mutex::new(storage));
         let scheduler_storage = Arc::new(TokioMutex::new(scheduler_storage));
-        let scheduler = Arc::new(lotus_core::Scheduler::new(
+        let scheduler = Arc::new(rhizome_lotus_core::Scheduler::new(
             scheduler_storage.clone(),
             interval_ms,
         ));
@@ -70,7 +70,10 @@ impl LotusRuntime {
 
         let storage = Arc::new(Mutex::new(storage));
         let scheduler_storage = Arc::new(TokioMutex::new(scheduler_storage));
-        let scheduler = Arc::new(lotus_core::Scheduler::new(scheduler_storage.clone(), 100));
+        let scheduler = Arc::new(rhizome_lotus_core::Scheduler::new(
+            scheduler_storage.clone(),
+            100,
+        ));
         let plugins = Arc::new(Mutex::new(plugin_loader::PluginRegistry::new()));
 
         Self {
@@ -98,7 +101,7 @@ impl LotusRuntime {
     }
 
     /// Get a reference to the scheduler.
-    pub fn scheduler(&self) -> &Arc<lotus_core::Scheduler> {
+    pub fn scheduler(&self) -> &Arc<rhizome_lotus_core::Scheduler> {
         &self.scheduler
     }
 
@@ -174,16 +177,16 @@ impl LotusRuntime {
 #[derive(Debug, thiserror::Error)]
 pub enum ExecutionError {
     #[error("storage error: {0}")]
-    Storage(#[from] lotus_core::StorageError),
+    Storage(#[from] rhizome_lotus_core::StorageError),
 
     #[error("lua error: {0}")]
     Lua(#[from] mlua::Error),
 
     #[error("runtime error: {0}")]
-    Runtime(#[from] lotus_runtime_luajit::ExecutionError),
+    Runtime(#[from] rhizome_lotus_runtime_luajit::ExecutionError),
 
     #[error("compile error: {0}")]
-    Compile(#[from] lotus_runtime_luajit::CompileError),
+    Compile(#[from] rhizome_lotus_runtime_luajit::CompileError),
 
     #[error("entity not found: {0}")]
     EntityNotFound(EntityId),
