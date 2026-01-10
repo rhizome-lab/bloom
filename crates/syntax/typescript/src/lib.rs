@@ -1,13 +1,8 @@
-//! TypeScript to S-expression transpiler.
+//! TypeScript entity definition parser for Lotus.
 //!
-//! Uses tree-sitter for parsing TypeScript, then transforms
-//! the CST into Lotus S-expressions.
+//! Parses TypeScript class definitions into EntityDefinition structures
+//! containing props and verbs. Uses reed for transpilation.
 
 pub mod entity_definition;
-mod transpiler;
 
-pub use entity_definition::{EntityDefinition, parse_entity_definition};
-pub use transpiler::{TranspileError, transpile};
-
-#[cfg(test)]
-mod tests;
+pub use entity_definition::{EntityDefError, EntityDefinition, parse_entity_definition};

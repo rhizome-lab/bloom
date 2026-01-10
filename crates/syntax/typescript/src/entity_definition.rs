@@ -1,11 +1,21 @@
 //! Parse entity definitions from TypeScript class files.
 
-use crate::TranspileError;
 use rhizome_lotus_ir::SExpr;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use thiserror::Error;
 use tree_sitter::{Node, Parser};
+
+/// Error parsing entity definitions.
+#[derive(Debug, Error)]
+pub enum EntityDefError {
+    #[error("parse error: {0}")]
+    Parse(String),
+
+    #[error("reed error: {0}")]
+    Reed(#[from] rhizome_reed_read_ts::ReadError),
+}
 
 /// Entity definition extracted from TypeScript class.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,20 +36,20 @@ pub fn parse_entity_definition(
     source: &str,
     class_name: &str,
     replacements: Option<&HashMap<String, String>>,
-) -> Result<EntityDefinition, TranspileError> {
+) -> Result<EntityDefinition, EntityDefError> {
     let mut parser = Parser::new();
     let language = tree_sitter_typescript::LANGUAGE_TYPESCRIPT;
     parser
         .set_language(&language.into())
-        .map_err(|err| TranspileError::Parse(err.to_string()))?;
+        .map_err(|err| EntityDefError::Parse(err.to_string()))?;
 
     let tree = parser
         .parse(source, None)
-        .ok_or_else(|| TranspileError::Parse("failed to parse".into()))?;
+        .ok_or_else(|| EntityDefError::Parse("failed to parse".into()))?;
 
     let root = tree.root_node();
     if root.has_error() {
-        return Err(TranspileError::Parse("syntax error in source".into()));
+        return Err(EntityDefError::Parse("syntax error in source".into()));
     }
 
     // Find the class declaration
@@ -54,7 +64,7 @@ fn find_class_declaration<'a>(
     root: &Node<'a>,
     source: &str,
     class_name: &str,
-) -> Result<Node<'a>, TranspileError> {
+) -> Result<Node<'a>, EntityDefError> {
     let mut cursor = root.walk();
     for child in root.children(&mut cursor) {
         if child.kind() == "class_declaration" {
@@ -79,7 +89,7 @@ fn find_class_declaration<'a>(
         }
     }
 
-    Err(TranspileError::Parse(format!(
+    Err(EntityDefError::Parse(format!(
         "class '{}' not found",
         class_name
     )))
@@ -105,14 +115,14 @@ impl<'a> EntityDefContext<'a> {
     fn extract_entity_definition(
         &self,
         class_node: Node,
-    ) -> Result<EntityDefinition, TranspileError> {
+    ) -> Result<EntityDefinition, EntityDefError> {
         let mut props = HashMap::new();
         let mut verbs = HashMap::new();
 
         // Find class body
         let body = class_node
             .child_by_field_name("body")
-            .ok_or_else(|| TranspileError::Parse("class missing body".into()))?;
+            .ok_or_else(|| EntityDefError::Parse("class missing body".into()))?;
 
         let mut cursor = body.walk();
         for member in body.children(&mut cursor) {
@@ -136,10 +146,10 @@ impl<'a> EntityDefContext<'a> {
         Ok(EntityDefinition { props, verbs })
     }
 
-    fn extract_property(&self, node: Node) -> Result<Option<(String, Value)>, TranspileError> {
+    fn extract_property(&self, node: Node) -> Result<Option<(String, Value)>, EntityDefError> {
         let name_node = node
             .child_by_field_name("name")
-            .ok_or_else(|| TranspileError::Parse("field_definition missing name".into()))?;
+            .ok_or_else(|| EntityDefError::Parse("field_definition missing name".into()))?;
         let name = self.node_text(name_node).to_string();
 
         // Get initializer value if present
@@ -153,16 +163,16 @@ impl<'a> EntityDefContext<'a> {
         Ok(None)
     }
 
-    fn extract_method(&self, node: Node) -> Result<Option<(String, SExpr)>, TranspileError> {
+    fn extract_method(&self, node: Node) -> Result<Option<(String, SExpr)>, EntityDefError> {
         let name_node = node
             .child_by_field_name("name")
-            .ok_or_else(|| TranspileError::Parse("method_definition missing name".into()))?;
+            .ok_or_else(|| EntityDefError::Parse("method_definition missing name".into()))?;
         let name = self.node_text(name_node).to_string();
 
         // Get body - this is a statement_block
         let body_node = node
             .child_by_field_name("body")
-            .ok_or_else(|| TranspileError::Parse("method_definition missing body".into()))?;
+            .ok_or_else(|| EntityDefError::Parse("method_definition missing body".into()))?;
 
         // Apply replacements to the body text
         let mut body_text = self.node_text(body_node).to_string();
@@ -172,13 +182,18 @@ impl<'a> EntityDefContext<'a> {
             }
         }
 
-        // Transpile the body directly (it's a statement_block which the transpiler supports)
-        let sexpr = crate::transpile(&body_text)?;
+        // Use reed to parse TS and convert to S-expression
+        let program = rhizome_reed_read_ts::read(&body_text)?;
+        let json_sexpr = rhizome_reed_sexpr::to_sexpr(&program);
+
+        // Convert serde_json::Value to lotus_ir::SExpr via serialization
+        let sexpr: SExpr = serde_json::from_value(json_sexpr)
+            .map_err(|e| EntityDefError::Parse(format!("failed to convert S-expression: {}", e)))?;
 
         Ok(Some((name, sexpr)))
     }
 
-    fn extract_literal(&self, node: Node) -> Result<Value, TranspileError> {
+    fn extract_literal(&self, node: Node) -> Result<Value, EntityDefError> {
         match node.kind() {
             "string" => {
                 let text = self.node_text(node);
@@ -206,7 +221,7 @@ impl<'a> EntityDefContext<'a> {
                 let clean_text = text.replace('_', "");
                 let num: f64 = clean_text
                     .parse()
-                    .map_err(|_| TranspileError::Parse(format!("invalid number: {}", text)))?;
+                    .map_err(|_| EntityDefError::Parse(format!("invalid number: {}", text)))?;
                 Ok(serde_json::Number::from_f64(num)
                     .map(Value::Number)
                     .unwrap_or(Value::Null))
@@ -231,10 +246,10 @@ impl<'a> EntityDefContext<'a> {
                     if child.kind() == "pair" {
                         let key = child
                             .child_by_field_name("key")
-                            .ok_or_else(|| TranspileError::Parse("pair missing key".into()))?;
+                            .ok_or_else(|| EntityDefError::Parse("pair missing key".into()))?;
                         let value = child
                             .child_by_field_name("value")
-                            .ok_or_else(|| TranspileError::Parse("pair missing value".into()))?;
+                            .ok_or_else(|| EntityDefError::Parse("pair missing value".into()))?;
 
                         let key_str = match key.kind() {
                             "property_identifier" | "identifier" => self.node_text(key).to_string(),

@@ -51,8 +51,7 @@ rusqlite = { version = "0.37", features = ["bundled"] }
 mlua = { version = "0.10", features = ["luajit52", "vendored", "serialize"] }
 
 # TypeScript parsing
-# arborium-typescript = "0.1"  # TODO: verify crate name
-tree-sitter = "0.24"
+tree-sitter = "0.23"
 tree-sitter-typescript = "0.23"
 
 # Serialization
@@ -70,6 +69,11 @@ rhizome-lotus-plugin-abi = { path = "crates/lotus-plugin-abi" }
 rhizome-lotus-transport-websocket-jsonrpc = { path = "crates/transport/websocket-jsonrpc" }
 rhizome-lotus-syntax-typescript = { path = "crates/syntax/typescript" }
 rhizome-lotus-runtime-luajit = { path = "crates/runtime/luajit" }
+
+# Reed (translation layer)
+rhizome-reed-ir = { path = "../reed/crates/reed-ir" }
+rhizome-reed-sexpr = { path = "../reed/crates/reed-sexpr" }
+rhizome-reed-read-ts = { path = "../reed/crates/readers/reed-read-ts" }
 
 # Minimize debug build size
 [profile.dev]

@@ -5,7 +5,6 @@ use std::sync::Arc;
 
 use clap::{Parser, Subcommand};
 use rhizome_lotus_runtime_luajit::compile;
-use rhizome_lotus_syntax_typescript::transpile;
 use rhizome_lotus_transport_websocket_jsonrpc::{Server, ServerConfig};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -103,7 +102,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Transpile { files, out } => {
             for file in files {
                 let source = std::fs::read_to_string(&file)?;
-                let sexpr = transpile(&source)?;
+
+                // Use reed to parse TS and convert to S-expression
+                let program = rhizome_reed_read_ts::read(&source)?;
+                let sexpr = rhizome_reed_sexpr::to_sexpr(&program);
                 let json = serde_json::to_string_pretty(&sexpr)?;
 
                 let out_path = if let Some(ref output_dir) = out {

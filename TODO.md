@@ -14,6 +14,40 @@
 
 - [ ] **Web Editor**: Re-add visual script editor (needs Rust→WASM bindings for transpile/decompile)
 - [ ] **Hybrid ECS**: Optional structured components for hot data (Position, Health) alongside flexible props
+- [ ] **Spore Integration**: Move Lua execution to spore, lotus becomes pure world state
+
+#### Kernel Operations for Spore Plugin
+
+When execution moves to spore, these kernel operations need to be provided via a `spore-lotus` plugin:
+
+**Entity Operations:**
+- `entity(id)` → Get entity by ID (returns flattened props)
+- `verbs(entity)` → Get all verbs defined on an entity
+- `update(entity_id, props)` → Persist entity property changes
+- `create(props, prototype_id?)` → Create new entity
+
+**Verb Execution:**
+- `call(target_entity, verb_name, args)` → Call a verb on an entity
+  - Checks `required_capability` if set on verb
+  - Creates nested execution context with proper `caller_id`
+- `schedule(verb_name, args, delay_ms)` → Schedule future verb execution
+
+**Capability System:**
+- `capability(id)` → Get capability by ID
+- `mint(authority, cap_type, params)` → Create new capability using mint authority
+  - Validates authority is `sys.mint` type
+  - Validates namespace permissions
+- `delegate(parent_cap, restrictions)` → Create restricted child capability
+  - Validates restrictions are subset of parent
+
+**Context Variables:**
+- `__this` → Current entity (flattened props)
+- `__caller` → Entity ID of caller
+- `__args` → Arguments passed to verb
+
+**Plugin Integration:**
+Existing plugins (fs, net, sqlite, vector, ai, memory, procgen) register Lua C functions directly.
+These should continue to work through spore's plugin system.
 
 ### Transpiler & Codegen
 
