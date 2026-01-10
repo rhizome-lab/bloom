@@ -38,9 +38,8 @@ pub fn parse_entity_definition(
     replacements: Option<&HashMap<String, String>>,
 ) -> Result<EntityDefinition, EntityDefError> {
     let mut parser = Parser::new();
-    let language = tree_sitter_typescript::LANGUAGE_TYPESCRIPT;
     parser
-        .set_language(&language.into())
+        .set_language(&arborium_typescript::language().into())
         .map_err(|err| EntityDefError::Parse(err.to_string()))?;
 
     let tree = parser
