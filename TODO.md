@@ -54,6 +54,31 @@ These should continue to work through spore's plugin system.
 
 - [ ] **Handle All Constructs**: Complete coverage of TypeScript language features
 
+### Complexity Hotspots (23 functions >21)
+- [ ] `crates/transport/websocket-jsonrpc/src/server.rs:handle_message` (83)
+- [ ] `crates/runtime/luajit/src/codegen/std.rs:compile_std` (73)
+- [ ] `crates/runtime/luajit/src/codegen/list.rs:compile_list` (64)
+- [ ] `crates/runtime/luajit/src/codegen/math.rs:compile_math` (55)
+- [ ] `crates/runtime/luajit/src/codegen/obj.rs:compile_obj` (51)
+- [ ] `crates/runtime/luajit/src/codegen/str.rs:compile_str` (43)
+- [ ] `crates/lotus-runtime/src/capability_validation.rs:is_valid_restriction` (36)
+- [ ] `crates/plugins/memory/src/lib.rs:memory_search_lua` (35)
+- [ ] `crates/plugins/cloud/src/lib.rs:create_operator` (35)
+- [ ] `crates/runtime/luajit/src/codegen/game.rs:compile_game` (29)
+- [ ] `crates/plugins/ai/src/lib.rs:ai_chat_lua` (29)
+- [ ] `crates/plugins/ai/src/lib.rs:ai_generate_text_lua` (27)
+- [ ] `crates/plugins/memory/src/lib.rs:memory_add_lua` (27)
+- [ ] `crates/runtime/luajit/src/codegen/fs.rs:compile_fs` (24)
+- [ ] `crates/plugins/net/src/lib.rs:net_post_lua` (24)
+- [ ] `crates/plugins/sqlite/src/lib.rs:sqlite_query_lua` (24)
+- [ ] `crates/plugins/ai/src/lib.rs:ai_embed_lua` (23)
+- [ ] `crates/plugins/sqlite/src/lib.rs:sqlite_execute_lua` (23)
+- [ ] `crates/plugins/vector/src/lib.rs:vector_insert_lua` (23)
+- [ ] `crates/plugins/fs/src/lib.rs:fs_list_lua` (22)
+- [ ] `crates/plugins/cloud/src/lib.rs:cloud_list_lua` (22)
+- [ ] `crates/plugins/diffusers/src/lib.rs:diffusers_generate_lua` (21)
+- [ ] `crates/plugins/cloud/src/lib.rs:cloud_stat_lua` (21)
+
 ### Testing & Fixes
 
 - [ ] **Scheduler Tests**: Rewrite scheduler_integration tests for new async API (process() now takes callback)
