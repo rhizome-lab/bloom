@@ -347,7 +347,7 @@ impl WorldStorage {
         &self,
         entity_id: EntityId,
         name: &str,
-        code: &rhizome_lotus_ir::SExpr,
+        code: &serde_json::Value,
     ) -> Result<i64, StorageError> {
         self.add_verb_with_cap(entity_id, name, code, None).await
     }
@@ -357,7 +357,7 @@ impl WorldStorage {
         &self,
         entity_id: EntityId,
         name: &str,
-        code: &rhizome_lotus_ir::SExpr,
+        code: &serde_json::Value,
         required_capability: Option<&str>,
     ) -> Result<i64, StorageError> {
         let code_str = serde_json::to_string(code)?;
@@ -402,7 +402,7 @@ impl WorldStorage {
             let name: String = row.get(2)?;
             let code_str: String = row.get(3)?;
             let required_capability: Option<String> = row.get(4)?;
-            let code: rhizome_lotus_ir::SExpr = serde_json::from_str(&code_str)?;
+            let code: serde_json::Value = serde_json::from_str(&code_str)?;
             Ok(Some(Verb {
                 id,
                 entity_id,
@@ -445,7 +445,7 @@ impl WorldStorage {
             let name: String = row.get(2)?;
             let code_str: String = row.get(3)?;
             let required_capability: Option<String> = row.get(4)?;
-            let code: rhizome_lotus_ir::SExpr = serde_json::from_str(&code_str)?;
+            let code: serde_json::Value = serde_json::from_str(&code_str)?;
             verb_map.insert(
                 name.clone(),
                 Verb {
@@ -465,7 +465,7 @@ impl WorldStorage {
     pub async fn update_verb(
         &self,
         id: i64,
-        code: &rhizome_lotus_ir::SExpr,
+        code: &serde_json::Value,
     ) -> Result<(), StorageError> {
         let code_str = serde_json::to_string(code)?;
         self.conn

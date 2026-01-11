@@ -1,6 +1,5 @@
 //! Entity types and prototype chain.
 
-use rhizome_lotus_ir::SExpr;
 use serde::{Deserialize, Serialize};
 
 /// Entity ID.
@@ -43,7 +42,8 @@ pub struct Verb {
     pub id: i64,
     pub entity_id: EntityId,
     pub name: String,
-    pub code: SExpr,
+    /// Verb code as S-expression JSON (parsed/executed by runtime layer).
+    pub code: serde_json::Value,
     /// Optional capability type required to call this verb.
     /// If set, caller must hold a capability of this type to execute the verb.
     pub required_capability: Option<String>,

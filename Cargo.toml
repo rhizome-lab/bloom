@@ -1,25 +1,6 @@
 [workspace]
 resolver = "2"
-default-members = ["crates/lotus-cli"]
-members = [
-    "crates/lotus-ir",
-    "crates/lotus-core",
-    "crates/lotus-runtime",
-    "crates/lotus-plugin-abi",
-    "crates/lotus-cli",
-    "crates/runtime/luajit",
-    "crates/transport/websocket-jsonrpc",
-    "crates/plugins/procgen",
-    "crates/plugins/fs",
-    "crates/plugins/sqlite",
-    "crates/plugins/net",
-    "crates/plugins/ai",
-    "crates/plugins/vector",
-    "crates/plugins/memory",
-    "crates/plugins/diffusers",
-    "crates/plugins/cloud",
-    "xtask",
-]
+members = ["crates/lotus-core"]
 
 [workspace.package]
 version = "0.1.0"
@@ -28,43 +9,11 @@ license = "MIT"
 repository = "https://github.com/rhizome-lab/lotus"
 
 [workspace.dependencies]
-# Core
-clap = { version = "4", features = ["derive", "color"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
-
-# Async
-tokio = { version = "1", features = ["full"] }
-tokio-tungstenite = "0.26"
-futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
-# Database
 libsql = "0.9"
-
-# Lua runtime
-mlua = { version = "0.10", features = ["luajit52", "vendored", "serialize"] }
-
-# TypeScript parsing
-tree-sitter = "0.25"
-arborium-typescript = "2.7"
-
-# Serialization
-capnp = "0.20"
-
-# Plugin system
-abi_stable = "0.11"
-libloading = "0.8"
-
-# Workspace crates
-rhizome-lotus-ir = { path = "crates/lotus-ir" }
-rhizome-lotus-core = { path = "crates/lotus-core" }
-rhizome-lotus-runtime = { path = "crates/lotus-runtime" }
-rhizome-lotus-plugin-abi = { path = "crates/lotus-plugin-abi" }
-rhizome-lotus-transport-websocket-jsonrpc = { path = "crates/transport/websocket-jsonrpc" }
-rhizome-lotus-runtime-luajit = { path = "crates/runtime/luajit" }
+tokio = { version = "1", features = ["full"] }
 
 # Minimize debug build size
 [profile.dev]

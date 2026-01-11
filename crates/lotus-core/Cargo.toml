@@ -6,7 +6,6 @@ license.workspace = true
 description = "Entity system, capabilities, and storage for Lotus"
 
 [dependencies]
-rhizome-lotus-ir.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 libsql.workspace = true
